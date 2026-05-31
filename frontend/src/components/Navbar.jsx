@@ -1,13 +1,21 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "../styles/Navbar.css";
 
 function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { userInfo, logout } = useAuth();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef(null);
+
+  const handleSearchChange = (event) => {
+    const searchTerm = event.target.value;
+    const searchQuery = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : "";
+
+    navigate(`/${searchQuery}#products`);
+  };
 
   const handleLogout = () => {
     logout();
@@ -50,6 +58,17 @@ function Navbar() {
         </Link>
 
       </div>
+
+      {userInfo?.role !== "admin" && (
+        <input
+          type="search"
+          className="navbar-search"
+          value={new URLSearchParams(location.search).get("search") || ""}
+          onChange={handleSearchChange}
+          placeholder="Search products..."
+          aria-label="Search products"
+        />
+      )}
 
       <div className="nav-links">
         {userInfo?.role === "admin" ? (

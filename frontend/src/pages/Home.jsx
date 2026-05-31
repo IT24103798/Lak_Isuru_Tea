@@ -1,9 +1,13 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
+import { useAuth } from "../context/AuthContext";
 import { getAllProducts } from "../services/productService";
 import "../styles/Home.css";
 
 function Home() {
+  const { userInfo } = useAuth();
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -27,21 +31,38 @@ function Home() {
     loadProducts();
   }, []);
 
+  const searchTerm = searchParams.get("search") || "";
+  const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const filteredProducts = products.filter((product) => {
+    const searchableText = [
+      product.name,
+      product.category,
+      product.description,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    return searchableText.includes(normalizedSearchTerm);
+  });
+
   return (
     <div className="home-page">
-      <section className="hero-section">
-        <div className="hero-content">
-          <h1>Fresh Tea From Fresh Name</h1>
-          <p>
-            Welcome to Lak Isuru Tea. Discover premium quality tea products with
-            natural freshness, rich aroma, and authentic Sri Lankan taste.
-          </p>
+      {!userInfo && (
+        <section className="hero-section">
+          <div className="hero-content">
+            <h1>Fresh Tea From Fresh Name</h1>
+            <p>
+              Welcome to Lak Isuru Tea. Discover premium quality tea products with
+              natural freshness, rich aroma, and authentic Sri Lankan taste.
+            </p>
 
-          <a href="#products" className="hero-btn">
-            Shop Now
-          </a>
-        </div>
-      </section>
+            <a href="#products" className="hero-btn">
+              Shop Now
+            </a>
+          </div>
+        </section>
+      )}
 
       <section className="products-section" id="products">
         <h2>Our Tea Products</h2>
@@ -58,9 +79,15 @@ function Home() {
           <p className="status-message">No products available yet.</p>
         )}
 
-        {!loading && !error && products.length > 0 && (
+        {!loading && !error && products.length > 0 && filteredProducts.length === 0 && (
+          <p className="status-message">
+            No products found for "{searchTerm.trim()}".
+          </p>
+        )}
+
+        {!loading && !error && filteredProducts.length > 0 && (
           <div className="product-grid">
-            {products.map((product) => (
+            {filteredProducts.map((product) => (
               <ProductCard product={product} key={product._id} />
             ))}
           </div>
