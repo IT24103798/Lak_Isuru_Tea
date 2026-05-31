@@ -55,7 +55,7 @@ function Navbar() {
         {userInfo?.role === "admin" ? (
           <>
             <Link to="/admin/dashboard">Dashboard</Link>
-            <Link to="/admin/dashboard#products">Products</Link>
+            <Link to="/admin/products">Products</Link>
             <Link to="/admin/dashboard#orders">Orders</Link>
             <Link to="/admin/dashboard#messages">Messages</Link>
           </>
