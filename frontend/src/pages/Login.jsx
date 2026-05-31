@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import API from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import "../styles/Auth.css";
+import SocialLoginButtons from "../components/SocialLoginButtons";
+import { validateLogin } from "../utils/validation";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -11,16 +13,20 @@ const Login = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    rememberMe: true,
   });
 
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setFormData((previousData) => ({
-      ...previousData,
-      [e.target.name]: e.target.value,
-    }));
+    const { name, value, type, checked } = e.target;
+
+    setFormData({
+      ...formData,
+      [name]: type === "checkbox" ? checked : value,
+    });
   };
 
   const handleLogin = async (e) => {
@@ -28,7 +34,7 @@ const Login = () => {
     setError("");
 
     if (!formData.email || !formData.password) {
-      setError("Please enter email and password");
+      setError("Please enter email and password.");
       return;
     }
 
@@ -40,53 +46,83 @@ const Login = () => {
         password: formData.password,
       });
 
-      login({
+      const loggedUser = {
         ...data.user,
         token: data.token,
-      });
+      };
 
-      navigate("/");
+      login(loggedUser);
+
+      if (loggedUser.role === "admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/");
+      }
     } catch (error) {
-      setError(error.response?.data?.message || "Login failed");
+      setError(error.response?.data?.message || "Login failed.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="auth-page">
+    <div className="auth-page-center">
       <div className="auth-card">
-        <h2>Login</h2>
-        <p>Login to continue your tea order</p>
+        <h2>Welcome Back</h2>
+        <p className="auth-subtitle">Login to continue your tea order.</p>
 
         {error && <div className="auth-error">{error}</div>}
 
         <form onSubmit={handleLogin}>
-          <label>Email</label>
+          <label>Email Address</label>
           <input
             type="email"
             name="email"
-            placeholder="Enter email"
+            placeholder="example@email.com"
             value={formData.email}
             onChange={handleChange}
           />
 
           <label>Password</label>
-          <input
-            type="password"
-            name="password"
-            placeholder="Enter password"
-            value={formData.password}
-            onChange={handleChange}
-          />
+          <div className="password-box">
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="Enter your password"
+              value={formData.password}
+              onChange={handleChange}
+            />
 
-          <button type="submit" disabled={loading}>
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
+
+          <div className="auth-options">
+            <label className="checkbox-row small">
+              <input
+                type="checkbox"
+                name="rememberMe"
+                checked={formData.rememberMe}
+                onChange={handleChange}
+              />
+              <span>Remember me</span>
+            </label>
+
+            <Link to="/forgot-password">Forgot password?</Link>
+          </div>
+
+          <button className="auth-main-btn" type="submit" disabled={loading}>
             {loading ? "Logging in..." : "Login"}
           </button>
+          <SocialLoginButtons />
         </form>
 
         <p className="auth-link">
-          Do not have an account? <Link to="/register">Register here</Link>
+          New customer? <Link to="/register">Create account</Link>
         </p>
       </div>
     </div>

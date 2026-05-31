@@ -34,6 +34,23 @@ const userSchema = new mongoose.Schema(
       enum: ["customer", "admin"],
       default: "customer",
     },
+    
+    resetPasswordOtp: {
+      type: String,
+    },
+
+    resetPasswordOtpExpire: {
+       type: Date,
+    },
+    provider: {
+      type: String,
+      enum: ["local", "google", "facebook", "apple"],
+      default: "local",
+    },
+
+    providerId: {
+      type: String,
+    },
   },
   {
     timestamps: true,

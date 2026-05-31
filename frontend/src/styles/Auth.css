@@ -1,5 +1,5 @@
-.auth-page {
-  min-height: 90vh;
+.auth-page-center {
+  min-height: calc(100vh - 75px);
   background: linear-gradient(135deg, #eef7ee, #d6ead6);
   display: flex;
   justify-content: center;
@@ -9,23 +9,25 @@
 
 .auth-card {
   width: 100%;
-  max-width: 430px;
+  max-width: 460px;
   background: white;
-  padding: 35px;
-  border-radius: 14px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+  padding: 38px;
+  border-radius: 18px;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.12);
 }
 
 .auth-card h2 {
+  margin: 0;
+  color: #1f5c2e;
   text-align: center;
-  color: #245c2c;
-  margin-bottom: 8px;
+  font-size: 30px;
 }
 
-.auth-card p {
+.auth-subtitle {
   text-align: center;
   color: #666;
-  margin-bottom: 22px;
+  margin-top: 8px;
+  margin-bottom: 24px;
 }
 
 .auth-card form {
@@ -35,40 +37,93 @@
 
 .auth-card label {
   font-weight: 600;
-  margin-bottom: 6px;
   color: #333;
+  margin-bottom: 6px;
 }
 
 .auth-card input {
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+  padding: 13px;
+  border: 1px solid #d0d0d0;
+  border-radius: 10px;
   outline: none;
-  margin-bottom: 15px;
   font-size: 14px;
+  margin-bottom: 15px;
 }
 
 .auth-card input:focus {
   border-color: #2e7d32;
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.12);
 }
 
-.auth-card button {
-  margin-top: 8px;
-  padding: 12px;
+.password-box {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.password-box input {
+  flex: 1;
+  margin-bottom: 0;
+  border-radius: 10px 0 0 10px;
+}
+
+.password-box button {
+  padding: 13px 14px;
+  border: 1px solid #d0d0d0;
+  border-left: none;
+  background: #2e7d32;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 0 10px 10px 0;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #444;
+}
+
+.checkbox-row input {
+  margin: 0;
+}
+
+.checkbox-row.small {
+  margin: 0;
+  font-size: 14px;
+}
+
+.auth-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 5px 0 18px;
+}
+
+.auth-options a {
+  color: #2e7d32;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.auth-main-btn {
+  padding: 13px;
   background: #2e7d32;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: bold;
   cursor: pointer;
   font-size: 15px;
 }
 
-.auth-card button:hover {
+.auth-main-btn:hover {
   background: #256628;
 }
 
-.auth-card button:disabled {
+.auth-main-btn:disabled {
   background: #8ab88d;
   cursor: not-allowed;
 }
@@ -76,20 +131,87 @@
 .auth-error {
   background: #ffe1e1;
   color: #b00020;
-  padding: 10px;
-  border-radius: 8px;
-  margin-bottom: 15px;
+  padding: 11px;
+  border-radius: 10px;
+  margin-bottom: 16px;
   text-align: center;
   font-size: 14px;
 }
 
 .auth-link {
+  text-align: center;
   margin-top: 18px;
-  font-size: 14px;
+  color: #555;
 }
 
 .auth-link a {
   color: #2e7d32;
   font-weight: bold;
   text-decoration: none;
+}
+
+@media (max-width: 600px) {
+  .auth-card {
+    padding: 28px;
+  }
+
+  .auth-options {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+}
+.auth-success {
+  background: #e3f8e3;
+  color: #1b7a1b;
+  padding: 11px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.reset-link-box {
+  background: #f4f8f3;
+  border: 1px solid #d0e6d0;
+  padding: 14px;
+  border-radius: 10px;
+  margin-top: 18px;
+  text-align: center;
+}
+
+.reset-link-box p {
+  margin: 0 0 8px;
+  color: #555;
+}
+
+.reset-link-box a {
+  color: #2e7d32;
+  font-weight: bold;
+  text-decoration: none;
+}
+.auth-success {
+  background: #e3f8e3;
+  color: #1b7a1b;
+  padding: 11px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  text-align: center;
+  font-size: 14px;
+}
+.auth-success {
+  background: #e3f8e3;
+  color: #1b7a1b;
+  padding: 11px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.password-hint {
+  color: #777;
+  margin-top: -4px;
+  margin-bottom: 14px;
+  font-size: 13px;
 }

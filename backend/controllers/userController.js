@@ -1,5 +1,7 @@
 import User from "../models/User.js";
 import generateToken from "../utils/generateToken.js";
+import crypto from "crypto";
+import sendEmail from "../utils/sendEmail.js";
 
 export const registerUser = async (req, res) => {
   try {
@@ -96,6 +98,219 @@ export const getUserProfile = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Server error while loading profile",
+      error: error.message,
+    });
+  }
+};
+
+
+
+// PUT /api/users/profile
+export const updateUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    user.name = req.body.name || user.name;
+    user.phone = req.body.phone || user.phone;
+
+    if (req.body.password) {
+      if (req.body.password.length < 8) {
+        return res.status(400).json({
+          message: "Password must be at least 8 characters",
+        });
+      }
+
+      user.password = req.body.password;
+    }
+
+    const updatedUser = await user.save();
+
+    res.status(200).json({
+      message: "Profile updated successfully",
+      user: {
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        role: updatedUser.role,
+      },
+      token: generateToken(updatedUser._id),
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error while updating profile",
+      error: error.message,
+    });
+  }
+};
+// POST /api/users/forgot-password
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        message: "Please enter your email address",
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        message: "No account found with this email",
+      });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    user.resetPasswordOtp = otp;
+    user.resetPasswordOtpExpire = Date.now() + 10 * 60 * 1000;
+
+    await user.save();
+
+    const message = `
+Your Luck Isru Tea password reset OTP is: ${otp}
+
+This OTP will expire in 10 minutes.
+
+If you did not request this, please ignore this email.
+`;
+
+    await sendEmail(user.email, "Luck Isru Tea Password Reset OTP", message);
+
+    res.status(200).json({
+      message: "OTP sent to your email address",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Email could not be sent",
+      error: error.message,
+    });
+  }
+};
+// PUT /api/users/reset-password-otp
+export const resetPasswordWithOtp = async (req, res) => {
+  try {
+    const { email, otp, password, confirmPassword } = req.body;
+
+    if (!email || !otp || !password || !confirmPassword) {
+      return res.status(400).json({
+        message: "Please fill all fields",
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters",
+      });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        message: "Passwords do not match",
+      });
+    }
+
+    const user = await User.findOne({
+      email,
+      resetPasswordOtp: otp,
+      resetPasswordOtpExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid or expired OTP",
+      });
+    }
+
+    user.password = password;
+    user.resetPasswordOtp = undefined;
+    user.resetPasswordOtpExpire = undefined;
+
+    await user.save();
+
+    res.status(200).json({
+      message: "Password reset successful. You can login now.",
+    });
+  } catch (error) {
+    console.log("EMAIL SEND ERROR:", error);
+
+    res.status(500).json({
+      message: "Server error during password reset",
+      error: error.message,
+    });
+  }
+};
+
+// PUT /api/users/change-password
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      return res.status(400).json({
+        message: "Please fill all password fields",
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        message: "New password must be at least 8 characters",
+      });
+    }
+
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
+
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(400).json({
+        message: "New password must include letters and numbers",
+      });
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      return res.status(400).json({
+        message: "New passwords do not match",
+      });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        message: "New password must be different from current password",
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    const isMatch = await user.matchPassword(currentPassword);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        message: "Current password is incorrect",
+      });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error while changing password",
       error: error.message,
     });
   }
