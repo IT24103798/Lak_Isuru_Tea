@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 
@@ -68,6 +69,8 @@ function App() {
           />
         </Routes>
       </main>
+
+      <Footer />
     </>
   );
 }

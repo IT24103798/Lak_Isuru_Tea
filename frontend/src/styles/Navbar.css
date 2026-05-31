@@ -36,6 +36,24 @@
   border-radius: 4px;
 }
 
+.navbar-search {
+  width: min(300px, 28vw);
+  min-width: 160px;
+  padding: 6px 16px;
+  margin-left: 400px;
+  border: 2px solid #168a2f;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #222222;
+  font: inherit;
+  outline: none;
+}
+
+.navbar-search:focus {
+  border-color: #c40000;
+  box-shadow: 0 0 0 3px rgba(196, 0, 0, 0.12);
+}
+
 .brand-name {
   color: #ff0000;
   font-size: 24px;
@@ -171,6 +189,11 @@
 
   .nav-left {
     justify-content: center;
+  }
+
+  .navbar-search {
+    width: min(400px, 100%);
+    margin: 0 auto;
   }
 
   .nav-logo {
