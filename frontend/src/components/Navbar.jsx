@@ -1,53 +1,123 @@
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "../styles/Navbar.css";
 
-const Navbar = () => {
+function Navbar() {
   const navigate = useNavigate();
   const { userInfo, logout } = useAuth();
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef(null);
 
-  const logoutHandler = () => {
+  const handleLogout = () => {
     logout();
+    setIsAccountMenuOpen(false);
     navigate("/login");
   };
 
+  useEffect(() => {
+    const closeAccountMenu = (event) => {
+      if (
+        event.key === "Escape" ||
+        (accountMenuRef.current &&
+          !accountMenuRef.current.contains(event.target))
+      ) {
+        setIsAccountMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", closeAccountMenu);
+    document.addEventListener("keydown", closeAccountMenu);
+
+    return () => {
+      document.removeEventListener("mousedown", closeAccountMenu);
+      document.removeEventListener("keydown", closeAccountMenu);
+    };
+  }, []);
+
+  const displayName = userInfo?.name || (userInfo?.role === "admin" ? "Admin" : "Customer");
+  const avatarLetter = displayName.charAt(0).toUpperCase();
+
   return (
     <nav className="navbar">
-      <Link to="/" className="logo">
-        Luck Isru Tea
-      </Link>
+      <div className="nav-left">
+        <Link to="/" className="logo-link">
+          <img
+            src="/images/lak-isuru-logo.png"
+            alt="Lak Isuru Tea Logo"
+            className="nav-logo"
+          />
+        </Link>
+
+      </div>
 
       <div className="nav-links">
-        <Link to="/">Home</Link>
-
-        {userInfo?.role === "admin" && (
-          <Link to="/admin/dashboard">Admin Dashboard</Link>
-        )}
-
-        {userInfo?.role === "customer" && (
-          <Link to="/my-orders">My Orders</Link>
-        )}
-
-        {userInfo ? (
-        
+        {userInfo?.role === "admin" ? (
           <>
-            <Link to="/profile">Profile</Link>
-            <span className="user-name">Hi, {userInfo.name}</span>
-            <button className="logout-btn" onClick={logoutHandler}>
-              Logout
-            </button>
+            <Link to="/admin/dashboard">Dashboard</Link>
+            <Link to="/admin/dashboard#products">Products</Link>
+            <Link to="/admin/dashboard#orders">Orders</Link>
+            <Link to="/admin/dashboard#messages">Messages</Link>
           </>
         ) : (
           <>
+            <Link to="/">Home</Link>
+            <Link to="/#products">Products</Link>
+            <Link to="/cart">Cart</Link>
+          </>
+        )}
+
+        {userInfo ? (
+          <div className="account-menu" ref={accountMenuRef}>
+            <button
+              type="button"
+              className="account-menu-button"
+              aria-expanded={isAccountMenuOpen}
+              aria-label={`Open account menu for ${displayName}`}
+              onClick={() => setIsAccountMenuOpen((isOpen) => !isOpen)}
+            >
+              <span className="account-avatar">{avatarLetter}</span>
+              <span className="account-name">{displayName}</span>
+              
+            </button>
+
+            {isAccountMenuOpen && (
+              <div className="account-dropdown">
+                <div className="account-summary">
+                  <strong>{displayName}</strong>
+                  <span>{userInfo.role || "customer"}</span>
+                </div>
+
+                <Link to="/profile" onClick={() => setIsAccountMenuOpen(false)}>
+                  Profile settings
+                </Link>
+
+                {userInfo.role !== "admin" && (
+                  <Link
+                    to="/my-orders"
+                    onClick={() => setIsAccountMenuOpen(false)}
+                  >
+                    My orders
+                  </Link>
+                )}
+
+                <button type="button" className="logout-btn" onClick={handleLogout}>
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
             <Link to="/my-orders">My Orders</Link>
-            <Link to="/login">Login</Link>
-            <Link to="/register">Register</Link>
-            
+            <Link to="/login" className="register-link">
+              Login
+            </Link>
           </>
         )}
       </div>
     </nav>
   );
-};
+}
 
 export default Navbar;

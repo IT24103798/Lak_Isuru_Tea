@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 const AdminDashboard = () => {
   return (
     <div className="page">
@@ -5,17 +7,17 @@ const AdminDashboard = () => {
       <p>Welcome to Luck Isru Tea admin panel.</p>
 
       <div className="admin-cards">
-        <div className="admin-card">
+        <Link to="/admin/products" className="admin-card">
           <h3>Products</h3>
           <p>Manage tea products</p>
-        </div>
+        </Link>
 
-        <div className="admin-card">
+        <div className="admin-card" id="orders">
           <h3>Orders</h3>
           <p>View and update customer orders</p>
         </div>
 
-        <div className="admin-card">
+        <div className="admin-card" id="messages">
           <h3>Messages</h3>
           <p>View customer contact messages</p>
         </div>
