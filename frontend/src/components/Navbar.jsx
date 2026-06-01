@@ -9,7 +9,7 @@ function Navbar() {
   const { userInfo, logout } = useAuth();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef(null);
-
+  
   const handleSearchChange = (event) => {
     const searchTerm = event.target.value;
     const searchQuery = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : "";
@@ -73,10 +73,10 @@ function Navbar() {
       <div className="nav-links">
         {userInfo?.role === "admin" ? (
           <>
-            <Link to="/admin/dashboard">Dashboard</Link>
+            <Link to="/admin/users">User Management</Link>
             <Link to="/admin/products">Products</Link>
-            <Link to="/admin/dashboard#orders">Orders</Link>
-            <Link to="/admin/dashboard#messages">Messages</Link>
+            <Link to="/admin/dashboard">Orders</Link>
+            <Link to="/admin/dashboard">reviews</Link>
           </>
         ) : (
           <>

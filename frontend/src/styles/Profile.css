@@ -1,6 +1,6 @@
 .profile-page {
   min-height: calc(100vh - 75px);
-  background: linear-gradient(135deg, #eef7ee, #d6ead6);
+  background: linear-gradient(135deg, #e6e6de, #eeedd3);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -52,7 +52,7 @@
 
 .profile-card button {
   padding: 13px;
-  background: #2e7d32;
+  background: #378b3b;
   color: white;
   border: none;
   border-radius: 10px;
