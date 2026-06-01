@@ -1,0 +1,231 @@
+.chatbot-floating-button {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 74px;
+  height: 74px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #064e2f, #16a34a);
+  color: white;
+  cursor: pointer;
+  z-index: 9999;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: chatbotPulse 1.8s infinite;
+  transition: 0.3s ease;
+}
+
+.chatbot-floating-button:hover {
+  transform: scale(1.08);
+}
+
+.chatbot-icon {
+  font-size: 34px;
+}
+
+.chatbot-badge {
+  position: absolute;
+  top: -6px;
+  right: -4px;
+  background: #facc15;
+  color: #14532d;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+@keyframes chatbotPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.65);
+  }
+
+  70% {
+    box-shadow: 0 0 0 18px rgba(22, 163, 74, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+  }
+}
+
+.chatbot-window {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 370px;
+  height: 540px;
+  background: #ffffff;
+  border-radius: 22px;
+  overflow: hidden;
+  z-index: 9999;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+  display: flex;
+  flex-direction: column;
+}
+
+.chatbot-header {
+  background: linear-gradient(135deg, #052e16, #15803d);
+  color: white;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chatbot-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chatbot-avatar {
+  width: 42px;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.chatbot-header h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.chatbot-header p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.chatbot-close-button {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 30px;
+  cursor: pointer;
+}
+
+.chatbot-messages {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  background: #f0fdf4;
+}
+
+.chatbot-message {
+  max-width: 82%;
+  padding: 11px 14px;
+  margin-bottom: 10px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.45;
+  word-wrap: break-word;
+}
+
+.chatbot-message.bot {
+  background: #ffffff;
+  color: #1f2937;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+}
+
+.chatbot-message.user {
+  background: #15803d;
+  color: white;
+  margin-left: auto;
+  border-bottom-right-radius: 4px;
+}
+
+.chatbot-typing {
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.chatbot-quick-actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+}
+
+.chatbot-quick-actions button {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.chatbot-quick-actions button:hover {
+  background: #dcfce7;
+}
+
+.chatbot-input-area {
+  display: flex;
+  padding: 12px;
+  gap: 8px;
+  border-top: 1px solid #e5e7eb;
+  background: white;
+}
+
+.chatbot-input-area input {
+  flex: 1;
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  padding: 11px 14px;
+  outline: none;
+  font-size: 14px;
+}
+
+.chatbot-input-area input:focus {
+  border-color: #16a34a;
+}
+
+.chatbot-input-area button {
+  border: none;
+  border-radius: 999px;
+  padding: 11px 16px;
+  background: #15803d;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chatbot-input-area button:hover {
+  background: #166534;
+}
+
+.chatbot-input-area button:disabled,
+.chatbot-quick-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .chatbot-window {
+    right: 12px;
+    bottom: 12px;
+    width: calc(100vw - 24px);
+    height: 78vh;
+  }
+
+  .chatbot-floating-button {
+    right: 18px;
+    bottom: 18px;
+    width: 68px;
+    height: 68px;
+  }
+}
