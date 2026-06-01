@@ -1,6 +1,7 @@
 import { Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import Chatbot from "./components/Chatbot";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import Sidebar from "./components/Sidebar";
@@ -115,6 +116,7 @@ function App() {
       </main>
     )}
 
+      <Chatbot />
       <Footer />
     </>
   );
