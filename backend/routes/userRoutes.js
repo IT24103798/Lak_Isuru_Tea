@@ -7,7 +7,9 @@ import {
   updateUserProfile,
   forgotPassword,
   resetPasswordWithOtp,
+  verifyResetOtp,
   changePassword,
+  socialLogin,
   getUsers,
   deleteUser,
   updateUser,
@@ -19,12 +21,13 @@ const router = express.Router();
 
 router.post("/register", registerUser);
 router.post("/login", loginUser);
-
+router.post("/social-login", socialLogin);
 router.get("/profile", protect, getUserProfile)
 router.put("/profile", protect, updateUserProfile);
 
 router.post("/forgot-password", forgotPassword);
 router.put("/reset-password-otp", resetPasswordWithOtp);
+router.post("/verify-reset-otp", verifyResetOtp);
 
 router.put("/change-password", protect, changePassword)
 
