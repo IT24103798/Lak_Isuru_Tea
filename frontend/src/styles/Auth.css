@@ -215,3 +215,28 @@
   margin-bottom: 14px;
   font-size: 13px;
 }
+.step-indicator {
+  text-align: center;
+  background: #eef7ee;
+  color: #2e7d32;
+  padding: 8px 12px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-weight: 700;
+}
+
+.auth-secondary-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 13px;
+  border: 1px solid #2e7d32;
+  background: white;
+  color: #2e7d32;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-secondary-btn:hover {
+  background: #eef7ee;
+}

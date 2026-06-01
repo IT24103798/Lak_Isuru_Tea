@@ -319,6 +319,87 @@ export const changePassword = async (req, res) => {
     });
   }
 };
+// POST /api/users/social-login
+export const socialLogin = async (req, res) => {
+  try {
+    const { name, email, provider, providerId, photoURL } = req.body;
+
+    if (!name || !email || !provider || !providerId) {
+      return res.status(400).json({
+        message: "Social login data is missing",
+      });
+    }
+
+    let user = await User.findOne({ email });
+
+    if (user) {
+      user.provider = provider;
+      user.providerId = providerId;
+      await user.save();
+    } else {
+      user = await User.create({
+        name,
+        email,
+        phone: "",
+        provider,
+        providerId,
+        profileImage: photoURL || "",
+        role: "customer",
+      });
+    }
+
+    res.status(200).json({
+      message: "Google login successful",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        provider: user.provider,
+      },
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Social login failed",
+      error: error.message,
+    });
+  }
+};
+// POST /api/users/verify-reset-otp
+export const verifyResetOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({
+        message: "Please enter email and OTP",
+      });
+    }
+
+    const user = await User.findOne({
+      email,
+      resetPasswordOtp: otp,
+      resetPasswordOtpExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid or expired OTP",
+      });
+    }
+
+    res.status(200).json({
+      message: "OTP verified successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error while verifying OTP",
+      error: error.message,
+    });
+  }
+};
 
 // @desc    Get all users
 // @route   GET /api/users

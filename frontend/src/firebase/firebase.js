@@ -3,14 +3,16 @@ import {
   getAuth,
   GoogleAuthProvider,
   FacebookAuthProvider,
-  OAuthProvider,
 } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  appId: "YOUR_APP_ID",
+  apiKey: "AIzaSyDZgXOBo5a99fogmjxXMOEAwbzcu-gWxRQ",
+  authDomain: "luck-isru-tea.firebaseapp.com",
+  projectId: "luck-isru-tea",
+  storageBucket: "luck-isru-tea.firebasestorage.app",
+  messagingSenderId: "449786834165",
+  appId: "1:449786834165:web:09c047d1dcbbe7cd24a9bc",
+  measurementId: "G-F4J7XGBB3G",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -18,5 +20,5 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
 export const googleProvider = new GoogleAuthProvider();
+
 export const facebookProvider = new FacebookAuthProvider();
-export const appleProvider = new OAuthProvider("apple.com");
