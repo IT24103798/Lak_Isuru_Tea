@@ -13,8 +13,8 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPasswordOtp from "./pages/ResetPassword";
 import ProductDetails from "./pages/ProductDetails";
 
-import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
+import AdminUsers from "./pages/admin/AdminUsers";
 
 function App() {
   return (
@@ -51,19 +51,19 @@ function App() {
           <Route path="/products/:id" element={<ProductDetails />} />
 
           <Route
-            path="/admin/dashboard"
+            path="/admin/products"
             element={
               <AdminRoute>
-                <AdminDashboard />
+                <AdminProducts />
               </AdminRoute>
             }
           />
 
           <Route
-            path="/admin/products"
+            path="/admin/users"
             element={
               <AdminRoute>
-                <AdminProducts />
+                <AdminUsers />
               </AdminRoute>
             }
           />
