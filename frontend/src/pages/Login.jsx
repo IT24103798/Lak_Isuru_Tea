@@ -51,6 +51,9 @@ const Login = () => {
         token: data.token,
       };
 
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(loggedUser));
+
       login(loggedUser);
 
       if (loggedUser.role === "admin") {
