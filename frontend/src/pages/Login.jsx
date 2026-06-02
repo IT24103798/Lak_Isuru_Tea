@@ -38,6 +38,13 @@ const Login = () => {
       return;
     }
 
+    const validationError = validateLogin(formData);
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -50,7 +57,7 @@ const Login = () => {
         ...data.user,
         token: data.token,
       };
-
+      
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(loggedUser));
 
