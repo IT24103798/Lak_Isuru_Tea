@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { addProductReview, getProductById } from "../services/productService";
+import API from "../api/api";
 import "../styles/ProductDetails.css";
 
 function ProductDetails() {
@@ -14,7 +15,8 @@ function ProductDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
-
+  const [cartMessage, setCartMessage] = useState("")
+  
   const reviews = product?.reviews || [];
 
   useEffect(() => {
@@ -77,7 +79,7 @@ function ProductDetails() {
     );
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!product.stock) {
       alert("This product is currently out of stock.");
       return;
@@ -89,7 +91,20 @@ function ProductDetails() {
       return;
     }
 
-    alert(`${quantity} ${product.name} added to cart successfully!`);
+    try {
+      await API.post("/cart", {
+        productId: product._id,
+        name: product.name,
+        price: product.price,
+        quantity: quantity,
+        image: product.image,
+      });
+
+      setCartMessage(`✓ ${quantity} × ${product.name} added to cart!`);
+      setTimeout(() => setCartMessage(""), 3000);
+    } catch (error) {
+      alert("Failed to add to cart. Please try again.");
+    }
   };
 
   const handleReviewSubmit = async (event) => {
@@ -175,6 +190,16 @@ function ProductDetails() {
                   Add To Cart
                 </button>
               </div>
+              {cartMessage && (
+                <p style={{
+                  color: "#0f6e56",
+                  fontWeight: 600,
+                  marginTop: "0.8rem",
+                  fontSize: "0.9rem"
+                }}>
+                  {cartMessage}
+                </p>
+              )}
             </div>
           </div>
         </section>

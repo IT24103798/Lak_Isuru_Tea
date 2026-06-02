@@ -1,0 +1,181 @@
+.orders-page {
+  padding: 2rem;
+  max-width: 860px;
+}
+
+.orders-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: #111;
+}
+
+/* Tabs */
+.orders-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 1.5rem;
+}
+
+.orders-tab {
+  background: none;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.orders-tab:hover { color: #111; }
+
+.orders-tab.active {
+  color: #0f6e56;
+  border-bottom-color: #0f6e56;
+}
+
+/* Empty / Loading */
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: #9ca3af;
+}
+.empty-state i { font-size: 2.5rem; display: block; margin-bottom: 0.5rem; }
+.loading-text { color: #9ca3af; padding: 1rem 0; }
+
+/* Order Cards */
+.orders-list { display: flex; flex-direction: column; gap: 1rem; }
+
+.order-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.2rem 1.5rem;
+  transition: box-shadow 0.2s;
+}
+.order-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+
+.order-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.order-icon {
+  width: 44px;
+  height: 44px;
+  background: #f3f4f6;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.3rem;
+  color: #6b7280;
+}
+
+.order-info { flex: 1; }
+
+.order-item-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #111;
+  margin: 0 0 2px;
+}
+
+.order-meta {
+  font-size: 0.82rem;
+  color: #9ca3af;
+  margin: 0 0 4px;
+}
+
+.order-price {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.order-card-footer-date {
+  margin-top: 0.8rem;
+  font-size: 0.82rem;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+}
+
+/* Price colors */
+.color-teal { color: #0f6e56; }
+.color-blue { color: #185fa5; }
+.color-amber { color: #ba7517; }
+.color-purple { color: #534ab7; }
+.color-red { color: #a32d2d; }
+.color-gray { color: #5f5e5a; }
+
+/* Badges */
+.order-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.badge-teal { background: #e1f5ee; color: #085041; }
+.badge-blue { background: #e6f1fb; color: #0c447c; }
+.badge-amber { background: #faeeda; color: #633806; }
+.badge-purple { background: #eeedfe; color: #3c3489; }
+.badge-red { background: #fcebeb; color: #791f1f; }
+.badge-gray { background: #f1efe8; color: #444441; }
+
+/* Progress Tracker */
+.order-progress {
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.progress-track {
+  position: relative;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  background: #1d9e75;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.progress-dot {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  border: 2px solid #e5e7eb;
+  transition: all 0.3s;
+}
+
+.progress-dot.done {
+  background: #1d9e75;
+  border-color: #1d9e75;
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 4px;
+}
