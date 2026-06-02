@@ -51,6 +51,15 @@ const userSchema = new mongoose.Schema(
     providerId: {
       type: String,
     },
+    
+    lastLogin: {
+      type: Date,
+    },
+    
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,

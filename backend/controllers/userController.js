@@ -32,6 +32,7 @@ export const registerUser = async (req, res) => {
       email,
       phone,
       password,
+      lastLogin: new Date(),
     });
 
     res.status(201).json({
@@ -66,6 +67,9 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
+      // Update last login using findByIdAndUpdate to ensure it's saved without side effects
+      await User.findByIdAndUpdate(user._id, { $set: { lastLogin: new Date() } });
+
       res.status(200).json({
         message: "Login successful",
         user: {
@@ -311,6 +315,163 @@ export const changePassword = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Server error while changing password",
+      error: error.message,
+    });
+  }
+};
+// POST /api/users/social-login
+export const socialLogin = async (req, res) => {
+  try {
+    const { name, email, provider, providerId, photoURL } = req.body;
+
+    if (!name || !email || !provider || !providerId) {
+      return res.status(400).json({
+        message: "Social login data is missing",
+      });
+    }
+
+    let user = await User.findOne({ email });
+
+    if (user) {
+      user.provider = provider;
+      user.providerId = providerId;
+      await user.save();
+    } else {
+      user = await User.create({
+        name,
+        email,
+        phone: "",
+        provider,
+        providerId,
+        profileImage: photoURL || "",
+        role: "customer",
+      });
+    }
+
+    res.status(200).json({
+      message: "Google login successful",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        provider: user.provider,
+      },
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Social login failed",
+      error: error.message,
+    });
+  }
+};
+// POST /api/users/verify-reset-otp
+export const verifyResetOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({
+        message: "Please enter email and OTP",
+      });
+    }
+
+    const user = await User.findOne({
+      email,
+      resetPasswordOtp: otp,
+      resetPasswordOtpExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid or expired OTP",
+      });
+    }
+
+    res.status(200).json({
+      message: "OTP verified successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error while verifying OTP",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Get all users
+// @route   GET /api/users
+// @access  Private/Admin
+export const getUsers = async (req, res) => {
+  try {
+    const users = await User.find({}).select("-password").sort({ createdAt: -1 });
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error while fetching users",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Delete user
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
+export const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (user) {
+      if (user.role === "admin") {
+        // Optional: Prevent deleting the last admin or yourself
+        if (user._id.toString() === req.user._id.toString()) {
+           return res.status(400).json({ message: "You cannot delete yourself" });
+        }
+      }
+      
+      await User.findByIdAndDelete(req.params.id);
+      res.status(200).json({ message: "User removed" });
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error while deleting user",
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Update user
+// @route   PUT /api/users/:id
+// @access  Private/Admin
+export const updateUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (user) {
+      user.name = req.body.name || user.name;
+      user.email = req.body.email || user.email;
+      user.role = req.body.role || user.role;
+      user.isActive = req.body.isActive !== undefined ? req.body.isActive : user.isActive;
+
+      const updatedUser = await user.save();
+
+      res.status(200).json({
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        isActive: updatedUser.isActive,
+      });
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error while updating user",
       error: error.message,
     });
   }

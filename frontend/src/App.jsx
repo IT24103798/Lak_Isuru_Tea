@@ -1,6 +1,7 @@
 import { Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import Chatbot from "./components/Chatbot";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import Sidebar from "./components/Sidebar";
@@ -19,8 +20,8 @@ import ResetPasswordOtp from "./pages/ResetPassword";
 import ProductDetails from "./pages/ProductDetails";
 import OrderSuccess from "./pages/OrderSuccess";
 
-import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
+import AdminUsers from "./pages/admin/AdminUsers";
 
 const sidebarRoutes = ["/profile", "/my-orders", "/my-returns", "/my-cancellations", "/payment-options"];
 
@@ -68,7 +69,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password-otp" element={<ResetPasswordOtp />} />
+          
 
           <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
           <Route path="/checkout" element={<Checkout />} />
@@ -95,15 +96,6 @@ function App() {
           <Route path="/products/:id" element={<ProductDetails />} />
 
           <Route
-            path="/admin/dashboard"
-            element={
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
-            }
-          />
-
-          <Route
             path="/admin/products"
             element={
               <AdminRoute>
@@ -111,10 +103,20 @@ function App() {
               </AdminRoute>
             }
           />
+
+          <Route
+            path="/admin/users"
+            element={
+              <AdminRoute>
+                <AdminUsers />
+              </AdminRoute>
+            }
+          />
         </Routes>
       </main>
     )}
 
+      <Chatbot />
       <Footer />
     </>
   );
