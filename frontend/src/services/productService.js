@@ -34,3 +34,14 @@ export const addProductReview = async (id, review) => {
     body: JSON.stringify(review),
   });
 };
+
+export const getReviewEligibility = async (id) => {
+  return apiRequest(`/products/${id}/review-eligibility`);
+};
+
+export const updateProductReview = async (productId, reviewId, review) => {
+  return apiRequest(`/products/${productId}/reviews/${reviewId}`, {
+    method: "PUT",
+    body: JSON.stringify(review),
+  });
+};

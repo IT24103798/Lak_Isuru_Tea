@@ -1,0 +1,92 @@
+.admin-reviews-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
+}
+
+.admin-reviews-header,
+.admin-review-product,
+.admin-review-card > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-reviews-header {
+  margin-bottom: 24px;
+}
+
+.admin-reviews-header h1,
+.admin-review-product h2 {
+  color: #143d24;
+  margin: 0 0 6px;
+}
+
+.admin-reviews-header p,
+.admin-review-product p {
+  color: #5b6b61;
+  margin: 0;
+}
+
+.admin-reviews-header strong {
+  background: #e7f8ed;
+  border-radius: 999px;
+  color: #176331;
+  padding: 10px 14px;
+  white-space: nowrap;
+}
+
+.admin-review-groups,
+.admin-review-list {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-review-group,
+.admin-reviews-empty {
+  background: #ffffff;
+  border: 1px solid #dfe9e2;
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(20, 61, 36, 0.08);
+  padding: 20px;
+}
+
+.admin-review-product {
+  justify-content: flex-start;
+  margin-bottom: 16px;
+}
+
+.admin-review-product img {
+  border: 1px solid #dfe9e2;
+  border-radius: 12px;
+  height: 64px;
+  object-fit: cover;
+  width: 64px;
+}
+
+.admin-review-card {
+  border-top: 1px solid #e6eee8;
+  padding-top: 14px;
+}
+
+.admin-review-card h3,
+.admin-review-card p {
+  margin: 0;
+}
+
+.admin-review-stars {
+  color: #f2b600;
+  letter-spacing: 2px;
+}
+
+.admin-review-stars span {
+  color: #d3d3d3;
+}
+
+.admin-review-card small {
+  color: #168a2f;
+  display: block;
+  font-weight: 700;
+  margin: 6px 0;
+}

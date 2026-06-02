@@ -1,12 +1,17 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { addProductReview, getProductById } from "../services/productService";
+import {
+  addProductReview,
+  getProductById,
+  getReviewEligibility,
+  updateProductReview,
+} from "../services/productService";
 import API from "../api/api";
 import "../styles/ProductDetails.css";
 
 function ProductDetails() {
   const { id } = useParams();
-  const user = JSON.parse(localStorage.getItem("userInfo"));
+  const user = useMemo(() => JSON.parse(localStorage.getItem("userInfo")), []);
 
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
@@ -15,9 +20,12 @@ function ProductDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewEligibility, setReviewEligibility] = useState(null);
+  const [checkingReviewEligibility, setCheckingReviewEligibility] = useState(Boolean(user));
+  const [editingReviewId, setEditingReviewId] = useState(null);
   const [cartMessage, setCartMessage] = useState("")
   
-  const reviews = product?.reviews || [];
+  const reviews = useMemo(() => product?.reviews || [], [product]);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -29,7 +37,7 @@ function ProductDetails() {
         setProduct(data.product);
         setQuantity(data.product.stock > 0 ? 1 : 0);
         setError("");
-      } catch (error) {
+      } catch {
         setError("Failed to load product details. Please try again.");
       } finally {
         setLoading(false);
@@ -38,6 +46,28 @@ function ProductDetails() {
 
     loadProduct();
   }, [id]);
+
+  useEffect(() => {
+    const loadReviewEligibility = async () => {
+      if (!user || user.role === "admin") {
+        setReviewEligibility(null);
+        setCheckingReviewEligibility(false);
+        return;
+      }
+
+      try {
+        setCheckingReviewEligibility(true);
+        const data = await getReviewEligibility(id);
+        setReviewEligibility(data);
+      } catch {
+        setReviewEligibility(null);
+      } finally {
+        setCheckingReviewEligibility(false);
+      }
+    };
+
+    loadReviewEligibility();
+  }, [id, user]);
 
   const averageRating = useMemo(() => {
     if (reviews.length === 0) {
@@ -102,7 +132,7 @@ function ProductDetails() {
 
       setCartMessage(`✓ ${quantity} × ${product.name} added to cart!`);
       setTimeout(() => setCartMessage(""), 3000);
-    } catch (error) {
+    } catch {
       alert("Failed to add to cart. Please try again.");
     }
   };
@@ -126,20 +156,37 @@ function ProductDetails() {
     try {
       setSubmittingReview(true);
 
-      const data = await addProductReview(product._id, {
-        name: user.name || "Customer",
+      const reviewPayload = {
         rating: Number(rating),
         comment: trimmedComment,
-      });
+      };
+      const data = editingReviewId
+        ? await updateProductReview(product._id, editingReviewId, reviewPayload)
+        : await addProductReview(product._id, reviewPayload);
 
       setProduct(data.product);
+      setReviewEligibility({ canReview: false, hasPurchased: true, hasReviewed: true });
+      setEditingReviewId(null);
       setRating(5);
       setComment("");
     } catch (error) {
-      alert("Failed to submit review. Please try again.");
+      alert(error.message || "Failed to submit review. Please try again.");
     } finally {
       setSubmittingReview(false);
     }
+  };
+
+  const handleEditReview = (review) => {
+    setEditingReviewId(review._id);
+    setRating(review.rating);
+    setComment(review.comment);
+    document.querySelector(".reviews-section")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingReviewId(null);
+    setRating(5);
+    setComment("");
   };
 
   return (
@@ -210,21 +257,37 @@ function ProductDetails() {
             <p>{reviews.length} reviews</p>
           </div>
 
-          {user ? (
+          {user && (reviewEligibility?.canReview || editingReviewId) ? (
             <form className="review-form" onSubmit={handleReviewSubmit}>
-              <label>
-                Rating
-                <select
-                  value={rating}
-                  onChange={(event) => setRating(event.target.value)}
-                >
-                  <option value="5">5 stars</option>
-                  <option value="4">4 stars</option>
-                  <option value="3">3 stars</option>
-                  <option value="2">2 stars</option>
-                  <option value="1">1 star</option>
-                </select>
-              </label>
+              <div className="review-form-heading">
+                <div>
+                  <h3>{editingReviewId ? "Edit your review" : "Share your experience"}</h3>
+                  <p>Your feedback helps other customers choose their tea.</p>
+                </div>
+                {editingReviewId && (
+                  <button type="button" className="review-cancel-button" onClick={handleCancelEdit}>
+                    Cancel
+                  </button>
+                )}
+              </div>
+
+              <fieldset className="star-rating-field">
+                <legend>Rating</legend>
+                <div className="star-picker" aria-label={`${rating} out of 5 stars`}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      type="button"
+                      key={star}
+                      className={star <= rating ? "selected" : ""}
+                      aria-label={`${star} star${star === 1 ? "" : "s"}`}
+                      aria-pressed={star === rating}
+                      onClick={() => setRating(star)}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
 
               <label>
                 Review
@@ -232,28 +295,63 @@ function ProductDetails() {
                   value={comment}
                   onChange={(event) => setComment(event.target.value)}
                   placeholder="Share your experience with this product"
+                  maxLength="500"
                 />
+                <span className="review-character-count">{comment.length}/500</span>
               </label>
 
               <button type="submit" disabled={submittingReview}>
-                {submittingReview ? "Submitting..." : "Submit Review"}
+                {submittingReview
+                  ? "Saving..."
+                  : editingReviewId
+                  ? "Save Changes"
+                  : "Submit Review"}
               </button>
             </form>
-          ) : (
+          ) : !user ? (
             <p className="login-review-note">
               Please <Link to="/login">login</Link> to give a rating and review.
+            </p>
+          ) : (
+            <p className="login-review-note">
+              {checkingReviewEligibility
+                ? "Checking your review eligibility..."
+                : reviewEligibility?.hasReviewed
+                ? "You have already reviewed this product."
+                : "Only customers who purchased this product can leave a review."}
             </p>
           )}
 
           <div className="review-list">
             {reviews.length > 0 ? (
               reviews.map((review) => (
-                <article className="review-item" key={review._id}>
-                  <div>
-                    <h3>{review.name}</h3>
-                    <p>{"*".repeat(review.rating)}</p>
+                <article
+                  className={`review-item ${review.user === user?._id ? "own-review" : ""}`}
+                  key={review._id}
+                >
+                  <div className="review-item-header">
+                    <div className="review-customer">
+                      <span className="review-avatar">{review.name.charAt(0).toUpperCase()}</span>
+                      <div>
+                        <h3>{review.name}</h3>
+                        {review.verifiedPurchase && <small>Verified purchase</small>}
+                      </div>
+                    </div>
+                    <p className="review-stars" aria-label={`${review.rating} out of 5 stars`}>
+                      {"★".repeat(review.rating)}
+                      <span>{"★".repeat(5 - review.rating)}</span>
+                    </p>
                   </div>
-                  <p>{review.comment}</p>
+                  <p className="review-comment">{review.comment}</p>
+                  {review.user === user?._id && (
+                    <button
+                      type="button"
+                      className="edit-review-button"
+                      onClick={() => handleEditReview(review)}
+                    >
+                      Edit review
+                    </button>
+                  )}
                 </article>
               ))
             ) : (

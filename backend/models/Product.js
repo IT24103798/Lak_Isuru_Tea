@@ -2,6 +2,10 @@ import mongoose from "mongoose";
 
 const reviewSchema = new mongoose.Schema(
   {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     name: {
       type: String,
       required: true,
@@ -17,6 +21,11 @@ const reviewSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      maxlength: 500,
+    },
+    verifiedPurchase: {
+      type: Boolean,
+      default: false,
     },
   },
   {

@@ -76,7 +76,7 @@ function Navbar() {
             <Link to="/admin/users">User Management</Link>
             <Link to="/admin/products">Products</Link>
             <Link to="/admin/dashboard">Orders</Link>
-            <Link to="/admin/dashboard">reviews</Link>
+            <Link to="/admin/reviews">Reviews</Link>
           </>
         ) : (
           <>
