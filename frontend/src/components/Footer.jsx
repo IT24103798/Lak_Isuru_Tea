@@ -1,5 +1,10 @@
 import "../styles/Footer.css";
 
+const footerLinks = [
+  { label: "About Us", url: "/#about" },
+  { label: "Contact Us", url: "/#contact" },
+];
+
 const socialLinks = [
   { name: "Facebook", url: "https://www.facebook.com", icon: "f", className: "facebook" },
   { name: "TikTok", url: "https://www.tiktok.com", icon: "\u266B", className: "tiktok" },
@@ -30,7 +35,16 @@ const Footer = () => {
         </div>
       </div>
 
-      <p>&copy; Lak Isuru Tea 2026</p>
+      <div className="footer-right">
+        <nav className="footer-nav" aria-label="Footer navigation">
+          {footerLinks.map((footerLink) => (
+            <a href={footerLink.url} key={footerLink.label}>
+              {footerLink.label}
+            </a>
+          ))}
+        </nav>
+        <p>&copy; Lak Isuru Tea 2026</p>
+      </div>
     </footer>
   );
 };

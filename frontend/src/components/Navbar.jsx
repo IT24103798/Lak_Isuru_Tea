@@ -8,6 +8,7 @@ function Navbar() {
   const location = useLocation();
   const { userInfo, logout } = useAuth();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState("home");
   const accountMenuRef = useRef(null);
   
   const handleSearchChange = (event) => {
@@ -43,8 +44,40 @@ function Navbar() {
     };
   }, []);
 
+  useEffect(() => {
+    const updateActiveSection = () => {
+      if (location.pathname !== "/") {
+        setActiveSection(location.pathname.replace("/", "") || "home");
+        return;
+      }
+
+      const sectionIds = ["products", "about", "contact"];
+      const currentSection = sectionIds.reduce((current, sectionId) => {
+        const section = document.getElementById(sectionId);
+        const activationLine = window.innerHeight * 0.45;
+
+        return section && section.getBoundingClientRect().top <= activationLine
+          ? sectionId
+          : current;
+      }, null);
+
+      setActiveSection(currentSection || "home");
+    };
+
+    updateActiveSection();
+    window.addEventListener("scroll", updateActiveSection, { passive: true });
+    window.addEventListener("resize", updateActiveSection);
+
+    return () => {
+      window.removeEventListener("scroll", updateActiveSection);
+      window.removeEventListener("resize", updateActiveSection);
+    };
+  }, [location.pathname, location.hash]);
+
   const displayName = userInfo?.name || (userInfo?.role === "admin" ? "Admin" : "Customer");
   const avatarLetter = displayName.charAt(0).toUpperCase();
+  const getNavLinkClass = (section) =>
+    activeSection === section ? "nav-link active" : "nav-link";
 
   return (
     <nav className="navbar">
@@ -73,16 +106,23 @@ function Navbar() {
       <div className="nav-links">
         {userInfo?.role === "admin" ? (
           <>
-            <Link to="/admin/users">User Management</Link>
-            <Link to="/admin/products">Products</Link>
-            <Link to="/admin/dashboard">Orders</Link>
-            <Link to="/admin/reviews">Reviews</Link>
+            <Link to="/admin/users" className={getNavLinkClass("admin/users")}>User Management</Link>
+            <Link to="/admin/products" className={getNavLinkClass("admin/products")}>Products</Link>
+            <Link to="/admin/dashboard" className={getNavLinkClass("admin/dashboard")}>Orders</Link>
+            <Link to="/admin/reviews" className={getNavLinkClass("admin/reviews")}>Reviews</Link>
+          </>
+        ) : !userInfo ? (
+          <>
+            <Link to="/" className={getNavLinkClass("home")}>Home</Link>
+            <Link to="/#products" className={getNavLinkClass("products")}>Products</Link>
+            <Link to="/#about" className={getNavLinkClass("about")}>About Us</Link>
+            <Link to="/#contact" className={getNavLinkClass("contact")}>Contact Us</Link>
           </>
         ) : (
           <>
-            <Link to="/">Home</Link>
-            <Link to="/#products">Products</Link>
-            <Link to="/cart">Cart</Link>
+            <Link to="/" className={getNavLinkClass("home")}>Home</Link>
+            <Link to="/#products" className={getNavLinkClass("products")}>Products</Link>
+            <Link to="/cart" className={getNavLinkClass("cart")}>Cart</Link>
           </>
         )}
 
@@ -128,7 +168,6 @@ function Navbar() {
           </div>
         ) : (
           <>
-            <Link to="/my-orders">My Orders</Link>
             <Link to="/login" className="register-link">
               Login
             </Link>

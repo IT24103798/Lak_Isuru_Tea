@@ -69,14 +69,29 @@ function ProductDetails() {
     loadReviewEligibility();
   }, [id, user]);
 
-  const averageRating = useMemo(() => {
+  const averageRatingValue = useMemo(() => {
     if (reviews.length === 0) {
-      return "No ratings yet";
+      return null;
     }
 
     const total = reviews.reduce((sum, review) => sum + review.rating, 0);
-    return `${(total / reviews.length).toFixed(1)} / 5`;
+    return total / reviews.length;
   }, [reviews]);
+
+  const averageRating = averageRatingValue
+    ? `${averageRatingValue.toFixed(1)} / 5`
+    : "No ratings yet";
+
+  const ratingBreakdown = useMemo(
+    () =>
+      [5, 4, 3, 2, 1].map((star) => {
+        const count = reviews.filter((review) => review.rating === star).length;
+        const percentage = reviews.length ? (count / reviews.length) * 100 : 0;
+
+        return { star, count, percentage };
+      }),
+    [reviews]
+  );
 
   if (loading) {
     return (
@@ -209,7 +224,6 @@ function ProductDetails() {
           </div>
 
           <div className="details-info">
-            <p className="details-rating">{averageRating}</p>
             <h1>{product.name}</h1>
             <p className="details-price">Rs. {product.price}</p>
             <p className="details-description">{product.description}</p>
@@ -253,11 +267,45 @@ function ProductDetails() {
 
         <section className="reviews-section">
           <div className="reviews-header">
-            <h2>Customer Reviews</h2>
-            <p>{reviews.length} reviews</p>
+            <h2>Ratings & Reviews of {product.name}</h2>
           </div>
 
-          {user && (reviewEligibility?.canReview || editingReviewId) ? (
+          <div className="ratings-overview">
+            <div className="ratings-score">
+              <div>
+                <strong>{averageRatingValue ? averageRatingValue.toFixed(1) : "0.0"}</strong>
+                <span>/5</span>
+              </div>
+              <p className="rating-stars-large" aria-label={`${averageRating} stars`}>
+                {"★".repeat(Math.round(averageRatingValue || 0))}
+                <span>{"★".repeat(5 - Math.round(averageRatingValue || 0))}</span>
+              </p>
+              <small>
+                {reviews.length} {reviews.length === 1 ? "Rating" : "Ratings"}
+              </small>
+            </div>
+
+            <div className="ratings-bars">
+              {ratingBreakdown.map((ratingRow) => (
+                <div className="rating-bar-row" key={ratingRow.star}>
+                  <span className="rating-bar-stars">
+                    {"★".repeat(ratingRow.star)}
+                    <span>{"★".repeat(5 - ratingRow.star)}</span>
+                  </span>
+                  <div className="rating-bar-track">
+                    <span style={{ width: `${ratingRow.percentage}%` }} />
+                  </div>
+                  <strong>{ratingRow.count}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {checkingReviewEligibility && user && user.role !== "admin" && (
+            <p className="review-status-note">Checking your review eligibility...</p>
+          )}
+
+          {user && !checkingReviewEligibility && (reviewEligibility?.canReview || editingReviewId) && (
             <form className="review-form" onSubmit={handleReviewSubmit}>
               <div className="review-form-heading">
                 <div>
@@ -308,19 +356,11 @@ function ProductDetails() {
                   : "Submit Review"}
               </button>
             </form>
-          ) : !user ? (
-            <p className="login-review-note">
-              Please <Link to="/login">login</Link> to give a rating and review.
-            </p>
-          ) : (
-            <p className="login-review-note">
-              {checkingReviewEligibility
-                ? "Checking your review eligibility..."
-                : reviewEligibility?.hasReviewed
-                ? "You have already reviewed this product."
-                : "Only customers who purchased this product can leave a review."}
-            </p>
           )}
+
+          <div className="product-reviews-title">
+            <h3>Product Reviews</h3>
+          </div>
 
           <div className="review-list">
             {reviews.length > 0 ? (
