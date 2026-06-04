@@ -240,3 +240,57 @@
 .auth-secondary-btn:hover {
   background: #eef7ee;
 }
+
+.phone-input-group {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.country-code-select {
+  width: 42%;
+  padding: 14px;
+  border: 1px solid #d0d0d0;
+  border-radius: 10px;
+  font-size: 15px;
+  outline: none;
+  background: #fff;
+}
+
+.phone-input-group input {
+  width: 58%;
+}
+
+.country-code-select:focus,
+.phone-input-group input:focus {
+  border-color: #2e7d32;
+}
+.react-tel-input {
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.react-tel-input .custom-phone-input {
+  width: 100% !important;
+  height: 48px !important;
+  border-radius: 10px !important;
+  border: 1px solid #d0d0d0 !important;
+  font-size: 15px !important;
+  padding-left: 58px !important;
+}
+
+.react-tel-input .custom-phone-input:focus {
+  border-color: #2e7d32 !important;
+  box-shadow: none !important;
+}
+
+.react-tel-input .custom-phone-button {
+  border-radius: 10px 0 0 10px !important;
+  border: 1px solid #d0d0d0 !important;
+  background: #fff !important;
+}
+
+.react-tel-input .custom-phone-dropdown {
+  border-radius: 10px !important;
+  font-size: 14px !important;
+}

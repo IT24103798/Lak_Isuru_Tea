@@ -1,10 +1,15 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import PhoneInputModule from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
+
 import API from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import "../styles/Auth.css";
 import SocialLoginButtons from "../components/SocialLoginButtons";
 import { validateRegister } from "../utils/validation";
+
+const PhoneInput = PhoneInputModule.default || PhoneInputModule;
 
 const Register = () => {
   const navigate = useNavigate();
@@ -13,6 +18,7 @@ const Register = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    countryCode: "+94",
     phone: "",
     password: "",
     confirmPassword: "",
@@ -24,78 +30,43 @@ const Register = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const validateEmail = (email) => {
-    return /\S+@\S+\.\S+/.test(email);
-  };
-
-  const validatePhone = (phone) => {
-    return /^[0-9]{10}$/.test(phone);
-  };
-
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    setFormData({
-      ...formData,
+    setFormData((previousData) => ({
+      ...previousData,
       [name]: type === "checkbox" ? checked : value,
-    });
+    }));
+  };
+
+  const handlePhoneChange = (value, country) => {
+    setFormData((previousData) => ({
+      ...previousData,
+      countryCode: `+${country.dialCode}`,
+      phone: value,
+    }));
   };
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
 
-    
-  const validationError = validateRegister(formData);
+    const validationError = validateRegister(formData);
 
-if (validationError) {
-  setError(validationError);
-  return;
-}
-
-    if (
-      !formData.name ||
-      !formData.email ||
-      !formData.phone ||
-      !formData.password ||
-      !formData.confirmPassword
-    ) {
-      setError("Please fill all required fields.");
-      return;
-    }
-
-    if (!validateEmail(formData.email)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-
-    if (!validatePhone(formData.phone)) {
-      setError("Phone number must contain 10 digits.");
-      return;
-    }
-
-    if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      return;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    if (!formData.agreeTerms) {
-      setError("Please agree to the Terms and Privacy Policy.");
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
     try {
       setLoading(true);
 
+      const fullPhoneNumber = `+${formData.phone}`;
+
       const { data } = await API.post("/users/register", {
         name: formData.name,
         email: formData.email,
-        phone: formData.phone,
+        phone: fullPhoneNumber,
         password: formData.password,
       });
 
@@ -114,13 +85,14 @@ if (validationError) {
 
   return (
     <div className="auth-page-center">
-      <div className="auth-brand">
-      </div>
+      <div className="auth-brand"></div>
 
       <div className="auth-form-section">
         <div className="auth-card">
           <h2>Create Account</h2>
-          <p className="auth-subtitle">Join us and start ordering premium tea.</p>
+          <p className="auth-subtitle">
+            Join us and start ordering premium tea.
+          </p>
 
           {error && <div className="auth-error">{error}</div>}
 
@@ -144,12 +116,18 @@ if (validationError) {
             />
 
             <label>Phone Number</label>
-            <input
-              type="text"
-              name="phone"
-              placeholder="0771234567"
+
+            <PhoneInput
+              country="lk"
               value={formData.phone}
-              onChange={handleChange}
+              onChange={handlePhoneChange}
+              enableSearch={true}
+              disableSearchIcon={true}
+              countryCodeEditable={false}
+              inputClass="custom-phone-input"
+              buttonClass="custom-phone-button"
+              dropdownClass="custom-phone-dropdown"
+              placeholder="Enter phone number"
             />
 
             <label>Password</label>
@@ -170,7 +148,7 @@ if (validationError) {
             </div>
 
             <small className="password-hint">
-              Use at least 8 characters for better security.
+              Use at least 8 characters with letters and numbers.
             </small>
 
             <label>Confirm Password</label>
