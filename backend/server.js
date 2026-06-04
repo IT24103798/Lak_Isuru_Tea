@@ -27,8 +27,23 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/chatbot", chatbotRoutes);
 
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const startServer = (port) => {
+  const server = app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
+
+  server.on("error", (error) => {
+    if (error.code === "EADDRINUSE") {
+      const nextPort = port + 1;
+      console.error(`Port ${port} is already in use. Trying port ${nextPort}...`);
+      startServer(nextPort);
+    } else {
+      console.error("Server error:", error);
+      process.exit(1);
+    }
+  });
+};
+
+startServer(PORT);

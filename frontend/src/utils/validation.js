@@ -2,8 +2,10 @@ export const isValidEmail = (email) => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 };
 
-export const isValidPhone = (phone) => {
-  return /^0[0-9]{9}$/.test(phone);
+// For local phone number part only
+// Example: 702265155, 771234567, 1234567890
+export const isValidInternationalPhone = (phone) => {
+  return /^[0-9]{7,15}$/.test(phone);
 };
 
 export const isValidName = (name) => {
@@ -36,12 +38,16 @@ export const validateRegister = (formData) => {
     return "Please enter a valid email address.";
   }
 
+  if (!formData.countryCode) {
+    return "Please select your country code.";
+  }
+
   if (!formData.phone.trim()) {
     return "Please enter your phone number.";
   }
 
-  if (!isValidPhone(formData.phone)) {
-    return "Phone number must be 10 digits and start with 0. Example: 0702265155";
+  if (!isValidInternationalPhone(formData.phone)) {
+    return "Phone number must contain only numbers and be 7 to 15 digits.";
   }
 
   if (!formData.password) {
@@ -98,8 +104,11 @@ export const validateProfile = (formData) => {
     return "Please enter your phone number.";
   }
 
-  if (!isValidPhone(formData.phone)) {
-    return "Phone number must be 10 digits and start with 0.";
+  // Profile phone may already be saved as +94702265155
+  const cleanedPhone = formData.phone.replace("+", "");
+
+  if (!/^[0-9]{7,15}$/.test(cleanedPhone)) {
+    return "Phone number must be valid. Example: +94702265155";
   }
 
   if (formData.password) {
@@ -168,6 +177,8 @@ export const validateResetPasswordOtp = (formData) => {
 
   return "";
 };
+
+// Change password validation
 export const validateChangePassword = (formData) => {
   if (!formData.currentPassword) {
     return "Please enter your current password.";

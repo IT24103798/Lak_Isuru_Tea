@@ -11,6 +11,7 @@
   top: 0;
   z-index: 100;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
 }
 
 .nav-left {
@@ -37,10 +38,9 @@
 }
 
 .navbar-search {
-  width: min(300px, 28vw);
+  width: min(380px, 30vw);
   min-width: 160px;
   padding: 6px 16px;
-  margin-left: 400px;
   border: 2px solid #168a2f;
   border-radius: 10px;
   background: #ffffff;
@@ -66,14 +66,36 @@
   display: flex;
   align-items: center;
   gap: 24px;
+  min-width: 0;
 }
 
 .nav-links a {
+  position: relative;
   color: #000000;
   text-decoration: none;
   font-weight: 600;
   line-height: 1.1;
   transition: 0.3s;
+}
+
+.nav-links a.nav-link::after {
+  width: 0;
+  height: 3px;
+  position: absolute;
+  left: 0;
+  bottom: -7px;
+  background: #c40000;
+  border-radius: 999px;
+  content: "";
+  transition: width 0.2s ease;
+}
+
+.nav-links a.nav-link.active {
+  color: #c40000;
+}
+
+.nav-links a.nav-link.active::after {
+  width: 100%;
 }
 
 .nav-links a:hover {
@@ -183,7 +205,7 @@
   .navbar {
     flex-direction: column;
     align-items: stretch;
-    gap: 14px;
+    gap: 12px;
     padding: 12px 5%;
   }
 
@@ -193,6 +215,7 @@
 
   .navbar-search {
     width: min(400px, 100%);
+    min-width: 0;
     margin: 0 auto;
   }
 
@@ -208,10 +231,42 @@
   .nav-links {
     justify-content: center;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 14px;
+    font-size: 16px;
+  }
+
+  .nav-links a.nav-link::after {
+    bottom: -5px;
+  }
+
+  .account-menu {
+    max-width: 100%;
+  }
+
+  .account-menu-button {
+    max-width: 100%;
+  }
+
+  .account-name {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .account-dropdown {
     right: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .nav-links {
+    gap: 12px;
+    font-size: 15px;
+  }
+
+  .nav-logo {
+    width: 86px;
+    height: 44px;
   }
 }

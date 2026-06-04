@@ -1,12 +1,17 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { addProductReview, getProductById } from "../services/productService";
+import {
+  addProductReview,
+  getProductById,
+  getReviewEligibility,
+  updateProductReview,
+} from "../services/productService";
 import API from "../api/api";
 import "../styles/ProductDetails.css";
 
 function ProductDetails() {
   const { id } = useParams();
-  const user = JSON.parse(localStorage.getItem("userInfo"));
+  const user = useMemo(() => JSON.parse(localStorage.getItem("userInfo")), []);
 
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
@@ -18,6 +23,12 @@ function ProductDetails() {
   const [cartMessage, setCartMessage] = useState("");
 
   const reviews = product?.reviews || [];
+  const [reviewEligibility, setReviewEligibility] = useState(null);
+  const [checkingReviewEligibility, setCheckingReviewEligibility] = useState(Boolean(user));
+  const [editingReviewId, setEditingReviewId] = useState(null);
+  const [cartMessage, setCartMessage] = useState("")
+  
+  const reviews = useMemo(() => product?.reviews || [], [product]);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -29,7 +40,7 @@ function ProductDetails() {
         setProduct(data.product);
         setQuantity(data.product.stock > 0 ? 1 : 0);
         setError("");
-      } catch (error) {
+      } catch {
         setError("Failed to load product details. Please try again.");
       } finally {
         setLoading(false);
@@ -39,17 +50,63 @@ function ProductDetails() {
     loadProduct();
   }, [id]);
 
-  const averageRating = useMemo(() => {
+  useEffect(() => {
+    const loadReviewEligibility = async () => {
+      if (!user || user.role === "admin") {
+        setReviewEligibility(null);
+        setCheckingReviewEligibility(false);
+        return;
+      }
+
+      try {
+        setCheckingReviewEligibility(true);
+        const data = await getReviewEligibility(id);
+        setReviewEligibility(data);
+      } catch {
+        setReviewEligibility(null);
+      } finally {
+        setCheckingReviewEligibility(false);
+      }
+    };
+
+    loadReviewEligibility();
+  }, [id, user]);
+
+  const averageRatingValue = useMemo(() => {
     if (reviews.length === 0) {
-      return "No ratings yet";
+      return null;
     }
 
     const total = reviews.reduce((sum, review) => sum + review.rating, 0);
-    return `${(total / reviews.length).toFixed(1)} / 5`;
+    return total / reviews.length;
   }, [reviews]);
 
   const decreaseQuantity = () => {
     if (!product) return;
+  const averageRating = averageRatingValue
+    ? `${averageRatingValue.toFixed(1)} / 5`
+    : "No ratings yet";
+
+  const ratingBreakdown = useMemo(
+    () =>
+      [5, 4, 3, 2, 1].map((star) => {
+        const count = reviews.filter((review) => review.rating === star).length;
+        const percentage = reviews.length ? (count / reviews.length) * 100 : 0;
+
+        return { star, count, percentage };
+      }),
+    [reviews]
+  );
+
+  if (loading) {
+    return (
+      <div className="details-page">
+        <main className="details-not-found">
+          <h1>Loading product...</h1>
+        </main>
+      </div>
+    );
+  }
 
     setQuantity((currentQuantity) =>
       Math.max(product.stock > 0 ? 1 : 0, currentQuantity - 1)
@@ -104,6 +161,8 @@ function ProductDetails() {
         error.response?.data?.message ||
           "Failed to add to cart. Please try again."
       );
+    } catch {
+      alert("Failed to add to cart. Please try again.");
     }
   };
 
@@ -126,17 +185,21 @@ function ProductDetails() {
     try {
       setSubmittingReview(true);
 
-      const data = await addProductReview(product._id, {
-        name: user.name || "Customer",
+      const reviewPayload = {
         rating: Number(rating),
         comment: trimmedComment,
-      });
+      };
+      const data = editingReviewId
+        ? await updateProductReview(product._id, editingReviewId, reviewPayload)
+        : await addProductReview(product._id, reviewPayload);
 
       setProduct(data.product);
+      setReviewEligibility({ canReview: false, hasPurchased: true, hasReviewed: true });
+      setEditingReviewId(null);
       setRating(5);
       setComment("");
     } catch (error) {
-      alert("Failed to submit review. Please try again.");
+      alert(error.message || "Failed to submit review. Please try again.");
     } finally {
       setSubmittingReview(false);
     }
@@ -162,6 +225,18 @@ function ProductDetails() {
       </div>
     );
   }
+  const handleEditReview = (review) => {
+    setEditingReviewId(review._id);
+    setRating(review.rating);
+    setComment(review.comment);
+    document.querySelector(".reviews-section")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingReviewId(null);
+    setRating(5);
+    setComment("");
+  };
 
   return (
     <div className="details-page">
@@ -243,25 +318,75 @@ function ProductDetails() {
 
         <section className="reviews-section">
           <div className="reviews-header">
-            <h2>Customer Reviews</h2>
-            <p>{reviews.length} reviews</p>
+            <h2>Ratings & Reviews of {product.name}</h2>
           </div>
 
-          {user ? (
+          <div className="ratings-overview">
+            <div className="ratings-score">
+              <div>
+                <strong>{averageRatingValue ? averageRatingValue.toFixed(1) : "0.0"}</strong>
+                <span>/5</span>
+              </div>
+              <p className="rating-stars-large" aria-label={`${averageRating} stars`}>
+                {"★".repeat(Math.round(averageRatingValue || 0))}
+                <span>{"★".repeat(5 - Math.round(averageRatingValue || 0))}</span>
+              </p>
+              <small>
+                {reviews.length} {reviews.length === 1 ? "Rating" : "Ratings"}
+              </small>
+            </div>
+
+            <div className="ratings-bars">
+              {ratingBreakdown.map((ratingRow) => (
+                <div className="rating-bar-row" key={ratingRow.star}>
+                  <span className="rating-bar-stars">
+                    {"★".repeat(ratingRow.star)}
+                    <span>{"★".repeat(5 - ratingRow.star)}</span>
+                  </span>
+                  <div className="rating-bar-track">
+                    <span style={{ width: `${ratingRow.percentage}%` }} />
+                  </div>
+                  <strong>{ratingRow.count}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {checkingReviewEligibility && user && user.role !== "admin" && (
+            <p className="review-status-note">Checking your review eligibility...</p>
+          )}
+
+          {user && !checkingReviewEligibility && (reviewEligibility?.canReview || editingReviewId) && (
             <form className="review-form" onSubmit={handleReviewSubmit}>
-              <label>
-                Rating
-                <select
-                  value={rating}
-                  onChange={(event) => setRating(event.target.value)}
-                >
-                  <option value="5">5 stars</option>
-                  <option value="4">4 stars</option>
-                  <option value="3">3 stars</option>
-                  <option value="2">2 stars</option>
-                  <option value="1">1 star</option>
-                </select>
-              </label>
+              <div className="review-form-heading">
+                <div>
+                  <h3>{editingReviewId ? "Edit your review" : "Share your experience"}</h3>
+                  <p>Your feedback helps other customers choose their tea.</p>
+                </div>
+                {editingReviewId && (
+                  <button type="button" className="review-cancel-button" onClick={handleCancelEdit}>
+                    Cancel
+                  </button>
+                )}
+              </div>
+
+              <fieldset className="star-rating-field">
+                <legend>Rating</legend>
+                <div className="star-picker" aria-label={`${rating} out of 5 stars`}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      type="button"
+                      key={star}
+                      className={star <= rating ? "selected" : ""}
+                      aria-label={`${star} star${star === 1 ? "" : "s"}`}
+                      aria-pressed={star === rating}
+                      onClick={() => setRating(star)}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
 
               <label>
                 Review
@@ -269,18 +394,24 @@ function ProductDetails() {
                   value={comment}
                   onChange={(event) => setComment(event.target.value)}
                   placeholder="Share your experience with this product"
+                  maxLength="500"
                 />
+                <span className="review-character-count">{comment.length}/500</span>
               </label>
 
               <button type="submit" disabled={submittingReview}>
-                {submittingReview ? "Submitting..." : "Submit Review"}
+                {submittingReview
+                  ? "Saving..."
+                  : editingReviewId
+                  ? "Save Changes"
+                  : "Submit Review"}
               </button>
             </form>
-          ) : (
-            <p className="login-review-note">
-              Please <Link to="/login">login</Link> to give a rating and review.
-            </p>
           )}
+
+          <div className="product-reviews-title">
+            <h3>Product Reviews</h3>
+          </div>
 
           <div className="review-list">
             {reviews.length > 0 ? (
@@ -289,8 +420,33 @@ function ProductDetails() {
                   <div>
                     <h3>{review.name}</h3>
                     <p>{"★".repeat(review.rating)}</p>
+                <article
+                  className={`review-item ${review.user === user?._id ? "own-review" : ""}`}
+                  key={review._id}
+                >
+                  <div className="review-item-header">
+                    <div className="review-customer">
+                      <span className="review-avatar">{review.name.charAt(0).toUpperCase()}</span>
+                      <div>
+                        <h3>{review.name}</h3>
+                        {review.verifiedPurchase && <small>Verified purchase</small>}
+                      </div>
+                    </div>
+                    <p className="review-stars" aria-label={`${review.rating} out of 5 stars`}>
+                      {"★".repeat(review.rating)}
+                      <span>{"★".repeat(5 - review.rating)}</span>
+                    </p>
                   </div>
-                  <p>{review.comment}</p>
+                  <p className="review-comment">{review.comment}</p>
+                  {review.user === user?._id && (
+                    <button
+                      type="button"
+                      className="edit-review-button"
+                      onClick={() => handleEditReview(review)}
+                    >
+                      Edit review
+                    </button>
+                  )}
                 </article>
               ))
             ) : (

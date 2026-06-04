@@ -24,6 +24,7 @@ import OrderSuccess from "./pages/OrderSuccess";
 
 import AdminProducts from "./pages/admin/AdminProducts";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminReviews from "./pages/admin/AdminReviews";
 
 const sidebarRoutes = ["/profile", "/my-orders", "/my-returns", "/my-cancellations", "/payment-options"];
 
@@ -121,6 +122,15 @@ function App() {
             element={
               <AdminRoute>
                 <AdminUsers />
+              </AdminRoute>
+            }
+          />
+
+          <Route
+            path="/admin/reviews"
+            element={
+              <AdminRoute>
+                <AdminReviews />
               </AdminRoute>
             }
           />

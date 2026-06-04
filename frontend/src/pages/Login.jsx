@@ -37,6 +37,13 @@ const Login = () => {
       return;
     }
 
+    const validationError = validateLogin(formData);
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -59,6 +66,9 @@ const Login = () => {
         sessionStorage.setItem("user", JSON.stringify(loggedUser));
         sessionStorage.setItem("userInfo", JSON.stringify(loggedUser));
       }
+      
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(loggedUser));
 
       login(loggedUser);
 
