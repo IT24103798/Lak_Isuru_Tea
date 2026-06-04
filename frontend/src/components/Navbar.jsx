@@ -8,16 +8,22 @@ function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { userInfo, logout } = useAuth();
+
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
   const [activeProductCategory, setActiveProductCategory] = useState(null);
   const [activeSection, setActiveSection] = useState("home");
+
   const accountMenuRef = useRef(null);
   const productMenuRef = useRef(null);
 
+  const isAdmin = userInfo?.role === "admin";
+
   const handleSearchChange = (event) => {
     const searchTerm = event.target.value;
-    const searchQuery = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : "";
+    const searchQuery = searchTerm
+      ? `?search=${encodeURIComponent(searchTerm)}`
+      : "";
 
     navigate(`/${searchQuery}#products`);
   };
@@ -121,15 +127,16 @@ function Navbar() {
     };
   }, [location.pathname, location.hash, location.search]);
 
-  const displayName = userInfo?.name || (userInfo?.role === "admin" ? "Admin" : "Customer");
+  const displayName = userInfo?.name || (isAdmin ? "Admin" : "Customer");
   const avatarLetter = displayName.charAt(0).toUpperCase();
+
   const getNavLinkClass = (section) =>
     activeSection === section ? "nav-link active" : "nav-link";
 
   return (
-    <nav className="navbar">
+    <nav className={`navbar ${isAdmin ? "admin-navbar" : ""}`}>
       <div className="nav-left">
-        <Link to="/" className="logo-link">
+        <Link to={isAdmin ? "/admin/orders" : "/"} className="logo-link">
           <img
             src="/images/lak-isuru-logo.png"
             alt="Lak Isuru Tea Logo"
@@ -138,7 +145,7 @@ function Navbar() {
         </Link>
       </div>
 
-      {userInfo?.role !== "admin" && (
+      {!isAdmin && (
         <input
           type="search"
           className="navbar-search"
@@ -150,86 +157,92 @@ function Navbar() {
       )}
 
       <div className="nav-links">
-        {userInfo?.role === "admin" ? (
+        {!isAdmin && (
           <>
-            <Link to="/admin/dashboard" className={getNavLinkClass("admin/dashboard")}>Dashboard</Link>
-            <Link to="/admin/users" className={getNavLinkClass("admin/users")}>User Management</Link>
-            <Link to="/admin/products" className={getNavLinkClass("admin/products")}>Products</Link>
-            <Link to="/admin/orders" className={getNavLinkClass("admin/orders")}> Orders</Link>
-            <Link to="/admin/reviews" className={getNavLinkClass("admin/reviews")}> Reviews</Link>
-          </>
-        ) : !userInfo ? (
-          <>
-            <Link to="/" className={getNavLinkClass("home")}>Home</Link>
-            <Link to="/#products" className={getNavLinkClass("products")}>Products</Link>
-            <Link to="/#about" className={getNavLinkClass("about")}>About Us</Link>
-            <Link to="/#contact" className={getNavLinkClass("contact")}>Contact Us</Link>
-          </>
-        ) : (
-          <>
-            <Link to="/" className={getNavLinkClass("home")}>Home</Link>
-            <div className="products-menu" ref={productMenuRef}>
-              <button
-                type="button"
-                className={getNavLinkClass("products")}
-                aria-expanded={isProductMenuOpen}
-                onClick={() => {
-                  setActiveProductCategory(null);
-                  setIsProductMenuOpen((isOpen) => !isOpen);
-                }}
-              >
-                Products
-              </button>
+            {!userInfo ? (
+              <>
+                <Link to="/" className={getNavLinkClass("home")}>
+                  Home
+                </Link>
+                <Link to="/#products" className={getNavLinkClass("products")}>
+                  Products
+                </Link>
+                <Link to="/#about" className={getNavLinkClass("about")}>
+                  About Us
+                </Link>
+                <Link to="/#contact" className={getNavLinkClass("contact")}>
+                  Contact Us
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/" className={getNavLinkClass("home")}>
+                  Home
+                </Link>
+                <div className="products-menu" ref={productMenuRef}>
+                  <button
+                    type="button"
+                    className={getNavLinkClass("products")}
+                    aria-expanded={isProductMenuOpen}
+                    onClick={() => {
+                      setActiveProductCategory(null);
+                      setIsProductMenuOpen((isOpen) => !isOpen);
+                    }}
+                  >
+                    Products
+                  </button>
 
-              {isProductMenuOpen && (
-                <div
-                  className="products-mega-menu"
-                  onMouseLeave={() => setActiveProductCategory(null)}
-                >
-                  <div className="products-menu-categories">
-                    {productCatalog.map((group) => (
-                      <div
-                        className={
-                          activeProductCategory?.category === group.category
-                            ? "products-menu-group active"
-                            : "products-menu-group"
-                        }
-                        key={group.category}
-                        onMouseEnter={() => setActiveProductCategory(group)}
-                        onFocus={() => setActiveProductCategory(group)}
-                      >
-                        <button
-                          type="button"
-                          className="products-menu-category"
-                          onClick={() => handleProductFilter(group.category)}
-                        >
-                          {group.category}
-                        </button>
+                  {isProductMenuOpen && (
+                    <div
+                      className="products-mega-menu"
+                      onMouseLeave={() => setActiveProductCategory(null)}
+                    >
+                      <div className="products-menu-categories">
+                        {productCatalog.map((group) => (
+                          <div
+                            className={
+                              activeProductCategory?.category === group.category
+                                ? "products-menu-group active"
+                                : "products-menu-group"
+                            }
+                            key={group.category}
+                            onMouseEnter={() => setActiveProductCategory(group)}
+                            onFocus={() => setActiveProductCategory(group)}
+                          >
+                            <button
+                              type="button"
+                              className="products-menu-category"
+                              onClick={() => handleProductFilter(group.category)}
+                            >
+                              {group.category}
+                            </button>
 
-                        {activeProductCategory?.category === group.category && (
-                          <div className="products-submenu-panel">
-                            {group.subcategories.map((subcategory) => (
-                              <button
-                                type="button"
-                                key={subcategory}
-                                onClick={() =>
-                                  handleProductFilter(group.category, subcategory)
-                                }
-                              >
-                                {subcategory}
-                              </button>
-                            ))}
+                            {activeProductCategory?.category === group.category && (
+                              <div className="products-submenu-panel">
+                                {group.subcategories.map((subcategory) => (
+                                  <button
+                                    type="button"
+                                    key={subcategory}
+                                    onClick={() =>
+                                      handleProductFilter(group.category, subcategory)
+                                    }
+                                  >
+                                    {subcategory}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        )}
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <Link to="/cart" className={getNavLinkClass("cart")}>
-              Cart
-            </Link>
+                <Link to="/cart" className={getNavLinkClass("cart")}>
+                  Cart
+                </Link>
+              </>
+            )}
           </>
         )}
 
@@ -250,34 +263,41 @@ function Navbar() {
               <div className="account-dropdown">
                 <div className="account-summary">
                   <strong>{displayName}</strong>
-                  <span>{userInfo.role || "customer"}</span>
+                  <span>{isAdmin ? "Admin" : "Customer"}</span>
                 </div>
 
-                <Link to="/profile" onClick={() => setIsAccountMenuOpen(false)}>
-                  Profile settings
-                </Link>
+                {!isAdmin && (
+                  <>
+                    <Link
+                      to="/profile-settings"
+                      onClick={() => setIsAccountMenuOpen(false)}
+                    >
+                      Profile settings
+                    </Link>
 
-                {userInfo.role !== "admin" && (
-                  <Link
-                    to="/my-orders"
-                    onClick={() => setIsAccountMenuOpen(false)}
-                  >
-                    My orders
-                  </Link>
+                    <Link
+                      to="/my-orders"
+                      onClick={() => setIsAccountMenuOpen(false)}
+                    >
+                      My orders
+                    </Link>
+                  </>
                 )}
 
-                <button type="button" className="logout-btn" onClick={handleLogout}>
+                <button
+                  type="button"
+                  className="logout-btn"
+                  onClick={handleLogout}
+                >
                   Logout
                 </button>
               </div>
             )}
           </div>
         ) : (
-          <>
-            <Link to="/login" className="register-link">
-              Login
-            </Link>
-          </>
+          <Link to="/login" className="register-link">
+            Login
+          </Link>
         )}
       </div>
     </nav>
