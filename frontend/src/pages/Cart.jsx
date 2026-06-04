@@ -7,6 +7,7 @@ const Cart = () => {
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedItems, setSelectedItems] = useState([]);
 
   const [removePopup, setRemovePopup] = useState({
     open: false,
@@ -31,6 +32,78 @@ const Cart = () => {
   useEffect(() => {
     loadCart();
   }, [loadCart]);
+
+  const handleSelectItem = (productId) => {
+    setSelectedItems((prevSelected) => {
+      if (prevSelected.includes(productId)) {
+        return prevSelected.filter((id) => id !== productId);
+      }
+
+      return [...prevSelected, productId];
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedItems.length === cart.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(cart.map((item) => item.productId));
+    }
+  };
+
+  const selectedCartItems = cart.filter((item) =>
+    selectedItems.includes(item.productId)
+  );
+
+  const selectedItemsTotal = selectedCartItems.reduce(
+    (sum, item) => sum + Number(item.price) * Number(item.quantity),
+    0
+  );
+
+  const selectedDeliveryFee =
+    selectedCartItems.length === 0
+      ? 0
+      : selectedItemsTotal >= 5000
+      ? 0
+      : 300;
+
+  const selectedTotal = selectedItemsTotal + selectedDeliveryFee;
+
+  const selectedItemCount = selectedCartItems.reduce(
+    (sum, item) => sum + Number(item.quantity),
+    0
+  );
+
+  const deleteSelectedItems = async () => {
+    if (selectedItems.length === 0) {
+      alert("Please select items to delete.");
+      return;
+    }
+
+    try {
+      await Promise.all(
+        selectedItems.map((productId) => API.delete(`/cart/${productId}`))
+      );
+
+      setCart((prevCart) =>
+        prevCart.filter((item) => !selectedItems.includes(item.productId))
+      );
+
+      setSelectedItems([]);
+    } catch (error) {
+      alert("Failed to delete selected items.");
+    }
+  };
+
+  const goToCheckout = () => {
+    if (selectedItems.length === 0) {
+      alert("Please select at least one item to checkout.");
+      return;
+    }
+
+    localStorage.setItem("checkoutItems", JSON.stringify(selectedCartItems));
+    navigate("/checkout");
+  };
 
   const updateQty = async (productId, quantity) => {
     if (quantity < 1) {
@@ -63,6 +136,7 @@ const Cart = () => {
       await API.delete(`/cart/${productId}`);
 
       setCart((prev) => prev.filter((item) => item.productId !== productId));
+      setSelectedItems((prev) => prev.filter((id) => id !== productId));
 
       setRemovePopup({
         open: false,
@@ -91,21 +165,28 @@ const Cart = () => {
   };
 
   const cartItemsTotal = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+    (sum, item) => sum + Number(item.price) * Number(item.quantity),
     0
   );
 
-  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const itemCount = cart.reduce(
+    (sum, item) => sum + Number(item.quantity),
+    0
+  );
 
   const deliveryFee =
-    cart.length === 0 ? 0 : cartItemsTotal >= 5000 ? 0 : 300;
-
-  const total = cartItemsTotal + deliveryFee;
+    selectedCartItems.length === 0
+      ? 0
+      : selectedItemsTotal >= 5000
+      ? 0
+      : 300;
 
   const remainingForFreeDelivery =
-    cartItemsTotal > 0 && cartItemsTotal < 5000 ? 5000 - cartItemsTotal : 0;
+    selectedItemsTotal > 0 && selectedItemsTotal < 5000
+      ? 5000 - selectedItemsTotal
+      : 0;
 
-  const checkoutDisabled = loading || cart.length === 0 || total <= 0;
+  const checkoutDisabled = loading || selectedItems.length === 0;
 
   return (
     <div className="cart-page">
@@ -150,13 +231,53 @@ const Cart = () => {
             </div>
           )}
 
+          {!loading && cart.length > 0 && (
+            <div className="cart-select-bar">
+              <div className="select-left">
+                <input
+                  type="checkbox"
+                  checked={
+                    cart.length > 0 && selectedItems.length === cart.length
+                  }
+                  onChange={handleSelectAll}
+                />
+
+                <span>
+                  SELECT ALL ({selectedItems.length} ITEM
+                  {selectedItems.length !== 1 ? "S" : ""})
+                </span>
+              </div>
+
+              <button
+                type="button"
+                className="delete-selected-btn"
+                onClick={deleteSelectedItems}
+                disabled={selectedItems.length === 0}
+              >
+                <i className="ti ti-trash"></i>
+                DELETE
+              </button>
+            </div>
+          )}
+
           <div className="cart-items">
             {cart.map((item, index) => (
               <div
-                className="cart-item"
+                className={
+                  selectedItems.includes(item.productId)
+                    ? "cart-item selected"
+                    : "cart-item"
+                }
                 key={item.productId}
                 style={{ animationDelay: `${index * 0.07}s` }}
               >
+                <input
+                  type="checkbox"
+                  className="cart-item-checkbox"
+                  checked={selectedItems.includes(item.productId)}
+                  onChange={() => handleSelectItem(item.productId)}
+                />
+
                 <div className="item-image-box">
                   {item.image ? (
                     <img
@@ -175,7 +296,7 @@ const Cart = () => {
                   <p className="item-name">{item.name}</p>
 
                   <p className="item-unit-price">
-                    Rs. {item.price.toLocaleString()} each
+                    Rs. {Number(item.price).toLocaleString()} each
                   </p>
 
                   <span className="stock-badge">In Stock</span>
@@ -205,7 +326,10 @@ const Cart = () => {
                   </div>
 
                   <p className="item-total-price">
-                    Rs. {(item.price * item.quantity).toLocaleString()}
+                    Rs.{" "}
+                    {(
+                      Number(item.price) * Number(item.quantity)
+                    ).toLocaleString()}
                   </p>
 
                   <button
@@ -226,22 +350,41 @@ const Cart = () => {
           <div className="cart-summary-box">
             <h2>Order Summary</h2>
 
-            <div className="summary-lines">
-              {cart.map((item) => (
-                <div className="summary-line" key={item.productId}>
-                  <span>
-                    {item.name} × {item.quantity}
-                  </span>
-                  <span>
-                    Rs. {(item.price * item.quantity).toLocaleString()}
-                  </span>
-                </div>
-              ))}
-            </div>
+            {selectedItems.length === 0 ? (
+              <div className="no-selection-note">
+                Select items from your cart to checkout.
+              </div>
+            ) : (
+              <div className="summary-lines">
+                {selectedCartItems.map((item) => (
+                  <div className="summary-line" key={item.productId}>
+                    <span>
+                      {item.name} × {item.quantity}
+                    </span>
+                    <span>
+                      Rs.{" "}
+                      {(
+                        Number(item.price) * Number(item.quantity)
+                      ).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="summary-divider" />
 
             <div className="price-breakdown">
+              <div>
+                <span>Selected Items</span>
+                <strong>{selectedItemCount}</strong>
+              </div>
+
+              <div>
+                <span>Items Total</span>
+                <strong>Rs. {selectedItemsTotal.toLocaleString()}</strong>
+              </div>
+
               <div>
                 <span>Delivery Fee</span>
 
@@ -266,7 +409,7 @@ const Cart = () => {
               <span>Total</span>
 
               <span className="total-amount">
-                Rs. {total.toLocaleString()}
+                Rs. {selectedTotal.toLocaleString()}
               </span>
             </div>
 
@@ -274,9 +417,9 @@ const Cart = () => {
               type="button"
               className="checkout-btn"
               disabled={checkoutDisabled}
-              onClick={() => navigate("/checkout")}
+              onClick={goToCheckout}
             >
-              Secure Checkout
+              Secure Checkout ({selectedItems.length})
               <i className="ti ti-arrow-right"></i>
             </button>
 

@@ -4,7 +4,6 @@ import API from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import "../styles/Auth.css";
 import SocialLoginButtons from "../components/SocialLoginButtons";
-import { validateLogin } from "../utils/validation";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -23,17 +22,17 @@ const Login = () => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [name]: type === "checkbox" ? checked : value,
-    });
+    }));
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!formData.email || !formData.password) {
+    if (!formData.email.trim() || !formData.password.trim()) {
       setError("Please enter email and password.");
       return;
     }
@@ -57,6 +56,16 @@ const Login = () => {
         ...data.user,
         token: data.token,
       };
+
+      if (formData.rememberMe) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(loggedUser));
+        localStorage.setItem("userInfo", JSON.stringify(loggedUser));
+      } else {
+        sessionStorage.setItem("token", data.token);
+        sessionStorage.setItem("user", JSON.stringify(loggedUser));
+        sessionStorage.setItem("userInfo", JSON.stringify(loggedUser));
+      }
       
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(loggedUser));
@@ -105,7 +114,7 @@ const Login = () => {
 
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
+              onClick={() => setShowPassword((prev) => !prev)}
             >
               {showPassword ? "Hide" : "Show"}
             </button>
@@ -128,6 +137,7 @@ const Login = () => {
           <button className="auth-main-btn" type="submit" disabled={loading}>
             {loading ? "Logging in..." : "Login"}
           </button>
+
           <SocialLoginButtons />
         </form>
 

@@ -1,97 +1,131 @@
-import { useState } from "react";
-import { NavLink } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useEffect, useState, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import API from "../api/api";
 import "../styles/Sidebar.css";
 
-const languages = [
-  { code: "en", label: "English" },
-  { code: "si", label: "සිංහල" },
-  { code: "ta", label: "தமிழ்" },
-  { code: "fr", label: "French" },
-  { code: "ar", label: "Arabic" },
-];
+const Sidebar = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [user, setUser] = useState(null);
 
-export default function Sidebar() {
-  const { userInfo, logout } = useAuth();
-  const [selectedLang, setSelectedLang] = useState("en");
+  const getStoredUser = () => {
+    try {
+      const localUser = localStorage.getItem("user");
+      const localUserInfo = localStorage.getItem("userInfo");
 
-  // Get initials from name (e.g. "Praween Sanjula" → "PS")
-  const getInitials = (name) => {
-    if (!name) return "U";
-    const parts = name.trim().split(" ");
-    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+      if (localUser) return JSON.parse(localUser);
+      if (localUserInfo) return JSON.parse(localUserInfo);
+
+      return null;
+    } catch {
+      return null;
+    }
   };
 
+  const loadUserDetails = useCallback(async () => {
+    const savedUser = getStoredUser();
+
+    if (savedUser) {
+      setUser(savedUser);
+    }
+
+    try {
+      const { data } = await API.get("/users/profile");
+
+      if (data.user) {
+        const updatedUser = {
+          ...savedUser,
+          ...data.user,
+          token: savedUser?.token,
+        };
+
+        setUser(updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        localStorage.setItem("userInfo", JSON.stringify(updatedUser));
+      }
+    } catch {
+      console.log("Using saved user details.");
+    }
+  }, []);
+
+  useEffect(() => {
+    loadUserDetails();
+  }, [loadUserDetails]);
+
+  const isActive = (path) => location.pathname === path;
+
+  const userName = user?.name || user?.fullName || user?.username || "Customer";
+  const userEmail = user?.email || "customer@email.com";
+  const avatarLetter = userName?.charAt(0)?.toUpperCase() || "U";
+
   return (
-    <div className="sidebar">
+    <aside className="orders-sidebar-pro">
+      <div className="sidebar-profile-card">
+        <div className="sidebar-avatar">{avatarLetter}</div>
 
-      {/* Header */}
-      <div className="sidebar-header">
-        <div className="avatar">{getInitials(userInfo?.name)}</div>
-        <div className="user-name">{userInfo?.name || "User"}</div>
-        <div className="member-tag">{userInfo?.email || ""}</div>
+        <h3>{userName}</h3>
+        <p>{userEmail}</p>
       </div>
 
-      {/* Manage My Account */}
-      <div className="section-label">Manage My Account</div>
-      <NavLink
-        to="/profile"
-        className={({ isActive }) => isActive ? "menu-item active" : "menu-item"}
-      >
-        <i className="ti ti-user"></i> My Profile
-      </NavLink>
-      
-      <NavLink
-        to="/payment-options"
-        className={({ isActive }) => isActive ? "menu-item active" : "menu-item"}
-      >
-        <i className="ti ti-credit-card"></i> My Payment Options
-      </NavLink>
-      
+      <div className="sidebar-menu-group">
+        <span>Manage Account</span>
 
-      {/* My Orders */}
-      <div className="section-label">My Orders</div>
-      <NavLink
-        to="/my-orders"
-        className={({ isActive }) => isActive ? "menu-item active" : "menu-item"}
-      >
-        <i className="ti ti-package"></i> My Orders
-      </NavLink>
-      <NavLink
-        to="/my-returns"
-        className={({ isActive }) => isActive ? "menu-item active" : "menu-item"}
-      >
-        <i className="ti ti-arrow-back-up"></i> My Returns
-      </NavLink>
-      <NavLink
-        to="/my-cancellations"
-        className={({ isActive }) => isActive ? "menu-item active" : "menu-item"}
-      >
-        <i className="ti ti-circle-x"></i> My Cancellations
-      </NavLink>
-
-      
-
-      {/* Language Switcher */}
-      <div className="section-label">Language</div>
-      <div className="language-switcher">
-        <i className="ti ti-world"></i>
-        <select
-          value={selectedLang}
-          onChange={(e) => setSelectedLang(e.target.value)}
-          className="lang-select"
+        <button
+          type="button"
+          className={isActive("/profile") ? "active" : ""}
+          onClick={() => navigate("/profile")}
         >
-          {languages.map((lang) => (
-            <option key={lang.code} value={lang.code}>
-              {lang.label}
-            </option>
-          ))}
-        </select>
+          <i className="ti ti-user"></i>
+          My Profile
+        </button>
+
+        <button type="button">
+          <i className="ti ti-credit-card"></i>
+          Payment Options
+        </button>
       </div>
 
-      
+      <div className="sidebar-menu-group">
+        <span>Orders</span>
 
-    </div>
+        <button
+          type="button"
+          className={isActive("/my-orders") ? "active" : ""}
+          onClick={() => navigate("/my-orders")}
+        >
+          <i className="ti ti-package"></i>
+          My Orders
+        </button>
+
+        <button
+          type="button"
+          className={isActive("/my-returns") ? "active" : ""}
+          onClick={() => navigate("/my-returns")}
+        >
+          <i className="ti ti-arrow-back-up"></i>
+          My Returns
+        </button>
+
+        <button
+          type="button"
+          className={isActive("/my-cancellations") ? "active" : ""}
+          onClick={() => navigate("/my-cancellations")}
+        >
+          <i className="ti ti-circle-x"></i>
+          My Cancellations
+        </button>
+      </div>
+
+      <button
+        type="button"
+        className="sidebar-shop-btn"
+        onClick={() => navigate("/")}
+      >
+        <i className="ti ti-shopping-bag"></i>
+        Continue Shopping
+      </button>
+    </aside>
   );
-}
+};
+
+export default Sidebar;

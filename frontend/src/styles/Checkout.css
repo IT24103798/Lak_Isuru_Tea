@@ -449,3 +449,86 @@
   width: auto;
   margin: 0 auto;
 }
+
+.address-type-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 1.2rem;
+  margin-bottom: 1.5rem;
+}
+
+.address-type-card {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 1rem;
+  border: 1px solid #d9e2dc;
+  border-radius: 14px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.address-type-card input {
+  display: none;
+}
+
+.address-type-card i {
+  font-size: 1.2rem;
+  color: #0f8a55;
+}
+
+.address-type-card.active {
+  border-color: #0f8a55;
+  background: #ecfdf5;
+  box-shadow: 0 8px 20px rgba(15, 138, 85, 0.12);
+}
+
+.form-group select {
+  width: 100%;
+  height: 48px;
+  border: 1px solid #d7d7d7;
+  border-radius: 10px;
+  padding: 0 0.9rem;
+  background: #ffffff;
+  font-size: 0.95rem;
+  color: #111827;
+  outline: none;
+}
+
+.form-group select:focus {
+  border-color: #0f8a55;
+  box-shadow: 0 0 0 3px rgba(15, 138, 85, 0.12);
+}
+
+.form-group select:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.back-to-delivery-btn {
+  margin-top: 1rem;
+  border: 1px solid #d7d7d7;
+  background: #ffffff;
+  color: #0f8a55;
+  border-radius: 14px;
+  padding: 0.85rem 1.2rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-to-delivery-btn:hover {
+  background: #ecfdf5;
+  border-color: #0f8a55;
+}
+
+@media (max-width: 768px) {
+  .address-type-row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -6,27 +6,40 @@ const API = axios.create({
   baseURL: API_BASE_URL,
 });
 
-API.interceptors.request.use((req) => {
-  const userInfo = localStorage.getItem("userInfo");
+const getStoredUser = () => {
+  try {
+    const user = localStorage.getItem("user");
+    const userInfo = localStorage.getItem("userInfo");
 
-  if (userInfo) {
-    const parsedUser = JSON.parse(userInfo);
-    req.headers.Authorization = `Bearer ${parsedUser.token}`;
+    if (user) return JSON.parse(user);
+    if (userInfo) return JSON.parse(userInfo);
+
+    return null;
+  } catch (error) {
+    return null;
+  }
+};
+
+API.interceptors.request.use((req) => {
+  const storedUser = getStoredUser();
+
+  if (storedUser?.token) {
+    req.headers.Authorization = `Bearer ${storedUser.token}`;
   }
 
   return req;
 });
 
 export const apiRequest = async (path, options = {}) => {
-  const userInfo = localStorage.getItem("userInfo");
+  const storedUser = getStoredUser();
+
   const headers = {
     "Content-Type": "application/json",
     ...options.headers,
   };
 
-  if (userInfo) {
-    const parsedUser = JSON.parse(userInfo);
-    headers.Authorization = `Bearer ${parsedUser.token}`;
+  if (storedUser?.token) {
+    headers.Authorization = `Bearer ${storedUser.token}`;
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
