@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import API from "../api/api";
+import PhoneInputModule from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
 import { useAuth } from "../context/AuthContext";
 import "../styles/Profile.css";
 
+const PhoneInput = PhoneInputModule.default || PhoneInputModule;
+
 const Profile = () => {
-  const { userInfo } = useAuth();
+  const { userInfo, login } = useAuth();
 
   const [profile, setProfile] = useState({
     name: "",
@@ -14,6 +18,7 @@ const Profile = () => {
   });
 
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [editMode, setEditMode] = useState(false);
@@ -23,13 +28,17 @@ const Profile = () => {
       try {
         const { data } = await API.get("/users/profile");
 
-        setProfile({
-          name: data.name || userInfo?.name || "",
-          email: data.email || userInfo?.email || "",
-          phone: data.phone || "",
-          address: data.address || "",
-        });
+        const loadedProfile = {
+          name: data.name || data.user?.name || userInfo?.name || "",
+          email: data.email || data.user?.email || userInfo?.email || "",
+          phone:
+            data.phone?.replace("+", "") ||
+            data.user?.phone?.replace("+", "") ||
+            "",
+          address: data.address || data.user?.address || "",
+        };
 
+        setProfile(loadedProfile);
         setError("");
       } catch (err) {
         setError("Failed to load profile. Please login again.");
@@ -37,8 +46,8 @@ const Profile = () => {
         setProfile({
           name: userInfo?.name || "",
           email: userInfo?.email || "",
-          phone: "",
-          address: "",
+          phone: userInfo?.phone ? userInfo.phone.replace("+", "") : "",
+          address: userInfo?.address || "",
         });
       } finally {
         setLoading(false);
@@ -49,32 +58,77 @@ const Profile = () => {
   }, [userInfo]);
 
   const handleChange = (e) => {
-    setProfile({
-      ...profile,
+    setProfile((previousProfile) => ({
+      ...previousProfile,
       [e.target.name]: e.target.value,
-    });
+    }));
+  };
+
+  const handlePhoneChange = (value) => {
+    setProfile((previousProfile) => ({
+      ...previousProfile,
+      phone: value,
+    }));
   };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
 
+    setError("");
+    setSuccess("");
+
+    if (!profile.name.trim()) {
+      setError("Please enter your full name.");
+      return;
+    }
+
+    if (!profile.phone.trim()) {
+      setError("Please enter your phone number.");
+      return;
+    }
+
+    if (!/^[0-9]{7,15}$/.test(profile.phone)) {
+      setError("Phone number must be valid.");
+      return;
+    }
+
     try {
-      setError("");
-      setSuccess("");
+      setUpdating(true);
 
-      const { data } = await API.put("/users/profile", profile);
+      const updateData = {
+        name: profile.name,
+        phone: `+${profile.phone}`,
+        address: profile.address,
+      };
 
-      setProfile({
-        name: data.name || profile.name,
-        email: data.email || profile.email,
-        phone: data.phone || profile.phone,
-        address: data.address || profile.address,
-      });
+      const { data } = await API.put("/users/profile", updateData);
+
+      const updatedUser = data.user || data;
+
+      const updatedProfile = {
+        name: updatedUser.name || profile.name,
+        email: updatedUser.email || profile.email,
+        phone: updatedUser.phone
+          ? updatedUser.phone.replace("+", "")
+          : profile.phone,
+        address: updatedUser.address || profile.address,
+      };
+
+      setProfile(updatedProfile);
+
+      if (data.token && login) {
+        login({
+          ...updatedUser,
+          token: data.token,
+        });
+      }
 
       setSuccess("Profile updated successfully.");
       setEditMode(false);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to update profile.");
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -107,7 +161,11 @@ const Profile = () => {
           <button
             type="button"
             className="profile-edit-btn"
-            onClick={() => setEditMode(!editMode)}
+            onClick={() => {
+              setError("");
+              setSuccess("");
+              setEditMode(!editMode);
+            }}
           >
             {editMode ? "Cancel" : "Edit Profile"}
           </button>
@@ -141,7 +199,9 @@ const Profile = () => {
               </div>
               <div>
                 <p className="profile-label">Phone Number</p>
-                <p className="profile-value">{profile.phone || "Not added"}</p>
+                <p className="profile-value">
+                  {profile.phone ? `+${profile.phone}` : "Not added"}
+                </p>
               </div>
             </div>
 
@@ -151,7 +211,9 @@ const Profile = () => {
               </div>
               <div>
                 <p className="profile-label">Address</p>
-                <p className="profile-value">{profile.address || "Not added"}</p>
+                <p className="profile-value">
+                  {profile.address || "Not added"}
+                </p>
               </div>
             </div>
           </div>
@@ -175,20 +237,27 @@ const Profile = () => {
                 type="email"
                 name="email"
                 value={profile.email}
-                onChange={handleChange}
                 placeholder="Enter your email"
-                required
+                disabled
               />
+              <small className="profile-help-text">
+                Email address cannot be changed.
+              </small>
             </div>
 
             <div className="profile-form-group">
               <label>Phone Number</label>
-              <input
-                type="text"
-                name="phone"
+              <PhoneInput
+                country="lk"
                 value={profile.phone}
-                onChange={handleChange}
-                placeholder="Enter your phone number"
+                onChange={handlePhoneChange}
+                enableSearch={true}
+                disableSearchIcon={true}
+                countryCodeEditable={false}
+                inputClass="custom-phone-input"
+                buttonClass="custom-phone-button"
+                dropdownClass="custom-phone-dropdown"
+                placeholder="Enter phone number"
               />
             </div>
 
@@ -204,14 +273,22 @@ const Profile = () => {
             </div>
 
             <div className="profile-actions">
-              <button type="submit" className="profile-save-btn">
-                Save Changes
+              <button
+                type="submit"
+                className="profile-save-btn"
+                disabled={updating}
+              >
+                {updating ? "Saving..." : "Save Changes"}
               </button>
 
               <button
                 type="button"
                 className="profile-cancel-btn"
-                onClick={() => setEditMode(false)}
+                onClick={() => {
+                  setError("");
+                  setSuccess("");
+                  setEditMode(false);
+                }}
               >
                 Cancel
               </button>
