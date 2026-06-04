@@ -534,5 +534,6 @@ luckisuru@gmail.com
 export const fallbackAnswer =
   "🤖 Sorry, I don’t have enough information about that right now. Please check our product page or contact Lak Isuru Tea support at luckisuru@gmail.com / 0778646780.";
 
-export const clarificationAnswer =
+
+  export const clarificationAnswer =
   "👋 Hello! Welcome to Lak Isuru Tea.\n\nI'm not quite sure what you mean by that. Could you please tell me how I can help you today? I can assist you with general information about our website.";
