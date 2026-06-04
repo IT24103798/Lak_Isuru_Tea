@@ -68,7 +68,7 @@ const MyCancellations = () => {
   };
 
   const openCancelDetails = (order) => {
-    openCancelDetails(order);
+    setCancelDetails(order);
   };
 
   const closeCancelDetails = () => {
