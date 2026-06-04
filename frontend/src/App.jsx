@@ -146,7 +146,7 @@ function App() {
                 </AdminRoute>
               }
             >
-              <Route index element={<AdminOrders />} />
+              <Route index element={<AdminDashboard />} />
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="profile" element={<Profile />} />
               <Route path="orders" element={<AdminOrders />} />
