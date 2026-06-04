@@ -7,6 +7,8 @@ import AdminRoute from "./components/AdminRoute";
 import Sidebar from "./components/Sidebar";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
+import Payment from "./pages/Payment";
+import AdminOrders from "./pages/admin/AdminOrders";
 
 import Home from "./pages/Home";
 import Register from "./pages/Register";
@@ -73,6 +75,7 @@ function App() {
 
           <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/payment" element={<ProtectedRoute><Payment /></ProtectedRoute>} />
           <Route path="/order-success" element={<OrderSuccess />} />
 
           <Route
@@ -100,6 +103,15 @@ function App() {
             element={
               <AdminRoute>
                 <AdminProducts />
+              </AdminRoute>
+            }
+          />
+
+          <Route
+            path="/admin/orders"
+            element={
+              <AdminRoute>
+                <AdminOrders />
               </AdminRoute>
             }
           />

@@ -15,8 +15,8 @@ function ProductDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
-  const [cartMessage, setCartMessage] = useState("")
-  
+  const [cartMessage, setCartMessage] = useState("");
+
   const reviews = product?.reviews || [];
 
   useEffect(() => {
@@ -48,40 +48,35 @@ function ProductDetails() {
     return `${(total / reviews.length).toFixed(1)} / 5`;
   }, [reviews]);
 
-  if (loading) {
-    return (
-      <div className="details-page">
-        <main className="details-not-found">
-          <h1>Loading product...</h1>
-        </main>
-      </div>
-    );
-  }
-
-  if (error || !product) {
-    return (
-      <div className="details-page">
-        <main className="details-not-found">
-          <h1>{error || "Product not found"}</h1>
-          <Link to="/">Back to products</Link>
-        </main>
-      </div>
-    );
-  }
-
   const decreaseQuantity = () => {
-    setQuantity((currentQuantity) => Math.max(product.stock > 0 ? 1 : 0, currentQuantity - 1));
+    if (!product) return;
+
+    setQuantity((currentQuantity) =>
+      Math.max(product.stock > 0 ? 1 : 0, currentQuantity - 1)
+    );
   };
 
   const increaseQuantity = () => {
+    if (!product) return;
+
     setQuantity((currentQuantity) =>
       Math.min(product.stock || 0, currentQuantity + 1)
     );
   };
 
   const handleAddToCart = async () => {
-    if (!product.stock) {
+    if (!product || product.stock <= 0) {
       alert("This product is currently out of stock.");
+      return;
+    }
+
+    if (quantity < 1) {
+      alert("Please select a valid quantity.");
+      return;
+    }
+
+    if (quantity > product.stock) {
+      alert(`Only ${product.stock} items available in stock.`);
       return;
     }
 
@@ -92,7 +87,7 @@ function ProductDetails() {
     }
 
     try {
-      await API.post("/cart", {
+      const res = await API.post("/cart", {
         productId: product._id,
         name: product.name,
         price: product.price,
@@ -100,10 +95,15 @@ function ProductDetails() {
         image: product.image,
       });
 
+      setQuantity(1);
+
       setCartMessage(`✓ ${quantity} × ${product.name} added to cart!`);
       setTimeout(() => setCartMessage(""), 3000);
     } catch (error) {
-      alert("Failed to add to cart. Please try again.");
+      alert(
+        error.response?.data?.message ||
+          "Failed to add to cart. Please try again."
+      );
     }
   };
 
@@ -142,6 +142,27 @@ function ProductDetails() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="details-page">
+        <main className="details-not-found">
+          <h1>Loading product...</h1>
+        </main>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="details-page">
+        <main className="details-not-found">
+          <h1>{error || "Product not found"}</h1>
+          <Link to="/">Back to products</Link>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="details-page">
       <main className="details-wrap">
@@ -163,20 +184,33 @@ function ProductDetails() {
 
           <div className="details-info">
             <p className="details-rating">{averageRating}</p>
+
             <h1>{product.name}</h1>
+
             <p className="details-price">Rs. {product.price}</p>
+
             <p className="details-description">{product.description}</p>
 
             <div className="purchase-panel">
-              <p className="stock-text">{product.stock || 0} in stock</p>
+              <p className="stock-text">{product.stock ?? 0} in stock</p>
 
               <div className="purchase-row">
                 <div className="quantity-control" aria-label="Quantity">
-                  <button type="button" onClick={decreaseQuantity}>
+                  <button
+                    type="button"
+                    onClick={decreaseQuantity}
+                    disabled={quantity <= 1 || product.stock <= 0}
+                  >
                     -
                   </button>
+
                   <span>{quantity}</span>
-                  <button type="button" onClick={increaseQuantity}>
+
+                  <button
+                    type="button"
+                    onClick={increaseQuantity}
+                    disabled={quantity >= product.stock || product.stock <= 0}
+                  >
                     +
                   </button>
                 </div>
@@ -185,18 +219,21 @@ function ProductDetails() {
                   type="button"
                   className="add-cart-button"
                   onClick={handleAddToCart}
-                  disabled={!product.stock}
+                  disabled={product.stock <= 0}
                 >
-                  Add To Cart
+                  {product.stock > 0 ? "Add To Cart" : "Out of Stock"}
                 </button>
               </div>
+
               {cartMessage && (
-                <p style={{
-                  color: "#0f6e56",
-                  fontWeight: 600,
-                  marginTop: "0.8rem",
-                  fontSize: "0.9rem"
-                }}>
+                <p
+                  style={{
+                    color: "#0f6e56",
+                    fontWeight: 600,
+                    marginTop: "0.8rem",
+                    fontSize: "0.9rem",
+                  }}
+                >
                   {cartMessage}
                 </p>
               )}
@@ -251,7 +288,7 @@ function ProductDetails() {
                 <article className="review-item" key={review._id}>
                   <div>
                     <h3>{review.name}</h3>
-                    <p>{"*".repeat(review.rating)}</p>
+                    <p>{"★".repeat(review.rating)}</p>
                   </div>
                   <p>{review.comment}</p>
                 </article>
