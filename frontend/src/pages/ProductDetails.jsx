@@ -21,13 +21,10 @@ function ProductDetails() {
   const [error, setError] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
   const [cartMessage, setCartMessage] = useState("");
-
-  const reviews = product?.reviews || [];
   const [reviewEligibility, setReviewEligibility] = useState(null);
   const [checkingReviewEligibility, setCheckingReviewEligibility] = useState(Boolean(user));
   const [editingReviewId, setEditingReviewId] = useState(null);
-  const [cartMessage, setCartMessage] = useState("")
-  
+
   const reviews = useMemo(() => product?.reviews || [], [product]);
 
   useEffect(() => {
@@ -81,8 +78,6 @@ function ProductDetails() {
     return total / reviews.length;
   }, [reviews]);
 
-  const decreaseQuantity = () => {
-    if (!product) return;
   const averageRating = averageRatingValue
     ? `${averageRatingValue.toFixed(1)} / 5`
     : "No ratings yet";
@@ -98,15 +93,8 @@ function ProductDetails() {
     [reviews]
   );
 
-  if (loading) {
-    return (
-      <div className="details-page">
-        <main className="details-not-found">
-          <h1>Loading product...</h1>
-        </main>
-      </div>
-    );
-  }
+  const decreaseQuantity = () => {
+    if (!product) return;
 
     setQuantity((currentQuantity) =>
       Math.max(product.stock > 0 ? 1 : 0, currentQuantity - 1)
@@ -161,8 +149,6 @@ function ProductDetails() {
         error.response?.data?.message ||
           "Failed to add to cart. Please try again."
       );
-    } catch {
-      alert("Failed to add to cart. Please try again.");
     }
   };
 
@@ -416,10 +402,6 @@ function ProductDetails() {
           <div className="review-list">
             {reviews.length > 0 ? (
               reviews.map((review) => (
-                <article className="review-item" key={review._id}>
-                  <div>
-                    <h3>{review.name}</h3>
-                    <p>{"★".repeat(review.rating)}</p>
                 <article
                   className={`review-item ${review.user === user?._id ? "own-review" : ""}`}
                   key={review._id}

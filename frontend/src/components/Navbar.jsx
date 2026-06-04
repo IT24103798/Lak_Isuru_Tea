@@ -79,16 +79,6 @@ function Navbar() {
   const getNavLinkClass = (section) =>
     activeSection === section ? "nav-link active" : "nav-link";
 
-      return (
-        <nav className="navbar">
-          <div className="nav-left">
-            <Link to="/" className="logo-link">
-              <img
-                src="/images/lak-isuru-logo.png"
-                alt="Lak Isuru Tea Logo"
-                className="nav-logo"
-              />
-            </Link>
   return (
     <nav className="navbar">
       <div className="nav-left">
@@ -99,7 +89,6 @@ function Navbar() {
             className="nav-logo"
           />
         </Link>
-
       </div>
 
       {userInfo?.role !== "admin" && (
@@ -147,7 +136,6 @@ function Navbar() {
             >
               <span className="account-avatar">{avatarLetter}</span>
               <span className="account-name">{displayName}</span>
-              
             </button>
 
             {isAccountMenuOpen && (
@@ -161,87 +149,21 @@ function Navbar() {
                   Profile settings
                 </Link>
 
-          </div>
-
-          {userInfo?.role !== "admin" && (
-            <input
-              type="search"
-              className="navbar-search"
-              value={new URLSearchParams(location.search).get("search") || ""}
-              onChange={handleSearchChange}
-              placeholder="Search products..."
-              aria-label="Search products"
-            />
-          )}
-
-          <div className="nav-links">
-            {userInfo?.role === "admin" ? (
-              <>
-                <Link to="/admin/users">User Management</Link>
-                <Link to="/admin/products">Products</Link>
-                <Link to="/admin/orders">Orders</Link>
-                <Link to="/admin/dashboard">reviews</Link>
-              </>
-            ) : (
-              <>
-                <Link to="/">Home</Link>
-                <Link to="/#products">Products</Link>
-                <Link to="/cart">Cart</Link>
-              </>
-            )}
-
-            {userInfo ? (
-              <div className="account-menu" ref={accountMenuRef}>
-                <button
-                  type="button"
-                  className="account-menu-button"
-                  aria-expanded={isAccountMenuOpen}
-                  aria-label={`Open account menu for ${displayName}`}
-                  onClick={() => setIsAccountMenuOpen((isOpen) => !isOpen)}
-                >
-                  <span className="account-avatar">{avatarLetter}</span>
-                  <span className="account-name">{displayName}</span>
-                  
-                </button>
-
-                {isAccountMenuOpen && (
-                  <div className="account-dropdown">
-                    <div className="account-summary">
-                      <strong>{displayName}</strong>
-                      <span>{userInfo.role || "customer"}</span>
-                    </div>
-
-                    <Link to="/profile" onClick={() => setIsAccountMenuOpen(false)}>
-                      Profile settings
-                    </Link>
-
-                    {userInfo.role !== "admin" && (
-                      <Link
-                        to="/my-orders"
-                        onClick={() => setIsAccountMenuOpen(false)}
-                      >
-                        My orders
-                      </Link>
-                    )}
-
-                    <button type="button" className="logout-btn" onClick={handleLogout}>
-                      Logout
-                    </button>
-                  </div>
+                {userInfo.role !== "admin" && (
+                  <Link
+                    to="/my-orders"
+                    onClick={() => setIsAccountMenuOpen(false)}
+                  >
+                    My orders
+                  </Link>
                 )}
+
+                <button type="button" className="logout-btn" onClick={handleLogout}>
+                  Logout
+                </button>
               </div>
-            ) : (
-              <>
-                <Link to="/my-orders">My Orders</Link>
-                <Link to="/login" className="register-link">
-                  Login
-                </Link>
-              </>
             )}
           </div>
-        </nav>
-      );
-    }
         ) : (
           <>
             <Link to="/login" className="register-link">

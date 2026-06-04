@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import API from "../api/api";
 import { useAuth } from "../context/AuthContext";
+import { validateLogin } from "../utils/validation";
 import "../styles/Auth.css";
 import SocialLoginButtons from "../components/SocialLoginButtons";
 
