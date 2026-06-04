@@ -45,3 +45,9 @@ export const updateProductReview = async (productId, reviewId, review) => {
     body: JSON.stringify(review),
   });
 };
+
+export const deleteProductReview = async (productId, reviewId) => {
+  return apiRequest(`/products/${productId}/reviews/${reviewId}`, {
+    method: "DELETE",
+  });
+};

@@ -46,6 +46,11 @@ const productSchema = new mongoose.Schema(
       trim: true,
       default: "Tea",
     },
+    subcategory: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     price: {
       type: Number,
       required: [true, "Price is required"],
@@ -66,6 +71,10 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: [true, "Description is required"],
       trim: true,
+    },
+    featuredOnHome: {
+      type: Boolean,
+      default: false,
     },
     reviews: [reviewSchema],
   },

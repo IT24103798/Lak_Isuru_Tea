@@ -18,10 +18,10 @@ import MyReturns from "./pages/MyReturns";
 import MyCancellations from "./pages/MyCancellations";
 import Profile from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
-import ResetPasswordOtp from "./pages/ResetPassword";
 import ProductDetails from "./pages/ProductDetails";
 import OrderSuccess from "./pages/OrderSuccess";
 
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminReviews from "./pages/admin/AdminReviews";
@@ -98,6 +98,15 @@ function App() {
           />
 
           <Route path="/products/:id" element={<ProductDetails />} />
+
+          <Route
+            path="/admin/dashboard"
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            }
+          />
 
           <Route
             path="/admin/products"

@@ -76,6 +76,7 @@ const Login = () => {
       if (loggedUser.role === "admin") {
         navigate("/admin/dashboard");
       } else {
+        sessionStorage.setItem("showWelcomeBack", "true");
         navigate("/");
       }
     } catch (error) {

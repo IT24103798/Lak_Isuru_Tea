@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import API from "../api/api";
 import {
   addProductReview,
+  deleteProductReview,
   getProductById,
   getReviewEligibility,
   updateProductReview,
 } from "../services/productService";
-import API from "../api/api";
 import "../styles/ProductDetails.css";
 
 function ProductDetails() {
@@ -31,7 +32,6 @@ function ProductDetails() {
     const loadProduct = async () => {
       try {
         setLoading(true);
-
         const data = await getProductById(id);
 
         setProduct(data.product);
@@ -102,7 +102,9 @@ function ProductDetails() {
   };
 
   const increaseQuantity = () => {
-    if (!product) return;
+    if (!product) {
+      return;
+    }
 
     setQuantity((currentQuantity) =>
       Math.min(product.stock || 0, currentQuantity + 1)
@@ -132,17 +134,16 @@ function ProductDetails() {
     }
 
     try {
-      const res = await API.post("/cart", {
+      await API.post("/cart", {
         productId: product._id,
         name: product.name,
         price: product.price,
-        quantity: quantity,
+        quantity,
         image: product.image,
       });
 
-      setQuantity(1);
-
       setCartMessage(`✓ ${quantity} × ${product.name} added to cart!`);
+      setQuantity(product.stock > 0 ? 1 : 0);
       setTimeout(() => setCartMessage(""), 3000);
     } catch (error) {
       alert(
@@ -191,6 +192,38 @@ function ProductDetails() {
     }
   };
 
+  const handleEditReview = (review) => {
+    setEditingReviewId(review._id);
+    setRating(review.rating);
+    setComment(review.comment);
+    document.querySelector(".reviews-section")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingReviewId(null);
+    setRating(5);
+    setComment("");
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm("Delete your review?")) {
+      return;
+    }
+
+    try {
+      const data = await deleteProductReview(product._id, reviewId);
+
+      setProduct(data.product);
+      setReviewEligibility({ canReview: true, hasPurchased: true, hasReviewed: false });
+
+      if (editingReviewId === reviewId) {
+        handleCancelEdit();
+      }
+    } catch (error) {
+      alert(error.message || "Failed to delete review. Please try again.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="details-page">
@@ -211,18 +244,6 @@ function ProductDetails() {
       </div>
     );
   }
-  const handleEditReview = (review) => {
-    setEditingReviewId(review._id);
-    setRating(review.rating);
-    setComment(review.comment);
-    document.querySelector(".reviews-section")?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const handleCancelEdit = () => {
-    setEditingReviewId(null);
-    setRating(5);
-    setComment("");
-  };
 
   return (
     <div className="details-page">
@@ -244,12 +265,13 @@ function ProductDetails() {
           </div>
 
           <div className="details-info">
-            <p className="details-rating">{averageRating}</p>
-
             <h1>{product.name}</h1>
-
-            <p className="details-price">Rs. {product.price}</p>
-
+            <p className="details-price">
+              <span className="price-currency">Rs.</span>
+              <span className="price-amount">
+                {product.price}
+              </span>
+            </p>
             <p className="details-description">{product.description}</p>
 
             <div className="purchase-panel">
@@ -264,9 +286,7 @@ function ProductDetails() {
                   >
                     -
                   </button>
-
                   <span>{quantity}</span>
-
                   <button
                     type="button"
                     onClick={increaseQuantity}
@@ -282,7 +302,7 @@ function ProductDetails() {
                   onClick={handleAddToCart}
                   disabled={product.stock <= 0}
                 >
-                  {product.stock > 0 ? "Add To Cart" : "Out of Stock"}
+                  {product.stock > 0 ? "Add To Cart" : "Out Of Stock"}
                 </button>
               </div>
 
@@ -410,8 +430,14 @@ function ProductDetails() {
                     <div className="review-customer">
                       <span className="review-avatar">{review.name.charAt(0).toUpperCase()}</span>
                       <div>
-                        <h3>{review.name}</h3>
-                        {review.verifiedPurchase && <small>Verified purchase</small>}
+                        <h3 className="review-name-line">
+                          <span>{review.name}</span>
+                          {review.verifiedPurchase && (
+                            <small className="verified-purchase">
+                              Verified purchase
+                            </small>
+                          )}
+                        </h3>
                       </div>
                     </div>
                     <p className="review-stars" aria-label={`${review.rating} out of 5 stars`}>
@@ -421,13 +447,22 @@ function ProductDetails() {
                   </div>
                   <p className="review-comment">{review.comment}</p>
                   {review.user === user?._id && (
-                    <button
-                      type="button"
-                      className="edit-review-button"
-                      onClick={() => handleEditReview(review)}
-                    >
-                      Edit review
-                    </button>
+                    <div className="review-actions">
+                      <button
+                        type="button"
+                        className="edit-review-button"
+                        onClick={() => handleEditReview(review)}
+                      >
+                        Edit review
+                      </button>
+                      <button
+                        type="button"
+                        className="delete-review-button"
+                        onClick={() => handleDeleteReview(review._id)}
+                      >
+                        Delete review
+                      </button>
+                    </div>
                   )}
                 </article>
               ))

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { productCatalog } from "../data/productCatalog";
 import "../styles/Navbar.css";
 
 function Navbar() {
@@ -8,9 +9,12 @@ function Navbar() {
   const location = useLocation();
   const { userInfo, logout } = useAuth();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
+  const [activeProductCategory, setActiveProductCategory] = useState(null);
   const [activeSection, setActiveSection] = useState("home");
   const accountMenuRef = useRef(null);
-  
+  const productMenuRef = useRef(null);
+
   const handleSearchChange = (event) => {
     const searchTerm = event.target.value;
     const searchQuery = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : "";
@@ -21,28 +25,49 @@ function Navbar() {
   const handleLogout = () => {
     logout();
     setIsAccountMenuOpen(false);
+    setIsProductMenuOpen(false);
     navigate("/login");
   };
 
-      useEffect(() => {
-        const closeAccountMenu = (event) => {
-          if (
-            event.key === "Escape" ||
-            (accountMenuRef.current &&
-              !accountMenuRef.current.contains(event.target))
-          ) {
-            setIsAccountMenuOpen(false);
-          }
-        };
+  const handleProductFilter = (category, subcategory = "") => {
+    const queryParams = new URLSearchParams();
+    queryParams.set("category", category);
 
-        document.addEventListener("mousedown", closeAccountMenu);
-        document.addEventListener("keydown", closeAccountMenu);
+    if (subcategory) {
+      queryParams.set("subcategory", subcategory);
+    }
 
-        return () => {
-          document.removeEventListener("mousedown", closeAccountMenu);
-          document.removeEventListener("keydown", closeAccountMenu);
-        };
-      }, []);
+    setIsProductMenuOpen(false);
+    setActiveProductCategory(null);
+    navigate(`/?${queryParams.toString()}#products`);
+  };
+
+  useEffect(() => {
+    const closeMenus = (event) => {
+      if (
+        event.key === "Escape" ||
+        (accountMenuRef.current && !accountMenuRef.current.contains(event.target))
+      ) {
+        setIsAccountMenuOpen(false);
+      }
+
+      if (
+        event.key === "Escape" ||
+        (productMenuRef.current && !productMenuRef.current.contains(event.target))
+      ) {
+        setIsProductMenuOpen(false);
+        setActiveProductCategory(null);
+      }
+    };
+
+    document.addEventListener("mousedown", closeMenus);
+    document.addEventListener("keydown", closeMenus);
+
+    return () => {
+      document.removeEventListener("mousedown", closeMenus);
+      document.removeEventListener("keydown", closeMenus);
+    };
+  }, []);
 
   useEffect(() => {
     const updateActiveSection = () => {
@@ -51,7 +76,29 @@ function Navbar() {
         return;
       }
 
-      const sectionIds = ["products", "about", "contact"];
+      const queryParams = new URLSearchParams(location.search);
+
+      if (
+        location.hash === "#products" ||
+        queryParams.has("category") ||
+        queryParams.has("subcategory") ||
+        queryParams.has("search")
+      ) {
+        setActiveSection("products");
+        return;
+      }
+
+      if (location.hash === "#about") {
+        setActiveSection("about");
+        return;
+      }
+
+      if (location.hash === "#contact") {
+        setActiveSection("contact");
+        return;
+      }
+
+      const sectionIds = ["about", "contact"];
       const currentSection = sectionIds.reduce((current, sectionId) => {
         const section = document.getElementById(sectionId);
         const activationLine = window.innerHeight * 0.45;
@@ -72,7 +119,7 @@ function Navbar() {
       window.removeEventListener("scroll", updateActiveSection);
       window.removeEventListener("resize", updateActiveSection);
     };
-  }, [location.pathname, location.hash]);
+  }, [location.pathname, location.hash, location.search]);
 
   const displayName = userInfo?.name || (userInfo?.role === "admin" ? "Admin" : "Customer");
   const avatarLetter = displayName.charAt(0).toUpperCase();
@@ -105,10 +152,11 @@ function Navbar() {
       <div className="nav-links">
         {userInfo?.role === "admin" ? (
           <>
+            <Link to="/admin/dashboard" className={getNavLinkClass("admin/dashboard")}>Dashboard</Link>
             <Link to="/admin/users" className={getNavLinkClass("admin/users")}>User Management</Link>
             <Link to="/admin/products" className={getNavLinkClass("admin/products")}>Products</Link>
-            <Link to="/admin/dashboard" className={getNavLinkClass("admin/dashboard")}>Orders</Link>
-            <Link to="/admin/reviews" className={getNavLinkClass("admin/reviews")}>Reviews</Link>
+            <Link to="/admin/orders" className={getNavLinkClass("admin/orders")}> Orders</Link>
+            <Link to="/admin/reviews" className={getNavLinkClass("admin/reviews")}> Reviews</Link>
           </>
         ) : !userInfo ? (
           <>
@@ -120,8 +168,68 @@ function Navbar() {
         ) : (
           <>
             <Link to="/" className={getNavLinkClass("home")}>Home</Link>
-            <Link to="/#products" className={getNavLinkClass("products")}>Products</Link>
-            <Link to="/cart" className={getNavLinkClass("cart")}>Cart</Link>
+            <div className="products-menu" ref={productMenuRef}>
+              <button
+                type="button"
+                className={getNavLinkClass("products")}
+                aria-expanded={isProductMenuOpen}
+                onClick={() => {
+                  setActiveProductCategory(null);
+                  setIsProductMenuOpen((isOpen) => !isOpen);
+                }}
+              >
+                Products
+              </button>
+
+              {isProductMenuOpen && (
+                <div
+                  className="products-mega-menu"
+                  onMouseLeave={() => setActiveProductCategory(null)}
+                >
+                  <div className="products-menu-categories">
+                    {productCatalog.map((group) => (
+                      <div
+                        className={
+                          activeProductCategory?.category === group.category
+                            ? "products-menu-group active"
+                            : "products-menu-group"
+                        }
+                        key={group.category}
+                        onMouseEnter={() => setActiveProductCategory(group)}
+                        onFocus={() => setActiveProductCategory(group)}
+                      >
+                        <button
+                          type="button"
+                          className="products-menu-category"
+                          onClick={() => handleProductFilter(group.category)}
+                        >
+                          {group.category}
+                        </button>
+
+                        {activeProductCategory?.category === group.category && (
+                          <div className="products-submenu-panel">
+                            {group.subcategories.map((subcategory) => (
+                              <button
+                                type="button"
+                                key={subcategory}
+                                onClick={() =>
+                                  handleProductFilter(group.category, subcategory)
+                                }
+                              >
+                                {subcategory}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <Link to="/cart" className={getNavLinkClass("cart")}>
+              Cart
+            </Link>
           </>
         )}
 
