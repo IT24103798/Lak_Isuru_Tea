@@ -62,31 +62,43 @@ const Sidebar = () => {
     <aside className="orders-sidebar-pro">
       <div className="sidebar-profile-card">
         <div className="sidebar-avatar">{avatarLetter}</div>
-
         <h3>{userName}</h3>
         <p>{userEmail}</p>
       </div>
 
       <div className="sidebar-menu-group">
-        <span>Manage Account</span>
+        <span>PROFILE SETTINGS</span>
 
         <button
           type="button"
-          className={isActive("/profile") ? "active" : ""}
-          onClick={() => navigate("/profile")}
+          className={isActive("/profile-settings") ? "active" : ""}
+          onClick={() => navigate("/profile-settings")}
         >
           <i className="ti ti-user"></i>
           My Profile
         </button>
 
-        <button type="button">
+        <button
+          type="button"
+          className="disabled-sidebar-link"
+          disabled
+        >
+          <i className="ti ti-books"></i>
+          Address Book
+        </button>
+
+        <button
+          type="button"
+          className="disabled-sidebar-link"
+          disabled
+        >
           <i className="ti ti-credit-card"></i>
           Payment Options
         </button>
       </div>
 
       <div className="sidebar-menu-group">
-        <span>Orders</span>
+        <span> MY ORDERS</span>
 
         <button
           type="button"
