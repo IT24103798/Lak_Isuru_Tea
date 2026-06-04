@@ -20,6 +20,47 @@ export const chatWithBot = async (req, res) => {
     const sentimentData = analyzeSentiment(message);
     const intent = detectIntent(message);
 
+      // If user asks for physical location / address, respond with preset address info
+
+    if (intent === "location") {
+      const locationResponse = `🏢 Lak Isuru Tea - Showroom & Head Office
+
+📍 Address:
+393/16, School Road,
+Thanthirimulla, Panadura
+
+🕒 Opening Hours:
+Mon–Sat 08:00 - 18:00
+
+📞 Phone:
+0778646780
+0776356412
+
+📧 Email:
+luckisuru@gmail.com
+
+🌐 You can also order online via our website.`;
+            
+      await ChatbotLog.create({
+        userId,
+        sessionId: sessionId || "guest-session",
+        userMessage: message,
+        botResponse: locationResponse,
+        sentiment: sentimentData.sentiment,
+        sentimentScore: sentimentData.score,
+        intent,
+      });
+
+      return res.status(200).json({
+        success: true,
+        response: locationResponse,
+        sentiment: sentimentData.sentiment,
+        sentimentScore: sentimentData.score,
+        intent,
+        isComplaint: false,
+      });
+    }
+
     const products = await Product.find({ isActive: true }).limit(20);
 
     const productContext = products

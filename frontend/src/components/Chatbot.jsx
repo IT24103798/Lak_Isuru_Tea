@@ -22,6 +22,56 @@ function Chatbot() {
     "Recommend a strong tea",
   ];
 
+  const renderMessageText = (text) => {
+    const emailPattern = /([\w.+-]+@[\w.-]+\.[A-Za-z]{2,})/g;
+    const phonePattern = /(\+?\d[\d\s-]{7,}\d)/g;
+
+    const linkifyLine = (line) => {
+      const parts = [];
+      let lastIndex = 0;
+      const pattern = new RegExp(`${emailPattern.source}|${phonePattern.source}`, "g");
+
+      line.replace(pattern, (match, email, phone, offset) => {
+        if (offset > lastIndex) {
+          parts.push(line.slice(lastIndex, offset));
+        }
+
+        if (email) {
+          parts.push(
+            <a key={`${offset}-email`} href={`mailto:${match}`} className="chatbot-link">
+              {match}
+            </a>
+          );
+        } else if (phone) {
+          const telValue = match.replace(/[^\d+]/g, "");
+          parts.push(
+            <a key={`${offset}-phone`} href={`tel:${telValue}`} className="chatbot-link">
+              {match}
+            </a>
+          );
+        } else {
+          parts.push(match);
+        }
+
+        lastIndex = offset + match.length;
+        return match;
+      });
+
+      if (lastIndex < line.length) {
+        parts.push(line.slice(lastIndex));
+      }
+
+      return parts;
+    };
+
+    return text.split("\n").map((line, lineIndex) => (
+      <React.Fragment key={`${lineIndex}-${line}`}>
+        {linkifyLine(line)}
+        {lineIndex < text.split("\n").length - 1 ? <br /> : null}
+      </React.Fragment>
+    ));
+  };
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
@@ -118,7 +168,7 @@ function Chatbot() {
           <div className="chatbot-messages">
             {messages.map((msg, index) => (
               <div key={index} className={`chatbot-message ${msg.sender}`}>
-                {msg.text}
+                {renderMessageText(msg.text)}
               </div>
             ))}
 
