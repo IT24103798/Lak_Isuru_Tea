@@ -112,6 +112,8 @@ export const getUserProfile = async (req, res) => {
 // PUT /api/users/profile
 export const updateUserProfile = async (req, res) => {
   try {
+    const { name } = req.body;
+
     const user = await User.findById(req.user._id);
 
     if (!user) {
@@ -120,18 +122,25 @@ export const updateUserProfile = async (req, res) => {
       });
     }
 
-    user.name = req.body.name || user.name;
-    user.phone = req.body.phone || user.phone;
-
-    if (req.body.password) {
-      if (req.body.password.length < 8) {
-        return res.status(400).json({
-          message: "Password must be at least 8 characters",
-        });
-      }
-
-      user.password = req.body.password;
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        message: "Name is required",
+      });
     }
+
+    if (name.trim().length < 3) {
+      return res.status(400).json({
+        message: "Name must be at least 3 characters",
+      });
+    }
+
+    if (!/^[A-Za-z\s]+$/.test(name)) {
+      return res.status(400).json({
+        message: "Name can contain only letters",
+      });
+    }
+
+    user.name = name.trim();
 
     const updatedUser = await user.save();
 
@@ -143,6 +152,7 @@ export const updateUserProfile = async (req, res) => {
         email: updatedUser.email,
         phone: updatedUser.phone,
         role: updatedUser.role,
+        provider: updatedUser.provider,
       },
       token: generateToken(updatedUser._id),
     });

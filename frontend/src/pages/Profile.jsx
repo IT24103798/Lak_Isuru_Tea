@@ -2,163 +2,222 @@ import { useEffect, useState } from "react";
 import API from "../api/api";
 import { useAuth } from "../context/AuthContext";
 import "../styles/Profile.css";
-import { Link } from "react-router-dom";
-import { validateProfile } from "../utils/validation"; 
 
 const Profile = () => {
-  const { userInfo, login } = useAuth();
+  const { userInfo } = useAuth();
 
-  const [formData, setFormData] = useState({
+  const [profile, setProfile] = useState({
     name: "",
     email: "",
     phone: "",
-    password: "",
-    confirmPassword: "",
+    address: "",
   });
 
-  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
-    if (userInfo) {
-      setFormData({
-        name: userInfo.name || "",
-        email: userInfo.email || "",
-        phone: userInfo.phone || "",
-        password: "",
-        confirmPassword: "",
-      });
-    }
+    const loadProfile = async () => {
+      try {
+        const { data } = await API.get("/users/profile");
+
+        setProfile({
+          name: data.name || userInfo?.name || "",
+          email: data.email || userInfo?.email || "",
+          phone: data.phone || "",
+          address: data.address || "",
+        });
+
+        setError("");
+      } catch (err) {
+        setError("Failed to load profile. Please login again.");
+
+        setProfile({
+          name: userInfo?.name || "",
+          email: userInfo?.email || "",
+          phone: "",
+          address: "",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfile();
   }, [userInfo]);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
+    setProfile({
+      ...profile,
       [e.target.name]: e.target.value,
     });
   };
 
-  const handleUpdateProfile = async (e) => {
+  const handleUpdate = async (e) => {
     e.preventDefault();
 
-    setMessage("");
-    setError("");
-
-    if (!formData.name || !formData.phone) {
-      setError("Name and phone are required.");
-      return;
-    }
-
-    if (formData.password) {
-      if (formData.password.length < 8) {
-        setError("Password must be at least 8 characters.");
-        return;
-      }
-
-      if (formData.password !== formData.confirmPassword) {
-        setError("Passwords do not match.");
-        return;
-      }
-    }
-
     try {
-      setLoading(true);
+      setError("");
+      setSuccess("");
 
-      const updateData = {
-        name: formData.name,
-        phone: formData.phone,
-      };
+      const { data } = await API.put("/users/profile", profile);
 
-      if (formData.password) {
-        updateData.password = formData.password;
-      }
-
-      const { data } = await API.put("/users/profile", updateData);
-
-      login({
-        ...data.user,
-        token: data.token,
+      setProfile({
+        name: data.name || profile.name,
+        email: data.email || profile.email,
+        phone: data.phone || profile.phone,
+        address: data.address || profile.address,
       });
 
-      setMessage("Profile updated successfully.");
-      setFormData({
-        ...formData,
-        password: "",
-        confirmPassword: "",
-      });
-    } catch (error) {
-      setError(error.response?.data?.message || "Profile update failed.");
-    } finally {
-      setLoading(false);
+      setSuccess("Profile updated successfully.");
+      setEditMode(false);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update profile.");
     }
   };
 
+  if (loading) {
+    return (
+      <div className="profile-page">
+        <p className="loading-text">Loading profile...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="profile-page">
+      <h1 className="profile-title">My Profile</h1>
+
+      {error && <p className="error-text">{error}</p>}
+      {success && <p className="success-text">{success}</p>}
+
       <div className="profile-card">
-        <h2>My Profile</h2>
-        <p>Manage your Luck Isru Tea account details.</p>
+        <div className="profile-header">
+          <div className="profile-avatar">
+            {profile.name ? profile.name.charAt(0).toUpperCase() : "U"}
+          </div>
 
-        {message && <div className="profile-success">{message}</div>}
-        {error && <div className="profile-error">{error}</div>}
+          <div className="profile-info">
+            <h2>{profile.name || "User"}</h2>
+            <p>{profile.email}</p>
+          </div>
 
-        <form onSubmit={handleUpdateProfile}>
-          <label>Full Name</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-          />
-
-          <label>Email Address</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            disabled
-          />
-
-          <label>Phone Number</label>
-          <input
-            type="text"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-          />
-
-          <label>New Password</label>
-          <input
-            type="password"
-            name="password"
-            placeholder="Leave empty if you do not want to change"
-            value={formData.password}
-            onChange={handleChange}
-          />
-
-          <label>Confirm New Password</label>
-          <input
-            type="password"
-            name="confirmPassword"
-            placeholder="Confirm new password"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-          />
-
-          <button type="submit" disabled={loading}>
-            {loading ? "Updating..." : "Update Profile"}
+          <button
+            type="button"
+            className="profile-edit-btn"
+            onClick={() => setEditMode(!editMode)}
+          >
+            {editMode ? "Cancel" : "Edit Profile"}
           </button>
-        </form>
-        <div className="profile-actions">
-  <Link to="/change-password" className="profile-link-btn">
-    Change Password
-  </Link>
-</div>
-
-        <div className="role-box">
-          Account type: <strong>{userInfo?.role}</strong>
         </div>
+
+        {!editMode ? (
+          <div className="profile-details">
+            <div className="profile-detail-row">
+              <div className="profile-detail-icon">
+                <i className="ti ti-user"></i>
+              </div>
+              <div>
+                <p className="profile-label">Full Name</p>
+                <p className="profile-value">{profile.name || "Not added"}</p>
+              </div>
+            </div>
+
+            <div className="profile-detail-row">
+              <div className="profile-detail-icon">
+                <i className="ti ti-mail"></i>
+              </div>
+              <div>
+                <p className="profile-label">Email Address</p>
+                <p className="profile-value">{profile.email || "Not added"}</p>
+              </div>
+            </div>
+
+            <div className="profile-detail-row">
+              <div className="profile-detail-icon">
+                <i className="ti ti-phone"></i>
+              </div>
+              <div>
+                <p className="profile-label">Phone Number</p>
+                <p className="profile-value">{profile.phone || "Not added"}</p>
+              </div>
+            </div>
+
+            <div className="profile-detail-row">
+              <div className="profile-detail-icon">
+                <i className="ti ti-map-pin"></i>
+              </div>
+              <div>
+                <p className="profile-label">Address</p>
+                <p className="profile-value">{profile.address || "Not added"}</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <form className="profile-form" onSubmit={handleUpdate}>
+            <div className="profile-form-group">
+              <label>Full Name</label>
+              <input
+                type="text"
+                name="name"
+                value={profile.name}
+                onChange={handleChange}
+                placeholder="Enter your full name"
+                required
+              />
+            </div>
+
+            <div className="profile-form-group">
+              <label>Email Address</label>
+              <input
+                type="email"
+                name="email"
+                value={profile.email}
+                onChange={handleChange}
+                placeholder="Enter your email"
+                required
+              />
+            </div>
+
+            <div className="profile-form-group">
+              <label>Phone Number</label>
+              <input
+                type="text"
+                name="phone"
+                value={profile.phone}
+                onChange={handleChange}
+                placeholder="Enter your phone number"
+              />
+            </div>
+
+            <div className="profile-form-group">
+              <label>Address</label>
+              <textarea
+                name="address"
+                value={profile.address}
+                onChange={handleChange}
+                placeholder="Enter your address"
+                rows="4"
+              ></textarea>
+            </div>
+
+            <div className="profile-actions">
+              <button type="submit" className="profile-save-btn">
+                Save Changes
+              </button>
+
+              <button
+                type="button"
+                className="profile-cancel-btn"
+                onClick={() => setEditMode(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
