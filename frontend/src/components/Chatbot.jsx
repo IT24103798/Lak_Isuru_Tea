@@ -1,6 +1,76 @@
 import React, { useState, useRef, useEffect } from "react";
 import "../styles/Chatbot.css";
 import api from "../api/api";
+import { clarificationAnswer, fallbackAnswer, teaFaqData } from "../data/teaFaqData";
+
+const faqEntries = teaFaqData.flatMap((section) => section.questions);
+
+const normalizeText = (text) =>
+  text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const findFaqAnswer = (message) => {
+  const normalizedMessage = normalizeText(message);
+
+  if (!normalizedMessage) {
+    return null;
+  }
+
+  const exactMatch = faqEntries.find(
+    (entry) => normalizeText(entry.question) === normalizedMessage
+  );
+
+  if (exactMatch) {
+    return exactMatch.answer;
+  }
+
+  const partialMatch = faqEntries.find((entry) => {
+    const normalizedQuestion = normalizeText(entry.question);
+    return (
+      normalizedMessage.includes(normalizedQuestion) ||
+      normalizedQuestion.includes(normalizedMessage)
+    );
+  });
+
+  if (partialMatch) {
+    return partialMatch.answer;
+  }
+
+  const keywordMatch = faqEntries.find((entry) => {
+    const normalizedQuestion = normalizeText(entry.question);
+    const keywords = normalizedQuestion.split(" ").filter(Boolean);
+    const hits = keywords.filter((keyword) => normalizedMessage.includes(keyword));
+    return keywords.length >= 3 && hits.length >= Math.min(3, keywords.length);
+  });
+
+  return keywordMatch ? keywordMatch.answer : null;
+};
+
+const isLikelyGibberish = (message) => {
+  const normalizedMessage = normalizeText(message);
+
+  if (!normalizedMessage) {
+    return true;
+  }
+
+  const words = normalizedMessage.split(" ").filter(Boolean);
+
+  if (/^(.)\1+$/.test(normalizedMessage) && normalizedMessage.length <= 4) {
+    return true;
+  }
+
+  if (words.length <= 2 && normalizedMessage.length <= 6) {
+    return true;
+  }
+
+  const meaningfulWords = words.filter((word) => word.length >= 3);
+  const shortWordRatio = words.length ? (words.length - meaningfulWords.length) / words.length : 0;
+
+  return meaningfulWords.length === 0 || shortWordRatio > 0.7;
+};
 
 function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,6 +86,8 @@ function Chatbot() {
   const messagesEndRef = useRef(null);
 
   const quickQuestions = [
+    "What are your best sellers?",
+    "Do you have any discounts?",   
     "Best tea for a gift",
     "How to place an order?",
     "Delivery information",
@@ -101,6 +173,32 @@ function Chatbot() {
     setMessage("");
     setLoading(true);
 
+    const faqAnswer = findFaqAnswer(userMessage);
+
+    if (faqAnswer) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text: faqAnswer,
+        },
+      ]);
+      setLoading(false);
+      return;
+    }
+
+    if (isLikelyGibberish(userMessage)) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text: clarificationAnswer,
+        },
+      ]);
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await api.post("/chatbot/chat", {
         message: userMessage,
@@ -110,7 +208,7 @@ function Chatbot() {
       const botReply =
         response.data.response ||
         response.data.answer ||
-        "Sorry, I could not understand that.";
+        fallbackAnswer;
 
       const botMessage = {
         sender: "bot",
