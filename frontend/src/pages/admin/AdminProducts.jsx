@@ -5,15 +5,26 @@ import {
   getAllProducts,
   updateProduct,
 } from "../../services/productService";
+import { productCatalog } from "../../data/productCatalog";
 import "../../styles/AdminProducts.css";
 
 const emptyForm = {
   name: "",
-  category: "Tea",
+  category: productCatalog[0].category,
+  subcategory: productCatalog[0].subcategories[0],
   price: "",
   stock: "",
   image: "",
   description: "",
+  featuredOnHome: false,
+};
+
+const findCatalogGroup = (category) => {
+  const normalizedCategory = String(category || "").trim().toLowerCase();
+
+  return productCatalog.find(
+    (group) => group.category.trim().toLowerCase() === normalizedCategory
+  );
 };
 
 const AdminProducts = () => {
@@ -24,6 +35,7 @@ const AdminProducts = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const selectedCategoryGroup = findCatalogGroup(formData.category) || productCatalog[0];
 
   const loadProducts = async () => {
     try {
@@ -39,14 +51,24 @@ const AdminProducts = () => {
   };
 
   useEffect(() => {
-    loadProducts();
+    const timerId = setTimeout(loadProducts, 0);
+
+    return () => {
+      clearTimeout(timerId);
+    };
   }, []);
 
   const handleChange = (event) => {
-    const { name, value } = event.target;
+    const { checked, name, type, value } = event.target;
     setFormData((current) => ({
       ...current,
-      [name]: value,
+      [name]: type === "checkbox" ? checked : value,
+      ...(name === "category"
+        ? {
+            subcategory:
+              findCatalogGroup(value)?.subcategories[0] || "",
+          }
+        : {}),
     }));
   };
 
@@ -87,14 +109,21 @@ const AdminProducts = () => {
   };
 
   const handleEdit = (product) => {
+    const catalogGroup = findCatalogGroup(product.category) || productCatalog[0];
+    const savedSubcategory = product.subcategory || "";
+
     setEditingProductId(product._id);
     setFormData({
       name: product.name || "",
-      category: product.category || "Tea",
+      category: catalogGroup.category,
+      subcategory: catalogGroup.subcategories.includes(savedSubcategory)
+        ? savedSubcategory
+        : "",
       price: product.price ?? "",
       stock: product.stock ?? "",
       image: product.image || "",
       description: product.description || "",
+      featuredOnHome: Boolean(product.featuredOnHome),
     });
     setMessage("");
     setError("");
@@ -121,6 +150,12 @@ const AdminProducts = () => {
     }
   };
 
+  const topSellingProducts = products
+    .filter((product) => product.isTopSelling)
+    .sort((firstProduct, secondProduct) => {
+      return (secondProduct.soldQuantity || 0) - (firstProduct.soldQuantity || 0);
+    });
+
   return (
     <div className="admin-products-page">
       <div className="admin-products-header">
@@ -132,6 +167,40 @@ const AdminProducts = () => {
 
       {message && <div className="admin-success">{message}</div>}
       {error && <div className="admin-error">{error}</div>}
+
+      <section className="admin-top-selling-card">
+        <div className="admin-section-heading">
+          <div>
+            <h2>Top Selling Products</h2>
+            <p>Calculated automatically from non-cancelled and non-returned orders.</p>
+          </div>
+        </div>
+
+        {loading ? (
+          <p className="admin-muted-text">Loading sales data...</p>
+        ) : topSellingProducts.length === 0 ? (
+          <p className="admin-muted-text">No sales data available yet.</p>
+        ) : (
+          <div className="top-selling-admin-grid">
+            {topSellingProducts.map((product, index) => (
+              <article className="top-selling-admin-item" key={product._id}>
+                <span className="top-selling-rank">#{index + 1}</span>
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  onError={(event) => {
+                    event.currentTarget.src = "/images/lak-isuru-logo.png";
+                  }}
+                />
+                <div>
+                  <h3>{product.name}</h3>
+                  <p>{product.soldQuantity || 0} sold</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="admin-product-form-card">
         <h2>{editingProductId ? "Update Product" : "Add New Product"}</h2>
@@ -151,14 +220,34 @@ const AdminProducts = () => {
 
           <label>
             Category
-            <input
-              type="text"
+            <select
               name="category"
               value={formData.category}
               onChange={handleChange}
-              placeholder="Tea"
               required
-            />
+            >
+              {productCatalog.map((group) => (
+                <option value={group.category} key={group.category}>
+                  {group.category}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Subcategory
+            <select
+              name="subcategory"
+              value={formData.subcategory}
+              onChange={handleChange}
+            >
+              <option value="">No subcategory</option>
+              {selectedCategoryGroup.subcategories.map((subcategory) => (
+                <option value={subcategory} key={subcategory}>
+                  {subcategory}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label>
@@ -211,6 +300,16 @@ const AdminProducts = () => {
             />
           </label>
 
+          <label className="admin-checkbox full-width">
+            <input
+              type="checkbox"
+              name="featuredOnHome"
+              checked={formData.featuredOnHome}
+              onChange={handleChange}
+            />
+            Show on public home page
+          </label>
+
           <div className="form-actions full-width">
             <button type="submit" disabled={saving}>
               {saving ? "Saving..." : editingProductId ? "Update Product" : "Add Product"}
@@ -240,8 +339,10 @@ const AdminProducts = () => {
                   <th>Image</th>
                   <th>Name</th>
                   <th>Category</th>
+                  <th>Subcategory</th>
                   <th>Price</th>
                   <th>Stock</th>
+                  <th>Public Home</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -262,8 +363,14 @@ const AdminProducts = () => {
                       <span>{product.description}</span>
                     </td>
                     <td>{product.category}</td>
+                    <td>{product.subcategory || "-"}</td>
                     <td>Rs. {product.price}</td>
                     <td>{product.stock}</td>
+                    <td>
+                      {product.isTopSelling && <span className="product-flag">Top selling</span>}
+                      {product.featuredOnHome && <span className="product-flag">Shown by admin</span>}
+                      {!product.isTopSelling && !product.featuredOnHome && "No"}
+                    </td>
                     <td>
                       <div className="table-actions">
                         <button type="button" onClick={() => handleEdit(product)}>

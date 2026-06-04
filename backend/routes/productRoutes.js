@@ -3,6 +3,7 @@ import {
   addProductReview,
   createProduct,
   deleteProduct,
+  deleteProductReview,
   getProductById,
   getProducts,
   getReviewEligibility,
@@ -18,5 +19,6 @@ router.route("/:id").get(getProductById).put(protect, admin, updateProduct).dele
 router.get("/:id/review-eligibility", protect, getReviewEligibility);
 router.post("/:id/reviews", protect, addProductReview);
 router.put("/:id/reviews/:reviewId", protect, updateProductReview);
+router.delete("/:id/reviews/:reviewId", protect, deleteProductReview);
 
 export default router;

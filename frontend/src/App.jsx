@@ -25,6 +25,7 @@ import MyCancellations from "./pages/MyCancellations";
 import Profile from "./pages/Profile";
 
 import AdminLayout from "./layouts/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminReviews from "./pages/admin/AdminReviews";
@@ -94,7 +95,6 @@ function App() {
       ) : (
         <main className="main-content" style={{ width: "100%" }}>
           <Routes>
-            {/* Public pages */}
             <Route path="/" element={<Home />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
@@ -102,7 +102,6 @@ function App() {
             <Route path="/reset-password" element={<ResetPasswordOtp />} />
             <Route path="/products/:id" element={<ProductDetails />} />
 
-            {/* Customer protected pages without sidebar */}
             <Route
               path="/cart"
               element={
@@ -139,7 +138,6 @@ function App() {
               }
             />
 
-            {/* Admin pages */}
             <Route
               path="/admin"
               element={
@@ -149,7 +147,7 @@ function App() {
               }
             >
               <Route index element={<AdminOrders />} />
-              <Route path="dashboard" element={<AdminOrders />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="profile" element={<Profile />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="users" element={<AdminUsers />} />

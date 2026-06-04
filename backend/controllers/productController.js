@@ -1,6 +1,8 @@
 import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 
+const TOP_SELLING_LIMIT = 4;
+
 const validateProductBody = ({ name, category, price, stock, image, description }) => {
   if (!name || !category || price === undefined || stock === undefined || !image || !description) {
     return "Please fill all product fields";
@@ -19,9 +21,31 @@ const validateProductBody = ({ name, category, price, stock, image, description 
 
 export const getProducts = async (req, res) => {
   try {
-    const products = await Product.find({}).sort({ createdAt: -1 });
+    const products = await Product.find({}).sort({ createdAt: -1 }).lean();
+    const salesTotals = await Order.aggregate([
+      { $match: { status: { $nin: ["cancelled", "returned"] } } },
+      { $unwind: "$items" },
+      {
+        $group: {
+          _id: "$items.product",
+          soldQuantity: { $sum: "$items.quantity" },
+        },
+      },
+      { $sort: { soldQuantity: -1 } },
+    ]);
+    const topSellingIds = new Set(
+      salesTotals.slice(0, TOP_SELLING_LIMIT).map((item) => item._id?.toString())
+    );
+    const salesByProductId = new Map(
+      salesTotals.map((item) => [item._id?.toString(), item.soldQuantity])
+    );
+    const productsWithSales = products.map((product) => ({
+      ...product,
+      soldQuantity: salesByProductId.get(product._id.toString()) || 0,
+      isTopSelling: topSellingIds.has(product._id.toString()),
+    }));
 
-    res.status(200).json({ products });
+    res.status(200).json({ products: productsWithSales });
   } catch (error) {
     res.status(500).json({
       message: "Server error while loading products",
@@ -58,10 +82,12 @@ export const createProduct = async (req, res) => {
     const product = await Product.create({
       name: req.body.name,
       category: req.body.category,
+      subcategory: req.body.subcategory || "",
       price: Number(req.body.price),
       stock: Number(req.body.stock),
       image: req.body.image,
       description: req.body.description,
+      featuredOnHome: Boolean(req.body.featuredOnHome),
     });
 
     res.status(201).json({
@@ -92,10 +118,12 @@ export const updateProduct = async (req, res) => {
 
     product.name = req.body.name;
     product.category = req.body.category;
+    product.subcategory = req.body.subcategory || "";
     product.price = Number(req.body.price);
     product.stock = Number(req.body.stock);
     product.image = req.body.image;
     product.description = req.body.description;
+    product.featuredOnHome = Boolean(req.body.featuredOnHome);
 
     const updatedProduct = await product.save();
 
@@ -232,6 +260,40 @@ export const updateProductReview = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Server error while updating review",
+      error: error.message,
+    });
+  }
+};
+
+export const deleteProductReview = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const review = product.reviews.id(req.params.reviewId);
+
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
+    }
+
+    if (!review.user || review.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "You can only delete your own review" });
+    }
+
+    review.deleteOne();
+
+    const updatedProduct = await product.save();
+
+    res.status(200).json({
+      message: "Review deleted successfully",
+      product: updatedProduct,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error while deleting review",
       error: error.message,
     });
   }

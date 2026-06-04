@@ -10,18 +10,39 @@ const heroSlides = [
     title: "Fresh Tea From Fresh Name",
     text: "Welcome to Lak Isuru Tea. Discover premium quality tea products with natural freshness, rich aroma, and authentic Sri Lankan taste.",
     image: "/images/hero-tea-plantation.png",
+    position: "center",
   },
   {
     title: "Start Your Day With Rich Flavor",
     text: "Enjoy carefully selected tea blends made for refreshing mornings, relaxing evenings, and every cup in between.",
     image: "/images/hero-tea-cup.png",
+    position: "right center",
   },
   {
     title: "Pure Taste In Every Cup",
     text: "Choose from fresh green, black, yellow, and breakfast teas with trusted quality and smooth Sri Lankan character.",
     image: "/images/hero-tea-leaves.png",
+    position: "right center",
   },
 ];
+
+const sortTopSellingFirst = (productList) => {
+  return [...productList].sort((firstProduct, secondProduct) => {
+    if (firstProduct.isTopSelling && !secondProduct.isTopSelling) {
+      return -1;
+    }
+
+    if (!firstProduct.isTopSelling && secondProduct.isTopSelling) {
+      return 1;
+    }
+
+    if (firstProduct.isTopSelling && secondProduct.isTopSelling) {
+      return (secondProduct.soldQuantity || 0) - (firstProduct.soldQuantity || 0);
+    }
+
+    return 0;
+  });
+};
 
 function Home() {
   const { userInfo } = useAuth();
@@ -31,6 +52,7 @@ function Home() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
 
   const loadProducts = async () => {
     try {
@@ -40,7 +62,7 @@ function Home() {
 
       setProducts(data.products);
       setError("");
-    } catch (error) {
+    } catch {
       setError("Failed to load products. Please try again.");
     } finally {
       setLoading(false);
@@ -48,7 +70,11 @@ function Home() {
   };
 
   useEffect(() => {
-    loadProducts();
+    const timerId = setTimeout(loadProducts, 0);
+
+    return () => {
+      clearTimeout(timerId);
+    };
   }, []);
 
   useEffect(() => {
@@ -68,6 +94,8 @@ function Home() {
   }, [userInfo]);
 
   const searchTerm = searchParams.get("search") || "";
+  const selectedCategory = searchParams.get("category") || "";
+  const selectedSubcategory = searchParams.get("subcategory") || "";
 
   useEffect(() => {
     if (!searchTerm.trim()) {
@@ -80,10 +108,46 @@ function Home() {
     });
   }, [searchTerm]);
 
+  useEffect(() => {
+    const shouldShowWelcome = sessionStorage.getItem("showWelcomeBack") === "true";
+
+    if (!userInfo || userInfo.role === "admin" || !shouldShowWelcome) {
+      setShowWelcomeMessage(false);
+      return;
+    }
+
+    sessionStorage.removeItem("showWelcomeBack");
+    setShowWelcomeMessage(true);
+
+    const welcomeTimerId = setTimeout(() => {
+      setShowWelcomeMessage(false);
+    }, 6000);
+
+    return () => {
+      clearTimeout(welcomeTimerId);
+    };
+  }, [userInfo]);
+
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+  const normalizedCategory = selectedCategory.trim().toLowerCase();
+  const normalizedSubcategory = selectedSubcategory.trim().toLowerCase();
+  const emptyProductsMessage = (() => {
+    const trimmedSearchTerm = searchTerm.trim();
+
+    if (trimmedSearchTerm) {
+      return `No products found for "${trimmedSearchTerm}".`;
+    }
+
+    if (selectedCategory) {
+      return `No products found in "${selectedCategory}${
+        selectedSubcategory ? ` - ${selectedSubcategory}` : ""
+      }"`;
+    }
+
+    return "No matching products found.";
+  })();
   const activeHash = location.hash;
   const showAboutSection = !userInfo || activeHash === "#about";
-  const showContactSection = !userInfo || activeHash === "#contact";
 
   useEffect(() => {
     if (!activeHash) {
@@ -100,15 +164,27 @@ function Home() {
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [activeHash, showAboutSection, showContactSection]);
+  }, [activeHash, showAboutSection]);
 
-  const filteredProducts = products.filter((product) => {
-    const searchableText = [product.name, product.category]
+  const visibleProducts = userInfo
+    ? sortTopSellingFirst(products)
+    : sortTopSellingFirst(
+        products.filter((product) => product.isTopSelling || product.featuredOnHome)
+      );
+
+  const filteredProducts = visibleProducts.filter((product) => {
+    const searchableText = [product.name, product.category, product.subcategory]
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
 
-    return searchableText.includes(normalizedSearchTerm);
+    const matchesSearch = searchableText.includes(normalizedSearchTerm);
+    const matchesCategory =
+      !normalizedCategory || product.category?.toLowerCase() === normalizedCategory;
+    const matchesSubcategory =
+      !normalizedSubcategory || product.subcategory?.toLowerCase() === normalizedSubcategory;
+
+    return matchesSearch && matchesCategory && matchesSubcategory;
   });
 
   return (
@@ -116,7 +192,10 @@ function Home() {
       {!userInfo && (
         <section
           className="hero-section"
-          style={{ backgroundImage: `url(${heroSlides[activeHeroSlide].image})` }}
+          style={{
+            backgroundImage: `url(${heroSlides[activeHeroSlide].image})`,
+            backgroundPosition: heroSlides[activeHeroSlide].position,
+          }}
         >
           <div className="hero-content">
             <h1>{heroSlides[activeHeroSlide].title}</h1>
@@ -142,25 +221,34 @@ function Home() {
         </section>
       )}
 
+      {userInfo && userInfo.role !== "admin" && showWelcomeMessage && (
+        <section className="customer-home-intro">
+          <h1>Welcome back {userInfo.name || "Tea Lover"}!</h1>
+        </section>
+      )}
+
       <section className="products-section" id="products">
-        <h2>Our Tea Products</h2>
-        <p className="section-subtitle">
-          Select a tea product to view details, stock, cart options, and
-          customer reviews.
-        </p>
+        {!userInfo && (
+          <>
+            <h2>Our Tea Products</h2>
+            <p className="section-subtitle">
+              {selectedCategory
+                ? `${selectedCategory}${selectedSubcategory ? ` - ${selectedSubcategory}` : ""}`
+                : "Select a tea product to view details, stock, cart options, and customer reviews."}
+            </p>
+          </>
+        )}
 
         {loading && <p className="status-message">Loading products...</p>}
 
         {error && <p className="error-message">{error}</p>}
 
-        {!loading && !error && products.length === 0 && (
+        {!loading && !error && visibleProducts.length === 0 && (
           <p className="status-message">No products available yet.</p>
         )}
 
-        {!loading && !error && products.length > 0 && filteredProducts.length === 0 && (
-          <p className="status-message">
-            No products found for "{searchTerm.trim()}".
-          </p>
+        {!loading && !error && visibleProducts.length > 0 && filteredProducts.length === 0 && (
+          <p className="status-message">{emptyProductsMessage}</p>
         )}
 
         {!loading && !error && filteredProducts.length > 0 && (
@@ -204,24 +292,6 @@ function Home() {
         </section>
       )}
 
-      {showContactSection && (
-        <section className="contact-section" id="contact">
-          <div className="contact-content">
-            <span className="contact-label">Contact Us</span>
-            <h2>Need help choosing your tea?</h2>
-            <p>
-              Reach out to Lak Isuru Tea for product details, orders, or support.
-              We are happy to help you find the right tea for your taste.
-            </p>
-
-            <div className="contact-details">
-              <a href="tel:+94771234567">+94 77 123 4567</a>
-              <a href="mailto:info@lakisurutea.com">info@lakisurutea.com</a>
-            </div>
-          </div>
-        </section>
-      )}
-      
     </div>
   );
 }

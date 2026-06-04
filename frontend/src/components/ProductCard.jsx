@@ -1,27 +1,36 @@
-import React from "react";
 import { Link } from "react-router-dom";
 import "../styles/ProductCard.css";
 
 function ProductCard({ product }) {
   return (
-    <Link to={`/products/${product._id}`} className="product-card">
-      <img
-        src={product.image}
-        alt={product.name}
-        className="product-image"
-        onError={(event) => {
-          event.currentTarget.src = "/images/lak-isuru-logo.png";
-        }}
-      />
+    <article className="product-card">
+      <Link to={`/products/${product._id}`} className="product-card-link">
+        <div className="product-image-wrap">
+          <img
+            src={product.image}
+            alt={product.name}
+            className="product-image"
+            onError={(event) => {
+              event.currentTarget.src = "/images/lak-isuru-logo.png";
+            }}
+          />
+          {product.isTopSelling && <span className="top-selling-badge">Top selling</span>}
+        </div>
 
-      <div className="product-content">
-        <h3>{product.name}</h3>
+        <div className="product-content">
+          <h3>{product.name}</h3>
 
-        <p className="product-price">Rs. {product.price}</p>
+          <p className="product-price">
+            <span className="price-currency">Rs.</span>
+            <span className="price-amount">
+              {product.price}
+            </span>
+          </p>
 
-        <p className="product-description">{product.description}</p>
-      </div>
-    </Link>
+          <p className="product-description">{product.description}</p>
+        </div>
+      </Link>
+    </article>
   );
 }
 
