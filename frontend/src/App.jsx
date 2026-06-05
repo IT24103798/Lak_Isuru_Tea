@@ -23,6 +23,7 @@ import MyOrders from "./pages/MyOrders";
 import MyReturns from "./pages/MyReturns";
 import MyCancellations from "./pages/MyCancellations";
 import Profile from "./pages/Profile";
+import AddressBook from "./pages/AddressBook";
 
 import AdminLayout from "./layouts/AdminLayout";
 import AdminProducts from "./pages/admin/AdminProducts";
@@ -32,6 +33,7 @@ import AdminOrders from "./pages/admin/AdminOrders";
 
 const sidebarRoutes = [
   "/profile-settings",
+  "/address-book",
   "/my-orders",
   "/my-returns",
   "/my-cancellations",
@@ -58,6 +60,15 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                }
+              />
+
+              <Route
+                path="/address-book"
+                element={
+                  <ProtectedRoute>
+                    <AddressBook />
                   </ProtectedRoute>
                 }
               />
@@ -161,7 +172,7 @@ function App() {
       )}
 
       {!isAdminPage && <Footer />}
-      <Chatbot />
+      {!isAdminPage && <Chatbot />}
     </>
   );
 }

@@ -3332,4 +3332,226 @@
   }
 }
 
+/* ==============================
+   MY CANCELLATIONS FIXES
+============================== */
 
+.cancellations-toolbar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 1.45rem;
+}
+
+.cancellations-summary-chip {
+  width: fit-content;
+  min-width: 230px;
+  min-height: 58px;
+  padding: 0.8rem 1.1rem;
+  justify-content: flex-start;
+}
+
+.cancellations-summary-chip i {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.cancellations-summary-chip div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  line-height: 1.1;
+}
+
+.cancellations-summary-chip strong {
+  color: #1d4ed8;
+  font-size: 1.25rem;
+  font-weight: 950;
+}
+
+.cancellations-summary-chip span {
+  color: #2563eb;
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.cancellation-card {
+  border-color: #fed7d7;
+}
+
+.cancellation-card::before {
+  opacity: 1;
+  background: linear-gradient(90deg, #ef4444, #fb7185);
+}
+
+.cancel-details-btn {
+  border: 1px solid #2563eb;
+  background: #ffffff;
+  color: #2563eb;
+  border-radius: 14px;
+  padding: 0.78rem 1.35rem;
+  font-size: 0.9rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-details-btn:hover {
+  background: #eff6ff;
+  transform: translateY(-1px);
+}
+
+/* Cancellation details popup */
+.cancel-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1.2rem;
+  z-index: 9999;
+}
+
+.cancel-popup-form {
+  width: 100%;
+  max-width: 760px;
+  max-height: 92vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 28px;
+  box-shadow: 0 34px 90px rgba(15, 23, 42, 0.32);
+}
+
+.cancel-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.7rem 1.8rem;
+  background: linear-gradient(135deg, #991b1b, #ef4444);
+  color: #ffffff;
+  border-radius: 28px 28px 0 0;
+}
+
+.cancel-popup-header h2 {
+  margin: 0.25rem 0 0;
+  font-size: 1.7rem;
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+.cancel-popup-header p {
+  margin: 0.4rem 0 0;
+  color: rgba(255, 255, 255, 0.82);
+  font-weight: 700;
+}
+
+.cancel-popup-header .modal-eyebrow {
+  color: #991b1b;
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.cancel-popup-header button {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cancel-popup-header button:hover {
+  background: #ffffff;
+  color: #dc2626;
+}
+
+.cancel-popup-body {
+  padding: 1.6rem 1.8rem;
+}
+
+.cancel-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.cancel-form-field {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 1rem;
+}
+
+.cancel-form-field.full {
+  grid-column: 1 / -1;
+}
+
+.cancel-form-field label {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.cancel-form-field p {
+  margin: 0;
+  color: #111827;
+  font-size: 0.98rem;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.cancel-form-warning {
+  margin-top: 1.2rem;
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+  border-radius: 18px;
+  padding: 1rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.cancel-popup-actions {
+  padding: 0 1.8rem 1.6rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 760px) {
+  .cancellations-summary-chip {
+    width: 100%;
+  }
+
+  .cancel-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cancel-popup-header {
+    padding: 1.3rem;
+  }
+
+  .cancel-popup-body {
+    padding: 1.3rem;
+  }
+
+  .cancel-popup-actions {
+    padding: 0 1.3rem 1.3rem;
+  }
+}
