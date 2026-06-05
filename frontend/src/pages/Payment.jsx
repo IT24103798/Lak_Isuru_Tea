@@ -10,6 +10,7 @@ const Payment = () => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
     useState("Cash on Delivery");
   const [orderSuccess, setOrderSuccess] = useState(null);
+  const [billingAddress, setBillingAddress] = useState(null);
 
   const [paymentDetails, setPaymentDetails] = useState({
     cardName: "",
@@ -19,6 +20,18 @@ const Payment = () => {
   });
 
   const navigate = useNavigate();
+
+  const loadDefaultBillingAddress = async () => {
+    try {
+      const { data } = await API.get("/addresses/default-billing");
+
+      if (data.address) {
+        setBillingAddress(data.address);
+      }
+    } catch (error) {
+      console.log("No default billing address found.");
+    }
+  };
 
   useEffect(() => {
     const savedDraft = JSON.parse(localStorage.getItem("checkoutDraft"));
@@ -30,6 +43,7 @@ const Payment = () => {
 
     setOrderDraft(savedDraft);
     setSelectedPaymentMethod(savedDraft.paymentMethod || "Cash on Delivery");
+    loadDefaultBillingAddress();
   }, [navigate]);
 
   const handlePaymentChange = (event) => {
@@ -76,14 +90,28 @@ const Payment = () => {
     try {
       setPlacingOrder(true);
       setError("");
+      const normalizeAddressType = (type) => {
+        const value = String(type || "Home").toLowerCase();
+
+        if (value === "home") return "Home";
+        if (value === "office") return "Office";
+        if (value === "other") return "Other";
+
+        return "Home";
+      };
 
       const finalOrderData = {
         ...orderDraft,
+        customer: {
+          ...orderDraft.customer,
+          addressType: normalizeAddressType(orderDraft.customer.addressType),
+        },
         paymentMethod: selectedPaymentMethod,
         paymentStatus:
           selectedPaymentMethod === "Cash on Delivery" ? "Pending" : "Paid",
         orderStatus: "To Ship",
       };
+
 
       const { data } = await API.post("/orders", finalOrderData);
 
@@ -107,6 +135,18 @@ const Payment = () => {
     } finally {
       setPlacingOrder(false);
     }
+  };
+
+  const formatDeliveryAddress = (customer = {}) => {
+    const parts = [
+      customer.addressLine1,
+      customer.city,
+      customer.district,
+      customer.province,
+      customer.postalCode,
+    ].filter(Boolean);
+
+    return parts.length ? parts.join(", ") : customer.address || "-";
   };
 
   if (orderSuccess) {
@@ -223,53 +263,72 @@ const Payment = () => {
 
               <div className="customer-details-row">
                 <div className="customer-detail-item">
-                  <span>Full Name :</span>
+                  <span>Full Name</span>
                   <strong>{customer.fullName}</strong>
                 </div>
 
                 <div className="customer-detail-item">
-                  <span>Email :</span>
+                  <span>Email</span>
                   <strong>{customer.email}</strong>
                 </div>
 
                 <div className="customer-detail-item">
-                  <span>Phone Number :</span>
+                  <span>Phone Number</span>
                   <strong>{customer.phone}</strong>
                 </div>
               </div>
             </section>
 
-            <section className="payment-card">
+            <section className="payment-card delivery-details-card">
               <div className="payment-section-title clean-title">
                 <div>
                   <h2>Delivery Address</h2>
-                  <p>Tea order will be delivered to this address</p>
+                  <p>Your tea order will be delivered to this address</p>
                 </div>
               </div>
 
-              <div className="address-box">
-                <span className="address-badge">{customer.addressType}</span>
+              <div className="payment-delivery-card">
+                <div className="payment-delivery-type">
+                  <i className="ti ti-home"></i>
+                  {customer.addressType || "Home"}
+                </div>
 
-                <p>
-                  <strong>{customer.addressLine1}</strong>,{" "}
-                  {customer.addressLine2}
-                </p>
+                <div className="payment-delivery-main">
+                  <h3>{customer.addressLine1 || customer.address || "-"}</h3>
+                </div>
 
-                {customer.landmark && (
-                  <p>
-                    <b>Landmark:</b> {customer.landmark}
-                  </p>
-                )}
+                <div className="payment-delivery-grid">
+                  <div>
+                    <span>City</span>
+                    <strong>{customer.city || "-"}</strong>
+                  </div>
 
-                <p>
-                  <b>Location:</b> {customer.city}, {customer.district},{" "}
-                  {customer.province}
-                </p>
+                  <div>
+                    <span>District</span>
+                    <strong>{customer.district || "-"}</strong>
+                  </div>
 
-                <p>
-                  <b>Postal Code:</b> {customer.postalCode}
-                </p>
+                  <div>
+                    <span>Province</span>
+                    <strong>{customer.province || "-"}</strong>
+                  </div>
+
+                  <div>
+                    <span>Postal Code</span>
+                    <strong>{customer.postalCode || "-"}</strong>
+                  </div>
+                </div>
               </div>
+
+              {billingAddress && (
+                <div className="billing-address-note">
+                  <i className="ti ti-receipt"></i>
+                  <span>
+                    Billing address is saved as{" "}
+                    <b>{billingAddress.addressType || "Default"}</b>.
+                  </span>
+                </div>
+              )}
             </section>
 
             <section className="payment-card">
@@ -397,7 +456,10 @@ const Payment = () => {
 
             <div className="payment-items">
               {items.map((item) => (
-                <div className="payment-item" key={item.productId}>
+                <div
+                  className="payment-item"
+                  key={item.productId || item.product || item._id}
+                >
                   <div className="payment-product">
                     <div className="payment-product-image">
                       {item.image ? (

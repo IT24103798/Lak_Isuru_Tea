@@ -78,10 +78,10 @@ const Sidebar = () => {
           My Profile
         </button>
 
-        <button
+       <button
           type="button"
-          className="disabled-sidebar-link"
-          disabled
+          className={isActive("/address-book") ? "active" : ""}
+          onClick={() => navigate("/address-book")}
         >
           <i className="ti ti-books"></i>
           Address Book
