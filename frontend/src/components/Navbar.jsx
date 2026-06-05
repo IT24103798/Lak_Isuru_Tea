@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { productCatalog } from "../data/productCatalog";
 import "../styles/Navbar.css";
 
 function Navbar() {
@@ -10,12 +9,9 @@ function Navbar() {
   const { userInfo, logout } = useAuth();
 
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
-  const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
-  const [activeProductCategory, setActiveProductCategory] = useState(null);
   const [activeSection, setActiveSection] = useState("home");
 
   const accountMenuRef = useRef(null);
-  const productMenuRef = useRef(null);
 
   const isAdmin = userInfo?.role === "admin";
 
@@ -25,27 +21,21 @@ function Navbar() {
       ? `?search=${encodeURIComponent(searchTerm)}`
       : "";
 
-    navigate(`/${searchQuery}#products`);
+    navigate(`/products${searchQuery}`);
   };
 
   const handleLogout = () => {
     logout();
     setIsAccountMenuOpen(false);
-    setIsProductMenuOpen(false);
     navigate("/login");
   };
 
-  const handleProductFilter = (category, subcategory = "") => {
-    const queryParams = new URLSearchParams();
-    queryParams.set("category", category);
+  const handleHomeClick = () => {
+    setIsAccountMenuOpen(false);
 
-    if (subcategory) {
-      queryParams.set("subcategory", subcategory);
+    if (location.pathname === "/" && !location.search && !location.hash) {
+      window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
     }
-
-    setIsProductMenuOpen(false);
-    setActiveProductCategory(null);
-    navigate(`/?${queryParams.toString()}#products`);
   };
 
   useEffect(() => {
@@ -55,14 +45,6 @@ function Navbar() {
         (accountMenuRef.current && !accountMenuRef.current.contains(event.target))
       ) {
         setIsAccountMenuOpen(false);
-      }
-
-      if (
-        event.key === "Escape" ||
-        (productMenuRef.current && !productMenuRef.current.contains(event.target))
-      ) {
-        setIsProductMenuOpen(false);
-        setActiveProductCategory(null);
       }
     };
 
@@ -77,6 +59,11 @@ function Navbar() {
 
   useEffect(() => {
     const updateActiveSection = () => {
+      if (location.pathname.startsWith("/products")) {
+        setActiveSection("products");
+        return;
+      }
+
       if (location.pathname !== "/") {
         setActiveSection(location.pathname.replace("/", "") || "home");
         return;
@@ -133,10 +120,17 @@ function Navbar() {
   const getNavLinkClass = (section) =>
     activeSection === section ? "nav-link active" : "nav-link";
 
+  const getAdminNavLinkClass = (path) =>
+    location.pathname === path ? "nav-link active" : "nav-link";
+
   return (
     <nav className={`navbar ${isAdmin ? "admin-navbar" : ""}`}>
       <div className="nav-left">
-        <Link to={isAdmin ? "/admin/orders" : "/"} className="logo-link">
+        <Link
+          to={isAdmin ? "/admin/dashboard" : "/"}
+          className="logo-link"
+          onClick={!isAdmin ? handleHomeClick : undefined}
+        >
           <img
             src="/images/lak-isuru-logo.png"
             alt="Lak Isuru Tea Logo"
@@ -159,90 +153,62 @@ function Navbar() {
       <div className="nav-links">
         {!isAdmin && (
           <>
-            {!userInfo ? (
+            <Link to="/" className={getNavLinkClass("home")} onClick={handleHomeClick}>
+              Home
+            </Link>
+
+            <Link to="/products" className={getNavLinkClass("products")}>
+              Products
+            </Link>
+
+            {!userInfo && (
               <>
-                <Link to="/" className={getNavLinkClass("home")}>
-                  Home
-                </Link>
-                <Link to="/#products" className={getNavLinkClass("products")}>
-                  Products
-                </Link>
                 <Link to="/#about" className={getNavLinkClass("about")}>
                   About Us
                 </Link>
-                <Link to="/#contact" className={getNavLinkClass("contact")}>
-                  Contact Us
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link to="/" className={getNavLinkClass("home")}>
-                  Home
-                </Link>
-                <div className="products-menu" ref={productMenuRef}>
-                  <button
-                    type="button"
-                    className={getNavLinkClass("products")}
-                    aria-expanded={isProductMenuOpen}
-                    onClick={() => {
-                      setActiveProductCategory(null);
-                      setIsProductMenuOpen((isOpen) => !isOpen);
-                    }}
-                  >
-                    Products
-                  </button>
-
-                  {isProductMenuOpen && (
-                    <div
-                      className="products-mega-menu"
-                      onMouseLeave={() => setActiveProductCategory(null)}
-                    >
-                      <div className="products-menu-categories">
-                        {productCatalog.map((group) => (
-                          <div
-                            className={
-                              activeProductCategory?.category === group.category
-                                ? "products-menu-group active"
-                                : "products-menu-group"
-                            }
-                            key={group.category}
-                            onMouseEnter={() => setActiveProductCategory(group)}
-                            onFocus={() => setActiveProductCategory(group)}
-                          >
-                            <button
-                              type="button"
-                              className="products-menu-category"
-                              onClick={() => handleProductFilter(group.category)}
-                            >
-                              {group.category}
-                            </button>
-
-                            {activeProductCategory?.category === group.category && (
-                              <div className="products-submenu-panel">
-                                {group.subcategories.map((subcategory) => (
-                                  <button
-                                    type="button"
-                                    key={subcategory}
-                                    onClick={() =>
-                                      handleProductFilter(group.category, subcategory)
-                                    }
-                                  >
-                                    {subcategory}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <Link to="/cart" className={getNavLinkClass("cart")}>
-                  Cart
-                </Link>
               </>
             )}
+
+            {userInfo && (
+              <Link to="/cart" className={getNavLinkClass("cart")}>
+                Cart
+              </Link>
+            )}
+          </>
+        )}
+
+        {isAdmin && (
+          <>
+            <Link
+              to="/admin/dashboard"
+              className={getAdminNavLinkClass("/admin/dashboard")}
+            >
+              Dashboard
+            </Link>
+            <Link
+              to="/admin/users"
+              className={getAdminNavLinkClass("/admin/users")}
+            >
+              Users
+            </Link>
+            <Link
+              to="/admin/products"
+              className={getAdminNavLinkClass("/admin/products")}
+            >
+              Products
+            </Link>
+            <Link
+              to="/admin/orders"
+              className={getAdminNavLinkClass("/admin/orders")}
+            >
+              Orders
+            </Link>
+            <Link
+              to="/admin/reviews"
+              className={getAdminNavLinkClass("/admin/reviews")}
+            >
+              Reviews
+            </Link>
           </>
         )}
 
@@ -266,7 +232,14 @@ function Navbar() {
                   <span>{isAdmin ? "Admin" : "Customer"}</span>
                 </div>
 
-                {!isAdmin && (
+                {isAdmin ? (
+                  <Link
+                    to="/admin/profile"
+                    onClick={() => setIsAccountMenuOpen(false)}
+                  >
+                    Profile settings
+                  </Link>
+                ) : (
                   <>
                     <Link
                       to="/profile-settings"

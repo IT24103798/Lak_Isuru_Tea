@@ -83,6 +83,7 @@ export const createProduct = async (req, res) => {
       name: req.body.name,
       category: req.body.category,
       subcategory: req.body.subcategory || "",
+      teaForm: req.body.teaForm || "",
       price: Number(req.body.price),
       stock: Number(req.body.stock),
       image: req.body.image,
@@ -119,6 +120,7 @@ export const updateProduct = async (req, res) => {
     product.name = req.body.name;
     product.category = req.body.category;
     product.subcategory = req.body.subcategory || "";
+    product.teaForm = req.body.teaForm || "";
     product.price = Number(req.body.price);
     product.stock = Number(req.body.stock);
     product.image = req.body.image;

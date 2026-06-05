@@ -51,6 +51,12 @@ const productSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    teaForm: {
+      type: String,
+      enum: ["", "Tea Bags", "Loose Tea"],
+      default: "",
+      trim: true,
+    },
     price: {
       type: Number,
       required: [true, "Price is required"],

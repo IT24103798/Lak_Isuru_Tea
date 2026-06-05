@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
@@ -12,6 +13,7 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPasswordOtp from "./pages/ResetPassword";
+import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
 
 import Cart from "./pages/Cart";
@@ -38,6 +40,20 @@ const sidebarRoutes = [
   "/my-cancellations",
 ];
 
+const ScrollToTop = () => {
+  const { pathname, search, hash } = useLocation();
+
+  useEffect(() => {
+    if (hash) {
+      return;
+    }
+
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [pathname, search, hash]);
+
+  return null;
+};
+
 function App() {
   const location = useLocation();
 
@@ -46,6 +62,8 @@ function App() {
 
   return (
     <>
+      <ScrollToTop />
+
       {!isAdminPage && <Navbar />}
 
       {showSidebar && !isAdminPage ? (
@@ -100,6 +118,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPasswordOtp />} />
+            <Route path="/products" element={<Products />} />
             <Route path="/products/:id" element={<ProductDetails />} />
 
             <Route

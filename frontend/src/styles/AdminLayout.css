@@ -1,12 +1,9 @@
 .admin-layout {
   min-height: 100vh;
-  display: flex;
   background: #f4f7f3;
 }
 
 .admin-layout-main {
-  flex: 1;
-  margin-left: 270px;
   min-height: 100vh;
 }
 
