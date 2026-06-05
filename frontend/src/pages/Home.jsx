@@ -53,6 +53,7 @@ function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
+  const isAdminUser = userInfo?.role === "admin";
 
   const loadProducts = async () => {
     try {
@@ -78,7 +79,7 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    if (userInfo) {
+    if (isAdminUser) {
       return;
     }
 
@@ -91,7 +92,7 @@ function Home() {
     return () => {
       clearInterval(slideInterval);
     };
-  }, [userInfo]);
+  }, [isAdminUser]);
 
   const searchTerm = searchParams.get("search") || "";
   const selectedCategory = searchParams.get("category") || "";
@@ -147,7 +148,7 @@ function Home() {
     return "No matching products found.";
   })();
   const activeHash = location.hash;
-  const showAboutSection = !userInfo || activeHash === "#about";
+  const showAboutSection = !userInfo;
 
   useEffect(() => {
     if (!activeHash) {
@@ -166,11 +167,9 @@ function Home() {
     };
   }, [activeHash, showAboutSection]);
 
-  const visibleProducts = userInfo
-    ? sortTopSellingFirst(products)
-    : sortTopSellingFirst(
-        products.filter((product) => product.isTopSelling || product.featuredOnHome)
-      );
+  const visibleProducts = sortTopSellingFirst(
+    products.filter((product) => product.isTopSelling || product.featuredOnHome)
+  );
 
   const filteredProducts = visibleProducts.filter((product) => {
     const searchableText = [product.name, product.category, product.subcategory]
@@ -189,7 +188,7 @@ function Home() {
 
   return (
     <div className="home-page">
-      {!userInfo && (
+      {!isAdminUser && (
         <section
           className="hero-section"
           style={{
@@ -228,14 +227,9 @@ function Home() {
       )}
 
       <section className="products-section" id="products">
-        {!userInfo && (
+        {!isAdminUser && (
           <>
             <h2>Our Tea Products</h2>
-            <p className="section-subtitle">
-              {selectedCategory
-                ? `${selectedCategory}${selectedSubcategory ? ` - ${selectedSubcategory}` : ""}`
-                : "Select a tea product to view details, stock, cart options, and customer reviews."}
-            </p>
           </>
         )}
 
@@ -265,12 +259,22 @@ function Home() {
           <div className="about-content">
             <div className="about-copy">
               <span className="about-label">About Us</span>
-              <h2>Rooted in Sri Lankan tea tradition</h2>
+              <h2>Established in 2012</h2>
               <p>
-                Lak Isuru Tea brings carefully selected tea products to customers
-                who value freshness, flavor, and trusted quality. We focus on rich
-                aroma, natural taste, and a dependable shopping experience from
-                browsing to delivery.
+                Lak Isuru Tea is a Sri Lankan tea supplier dedicated to delivering
+                high-quality Ceylon tea to customers worldwide. We work closely
+                with carefully selected tea estate partners across Sri Lanka to
+                ensure consistent quality, rich flavor, and natural freshness in
+                every pack.
+              </p>
+              <p>
+                We offer black tea, green tea, and blended varieties, all carefully
+                processed and packaged to preserve the authentic taste and aroma of
+                Sri Lankan tea.
+              </p>
+              <p>
+                At Lak Isuru Tea, we believe every cup should reflect the true
+                essence of Sri Lankan tea—rich, refreshing, and authentic.
               </p>
             </div>
 

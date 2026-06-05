@@ -12,6 +12,7 @@ const emptyForm = {
   name: "",
   category: productCatalog[0].category,
   subcategory: productCatalog[0].subcategories[0],
+  teaForm: "",
   price: "",
   stock: "",
   image: "",
@@ -26,6 +27,8 @@ const findCatalogGroup = (category) => {
     (group) => group.category.trim().toLowerCase() === normalizedCategory
   );
 };
+
+const teaFormOptions = ["Tea Bags", "Loose Tea"];
 
 const AdminProducts = () => {
   const [products, setProducts] = useState([]);
@@ -119,6 +122,7 @@ const AdminProducts = () => {
       subcategory: catalogGroup.subcategories.includes(savedSubcategory)
         ? savedSubcategory
         : "",
+      teaForm: product.teaForm || "",
       price: product.price ?? "",
       stock: product.stock ?? "",
       image: product.image || "",
@@ -251,6 +255,22 @@ const AdminProducts = () => {
           </label>
 
           <label>
+            Tea Form
+            <select
+              name="teaForm"
+              value={formData.teaForm}
+              onChange={handleChange}
+            >
+              <option value="">Not specified</option>
+              {teaFormOptions.map((teaForm) => (
+                <option value={teaForm} key={teaForm}>
+                  {teaForm}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
             Price / Rs.
             <input
               type="number"
@@ -300,6 +320,7 @@ const AdminProducts = () => {
             />
           </label>
 
+
           <label className="admin-checkbox full-width">
             <input
               type="checkbox"
@@ -340,6 +361,7 @@ const AdminProducts = () => {
                   <th>Name</th>
                   <th>Category</th>
                   <th>Subcategory</th>
+                  <th>Tea Form</th>
                   <th>Price</th>
                   <th>Stock</th>
                   <th>Public Home</th>
@@ -364,6 +386,7 @@ const AdminProducts = () => {
                     </td>
                     <td>{product.category}</td>
                     <td>{product.subcategory || "-"}</td>
+                    <td>{product.teaForm || "-"}</td>
                     <td>Rs. {product.price}</td>
                     <td>{product.stock}</td>
                     <td>

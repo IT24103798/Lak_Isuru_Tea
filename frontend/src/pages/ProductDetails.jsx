@@ -248,7 +248,7 @@ function ProductDetails() {
   return (
     <div className="details-page">
       <main className="details-wrap">
-        <Link to="/#products" className="back-link">
+        <Link to="/products" className="back-link">
           Back to products
         </Link>
 

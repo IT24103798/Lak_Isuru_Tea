@@ -11,6 +11,11 @@ function AdminSidebar() {
       </div>
 
       <nav className="admin-sidebar-menu">
+        <NavLink to="/admin/dashboard" className="admin-sidebar-link">
+          <span>📊</span>
+          Dashboard
+        </NavLink>
+
          <NavLink to="/admin/profile" className="admin-sidebar-link">
           <span>⚙️</span>
           Profile Settings
