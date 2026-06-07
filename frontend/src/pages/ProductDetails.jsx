@@ -48,6 +48,34 @@ function ProductDetails() {
   }, [id]);
 
   useEffect(() => {
+    if (!product || !user || user.role === "admin") {
+      return;
+    }
+
+    const userId = user._id || user.id;
+    const storageKey = `lakIsuruRecentlyViewed:${userId || "guest"}`;
+    const recentProduct = {
+      _id: product._id,
+      name: product.name,
+      image: product.image,
+      price: product.price,
+      description: product.description,
+    };
+
+    try {
+      const storedProducts = JSON.parse(localStorage.getItem(storageKey)) || [];
+      const recentlyViewedProducts = [
+        recentProduct,
+        ...storedProducts.filter((storedProduct) => storedProduct._id !== product._id),
+      ].slice(0, 8);
+
+      localStorage.setItem(storageKey, JSON.stringify(recentlyViewedProducts));
+    } catch {
+      localStorage.setItem(storageKey, JSON.stringify([recentProduct]));
+    }
+  }, [product, user]);
+
+  useEffect(() => {
     const loadReviewEligibility = async () => {
       if (!user || user.role === "admin") {
         setReviewEligibility(null);

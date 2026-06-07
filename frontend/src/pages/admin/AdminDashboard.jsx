@@ -172,7 +172,7 @@ function AdminDashboard() {
       try {
         setLoading(true);
         const [productsData, ordersResponse] = await Promise.all([
-          getAllProducts(),
+          getAllProducts({ includeHidden: true }),
           API.get("/orders/admin/all"),
         ]);
 
