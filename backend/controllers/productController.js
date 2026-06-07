@@ -19,6 +19,16 @@ const validateProductBody = ({ name, category, price, stock, image, description 
   return null;
 };
 
+const hasReviewablePurchase = async (userId, productId) => {
+  return Boolean(
+    await Order.exists({
+      user: userId,
+      "items.product": productId,
+      $or: [{ status: "delivered" }, { orderStatus: "To Review" }],
+    })
+  );
+};
+
 export const getProducts = async (req, res) => {
   try {
     const canViewHidden = req.user?.role === "admin" && req.query.includeHidden === "true";
@@ -214,11 +224,7 @@ export const addProductReview = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    const hasPurchased = await Order.exists({
-      user: req.user._id,
-      "items.product": product._id,
-      status: { $nin: ["cancelled", "returned"] },
-    });
+    const hasPurchased = await hasReviewablePurchase(req.user._id, product._id);
 
     if (!hasPurchased) {
       return res.status(403).json({ message: "Only customers who purchased this product can review it" });
@@ -343,13 +349,7 @@ export const getReviewEligibility = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    const hasPurchased = Boolean(
-      await Order.exists({
-        user: req.user._id,
-        "items.product": product._id,
-        status: { $nin: ["cancelled", "returned"] },
-      })
-    );
+    const hasPurchased = await hasReviewablePurchase(req.user._id, product._id);
     const hasReviewed = product.reviews.some(
       (review) => review.user?.toString() === req.user._id.toString()
     );
