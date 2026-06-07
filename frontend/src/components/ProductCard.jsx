@@ -1,9 +1,27 @@
 import { Link } from "react-router-dom";
 import "../styles/ProductCard.css";
 
-function ProductCard({ product }) {
+function ProductCard({ product, showFavorite = false, isFavorite = false, onToggleFavorite }) {
   return (
     <article className="product-card">
+      {showFavorite && (
+        <button
+          type="button"
+          className={`product-favorite-button ${isFavorite ? "saved" : ""}`}
+          aria-label={
+            isFavorite
+              ? `Remove ${product.name} from favorites`
+              : `Save ${product.name} to favorites`
+          }
+          onClick={(event) => {
+            event.preventDefault();
+            onToggleFavorite?.(product._id);
+          }}
+        >
+          {isFavorite ? "♥" : "♡"}
+        </button>
+      )}
+
       <Link to={`/products/${product._id}`} className="product-card-link">
         <div className="product-image-wrap">
           <img

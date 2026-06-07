@@ -261,6 +261,39 @@
   margin-bottom: 16px;
 }
 
+.admin-product-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.admin-product-list-heading h2 {
+  margin-bottom: 0;
+}
+
+.admin-product-list-heading label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #66736b;
+  font-size: 0.82rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.admin-product-list-heading select {
+  min-width: 170px;
+  border: 1px solid #cfded3;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #143d24;
+  font: inherit;
+  font-weight: 800;
+  padding: 8px 10px;
+}
+
 .admin-muted-text {
   color: #66736b;
   margin: 0;
@@ -451,12 +484,12 @@
 .admin-product-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 760px;
+  min-width: 840px;
 }
 
 .admin-product-table th,
 .admin-product-table td {
-  padding: 14px 12px;
+  padding: 12px 10px;
   border-bottom: 1px solid #e6eee8;
   text-align: left;
   vertical-align: middle;
@@ -465,6 +498,19 @@
 .admin-product-table th {
   background: #f4faf6;
   color: #143d24;
+  font-size: 0.88rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.admin-product-table td {
+  color: #111827;
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+
+.admin-product-table td strong {
+  font-size: 0.94rem;
 }
 
 .admin-product-table img {
@@ -479,7 +525,7 @@
   display: block;
   max-width: 360px;
   color: #66736b;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   margin-top: 5px;
   white-space: nowrap;
   overflow: hidden;
@@ -500,10 +546,48 @@
   white-space: nowrap;
 }
 
+.admin-product-table td .hidden-flag {
+  background: #fdeaea;
+  border-color: #f2b8b5;
+  color: #9b1c1c;
+}
+
+.admin-product-table td .visible-flag {
+  background: #e7f8ed;
+  border-color: #b9e5c7;
+  color: #176331;
+}
+
 .table-actions {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.table-actions .icon-action {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 0;
+  font-size: 19px;
+  line-height: 1;
+}
+
+.table-actions .edit-action {
+  background: #176331;
+}
+
+.table-actions .hide-btn {
+  background: #4b5563;
+}
+
+.table-actions .show-btn {
+  background: #0f766e;
 }
 
 .table-actions .danger-btn {
@@ -544,6 +628,17 @@
 
   .admin-revenue-table-heading {
     display: grid;
+  }
+
+  .admin-product-list-heading {
+    align-items: stretch;
+    display: grid;
+  }
+
+  .admin-product-list-heading label {
+    align-items: stretch;
+    display: grid;
+    gap: 6px;
   }
 
   .admin-product-form {

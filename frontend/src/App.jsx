@@ -26,6 +26,7 @@ import MyReturns from "./pages/MyReturns";
 import MyCancellations from "./pages/MyCancellations";
 import Profile from "./pages/Profile";
 import AddressBook from "./pages/AddressBook";
+import Favorites from "./pages/Favorites";
 
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -164,6 +165,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <OrderSuccess />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/favorites"
+              element={
+                <ProtectedRoute>
+                  <Favorites />
                 </ProtectedRoute>
               }
             />

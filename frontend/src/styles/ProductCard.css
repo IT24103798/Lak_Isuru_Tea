@@ -84,6 +84,33 @@
   z-index: 2;
 }
 
+.product-favorite-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(22, 138, 47, 0.22);
+  border-radius: 50%;
+  background: #ffffff;
+  color: #168a2f;
+  font-size: 23px;
+  font-weight: 900;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(20, 61, 36, 0.12);
+}
+
+.product-favorite-button.saved {
+  border-color: rgba(196, 0, 0, 0.35);
+  color: #c40000;
+}
+
 .product-content h3 {
   color: #b60000;
   font-size: 21px;
@@ -134,35 +161,105 @@
 }
 
 @media (max-width: 520px) {
+  .product-card {
+    border-radius: 7px;
+  }
+
+  .product-card:hover {
+    transform: none;
+  }
+
+  .product-image {
+    aspect-ratio: 1 / 0.92;
+    object-fit: contain;
+    padding: 8px;
+    background: #ffffff;
+  }
+
   .product-content {
-    padding: 18px 16px 22px;
+    padding: 8px 7px 12px;
   }
 
   .product-content h3 {
-    font-size: 19px;
-    min-height: auto;
+    min-height: 28px;
+    margin-bottom: 2px;
+    font-size: 14px;
+    line-height: 1.18;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   .product-price {
-    margin-bottom: 14px;
+    gap: 4px;
+    margin-bottom: 5px;
+    padding-bottom: 2px;
   }
 
   .price-amount {
-    font-size: 21px;
+    font-size: 17px;
   }
 
   .price-currency {
-    font-size: 21px;
+    font-size: 17px;
   }
 
   .product-description {
+    width: 100%;
     min-height: auto;
+    max-width: none;
+    color: #2b2f2c;
+    font-size: 11px;
+    line-height: 1.25;
+    display: block;
+    overflow: visible;
   }
 
   .top-selling-badge {
-    left: 10px;
-    top: 10px;
+    left: 7px;
+    top: 7px;
     font-size: 10px;
-    padding: 7px 9px;
+    padding: 6px 7px;
+  }
+
+  .product-favorite-button {
+    top: 7px;
+    right: 7px;
+    width: 30px;
+    height: 30px;
+    font-size: 19px;
+  }
+}
+
+@media (max-width: 360px) {
+  .product-content {
+    padding: 7px 5px 11px;
+  }
+
+  .product-content h3 {
+    font-size: 13px;
+  }
+
+  .price-amount,
+  .price-currency {
+    font-size: 16px;
+  }
+
+  .product-description {
+    font-size: 10px;
+  }
+
+  .top-selling-badge {
+    max-width: calc(100% - 14px);
+    font-size: 9px;
+    padding: 5px 6px;
+  }
+
+  .product-favorite-button {
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
   }
 }
