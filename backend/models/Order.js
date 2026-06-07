@@ -73,7 +73,7 @@ const orderSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
-      enum: ["Cash on Delivery", "Online Payment"],
+      enum: ["Cash on Delivery", "Online Payment", "PayHere"],
       required: true,
     },
 
@@ -83,6 +83,7 @@ const orderSchema = new mongoose.Schema(
         "Pending",
         "Paid",
         "Processing",
+        "Failed",
         "Refund Pending",
         "Cancelled",
       ],
@@ -192,6 +193,16 @@ const orderSchema = new mongoose.Schema(
         default: "",
         trim: true,
       },
+    },
+
+    payherePaymentId: {
+      type: String,
+      default: "",
+    },
+
+    payhereOrderId: {
+      type: String,
+      default: "",
     },
 
     status: {
