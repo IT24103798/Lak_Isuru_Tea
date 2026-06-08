@@ -710,13 +710,13 @@
 .review-btn {
   border: none;
   color: #ffffff;
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
-  box-shadow: 0 10px 20px rgba(124, 58, 237, 0.18);
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  box-shadow: 0 10px 20px rgba(34, 197, 94, 0.18);
 }
 
 .review-btn:hover {
   transform: translateY(-1px);
-  background: linear-gradient(135deg, #6d28d9, #7c3aed);
+  background: linear-gradient(135deg, #15803d, #16a34a);
 }
 
 .primary-btn:disabled,
@@ -2237,13 +2237,13 @@
 .review-btn {
   border: none;
   color: #ffffff;
-  background: linear-gradient(135deg, #7c3aed, #a855f7);
-  box-shadow: 0 10px 20px rgba(124, 58, 237, 0.18);
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  box-shadow: 0 10px 20px rgba(34, 197, 94, 0.18);
 }
 
 .review-btn:hover {
   transform: translateY(-1px);
-  background: linear-gradient(135deg, #6d28d9, #7c3aed);
+  background: linear-gradient(135deg, #15803d, #16a34a);
 }
 
 .primary-btn:disabled,

@@ -1,6 +1,14 @@
 import Cart from "../models/Cart.js";
 import Order from "../models/Order.js";
 import Product from "../models/Product.js";
+import User from "../models/User.js";
+import sendEmail from "../utils/sendEmail.js";
+
+import {
+  orderPlacedCustomerTemplate,
+  orderPlacedAdminTemplate,
+  orderDeliveredCustomerTemplate,
+} from "../utils/emailTemplates.js";
 
 // POST /api/orders
 export const createOrder = async (req, res) => {
@@ -30,7 +38,6 @@ export const createOrder = async (req, res) => {
       !customer.province ||
       !customer.district ||
       !customer.city ||
-      !customer.postalCode ||
       !paymentMethod
     ) {
       return res.status(400).json({
@@ -46,6 +53,7 @@ export const createOrder = async (req, res) => {
       price: Number(item.price),
     }));
 
+    // Check stock before creating order
     for (const item of items) {
       const productId = item.productId || item.product || item._id;
       const product = await Product.findById(productId);
@@ -63,22 +71,32 @@ export const createOrder = async (req, res) => {
       }
     }
 
+    const calculatedItemsTotal = formattedItems.reduce((sum, item) => {
+      return sum + Number(item.price || 0) * Number(item.quantity || 0);
+    }, 0);
+
+    const finalCartItemsTotal = Number(cartItemsTotal) || calculatedItemsTotal;
+    const finalDeliveryFee = Number(deliveryFee) || 0;
+    const finalTotal = Number(total) || finalCartItemsTotal + finalDeliveryFee;
+
     const paymentStatus =
       paymentMethod === "Cash on Delivery" ? "Pending" : "Paid";
 
+    // Create order
     const order = await Order.create({
       user: req.user._id,
       customer,
       items: formattedItems,
-      cartItemsTotal: Number(cartItemsTotal),
-      deliveryFee: Number(deliveryFee),
-      totalPrice: Number(total),
+      cartItemsTotal: finalCartItemsTotal,
+      deliveryFee: finalDeliveryFee,
+      totalPrice: finalTotal,
       paymentMethod,
       paymentStatus,
       orderStatus: "To Ship",
       status: "processing",
     });
 
+    // Reduce stock after order is successfully created
     for (const item of items) {
       const productId = item.productId || item.product || item._id;
 
@@ -89,13 +107,54 @@ export const createOrder = async (req, res) => {
       });
     }
 
+    // Remove user's cart after order is placed
     await Cart.findOneAndDelete({ user: req.user._id });
+
+    // Send emails without stopping order process if email fails
+    try {
+      // 1. Customer order placed email
+      await sendEmail(
+        order.customer.email,
+        `Your Lak Isuru Tea order is confirmed - #${order._id}`,
+        "Your order has been placed successfully.",
+        orderPlacedCustomerTemplate(order)
+      );
+
+      // 2. Find all admins from database
+      const admins = await User.find({
+        role: { $regex: /^admin$/i },
+      }).select("email");
+
+      const adminEmails = admins.map((admin) => admin.email).filter(Boolean);
+
+      // Optional fallback shop email
+      if (process.env.SHOP_EMAIL) {
+        adminEmails.push(process.env.SHOP_EMAIL);
+      }
+
+      // Remove duplicate emails
+      const uniqueAdminEmails = [...new Set(adminEmails)];
+
+      // 3. Admin new order email
+      if (uniqueAdminEmails.length > 0) {
+        await sendEmail(
+          uniqueAdminEmails.join(","),
+          `New Order Received - #${order._id}`,
+          "New order received.",
+          orderPlacedAdminTemplate(order)
+        );
+      }
+    } catch (emailError) {
+      console.error("Order email sending failed:", emailError.message);
+    }
 
     res.status(201).json({
       message: "Order placed successfully",
       order,
     });
   } catch (error) {
+    console.error("ORDER ERROR FULL:", error);
+
     res.status(500).json({
       message: "Server error while placing order",
       error: error.message,
@@ -229,9 +288,12 @@ export const cancelOrder = async (req, res) => {
       });
     }
 
+    // Restore stock when order is cancelled
     for (const item of order.items) {
       await Product.findByIdAndUpdate(item.product, {
-        $inc: { stock: item.quantity },
+        $inc: {
+          stock: Number(item.quantity),
+        },
       });
     }
 
@@ -282,6 +344,18 @@ export const confirmReceived = async (req, res) => {
     order.orderStatus = "To Review";
 
     await order.save();
+
+    // Customer delivered email
+    try {
+      await sendEmail(
+        order.customer.email,
+        `Your Lak Isuru Tea order has been delivered - #${order._id}`,
+        "Your order has been delivered successfully.",
+        orderDeliveredCustomerTemplate(order)
+      );
+    } catch (emailError) {
+      console.error("Delivered email sending failed:", emailError.message);
+    }
 
     res.status(200).json({
       message: "Order confirmed as received.",
@@ -378,12 +452,36 @@ export const updateOrderStatus = async (req, res) => {
       order.orderStatus = "Cancelled";
       order.paymentStatus =
         order.paymentStatus === "Paid" ? "Refund Pending" : "Cancelled";
+
       order.cancelledAt = new Date();
       order.cancelReason = order.cancelReason || "Cancelled by admin";
       order.cancelNote = order.cancelNote || "";
+
+      // Restore stock when admin cancels order
+      for (const item of order.items) {
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: {
+            stock: Number(item.quantity),
+          },
+        });
+      }
     }
 
     await order.save();
+
+    // Customer delivered email when admin marks order as delivered
+    if (status === "delivered") {
+      try {
+        await sendEmail(
+          order.customer.email,
+          `Your Lak Isuru Tea order has been delivered - #${order._id}`,
+          "Your order has been delivered successfully.",
+          orderDeliveredCustomerTemplate(order)
+        );
+      } catch (emailError) {
+        console.error("Delivered email sending failed:", emailError.message);
+      }
+    }
 
     res.status(200).json({
       message: "Order status updated successfully.",

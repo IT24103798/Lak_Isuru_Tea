@@ -32,7 +32,7 @@ const addressSchema = new mongoose.Schema(
 
     addressType: {
       type: String,
-      enum: ["HOME", "OFFICE", "OTHER", "Home", "Office", "Other"],
+      enum: ["HOME", "OFFICE"],
       default: "HOME",
     },
 
@@ -46,12 +46,14 @@ const addressSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      default: "",
     },
 
     addressLine2: {
       type: String,
       required: true,
       trim: true,
+      default: "",
     },
 
     landmark: {
@@ -79,8 +81,7 @@ const addressSchema = new mongoose.Schema(
     },
 
     postalCode: {
-      type: String,
-      required: true,
+      type: Number,
       trim: true,
     },
 
