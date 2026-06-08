@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import "../styles/Footer.css";
 
 const FacebookIcon = () => (
@@ -37,6 +38,15 @@ const Footer = () => {
           <p>
             <a href="mailto:luckisuru@gmail.com">luckisuru@gmail.com</a>
           </p>
+        </div>
+
+        <div className="footer-policies">
+          <h2>Policies</h2>
+          <nav className="footer-nav" aria-label="Policies">
+            <Link to="/terms-and-conditions">Terms and Conditions</Link>
+            <Link to="/privacy-policy">Privacy Policy</Link>
+            <Link to="/return-policy">Return Policy</Link>
+          </nav>
         </div>
 
         <div className="footer-right">

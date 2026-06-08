@@ -53,6 +53,7 @@ function ProductCard({ product, showFavorite = false, isFavorite = false, onTogg
             className="product-card-rating"
             aria-label={reviews.length ? `${averageRating.toFixed(1)} out of 5 stars` : "No ratings yet"}
           >
+            <span className="rating-number">{averageRating.toFixed(1)}</span>
             {Array.from({ length: 5 }, (_, index) => (
               <span className={index < roundedRating ? "filled" : ""} key={index}>
                 {"\u2605"}

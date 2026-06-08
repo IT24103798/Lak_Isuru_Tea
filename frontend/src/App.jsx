@@ -15,6 +15,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPasswordOtp from "./pages/ResetPassword";
 import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
+import PolicyPage from "./pages/PolicyPage";
 
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
@@ -132,6 +133,12 @@ function App() {
             <Route path="/reset-password" element={<ResetPasswordOtp />} />
             <Route path="/products" element={<Products />} />
             <Route path="/products/:id" element={<ProductDetails />} />
+            <Route
+              path="/terms-and-conditions"
+              element={<PolicyPage type="terms-and-conditions" />}
+            />
+            <Route path="/privacy-policy" element={<PolicyPage type="privacy-policy" />} />
+            <Route path="/return-policy" element={<PolicyPage type="return-policy" />} />
 
             <Route
               path="/cart"

@@ -26,16 +26,25 @@ const MyReturns = () => {
   }, [loadReturns]);
 
   return (
-    <div className="orders-page">
-      <h1 className="orders-title">My Returns</h1>
+    <div className="returns-page">
+      <header className="returns-header">
+        <div>
+          <span className="returns-eyebrow">Returns Center</span>
+          <h1 className="returns-title">My Returns</h1>
+          <p className="returns-subtitle">
+            Track returned orders and review eligibility before sending an item back.
+          </p>
+        </div>
+      </header>
 
       {error && <p className="error-text">{error}</p>}
       {loading && <p className="loading-text">Loading...</p>}
 
       {!loading && returns.length === 0 && !error && (
-        <div className="empty-state">
+        <div className="returns-empty-state">
           <i className="ti ti-arrow-back-up"></i>
-          <p>No returns found.</p>
+          <h2>No returns found</h2>
+          <p>Returned orders will appear here after they are processed.</p>
         </div>
       )}
 
