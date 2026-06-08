@@ -7,7 +7,6 @@ const statusLabelMap = {
   processing: "To Ship",
   shipped: "To Receive",
   delivered: "Delivered",
-  returned: "Returned",
   cancelled: "Cancelled",
 };
 
@@ -16,7 +15,6 @@ const statusColorMap = {
   processing: "blue",
   shipped: "purple",
   delivered: "green",
-  returned: "red",
   cancelled: "gray",
 };
 
@@ -26,7 +24,6 @@ const statusOptions = [
   { value: "processing", label: "To Ship" },
   { value: "shipped", label: "To Receive" },
   { value: "delivered", label: "Delivered" },
-  { value: "returned", label: "Returned" },
   { value: "cancelled", label: "Cancelled" },
 ];
 
@@ -457,7 +454,6 @@ const AdminOrders = () => {
                   <option value="processing">To Ship</option>
                   <option value="shipped">To Receive</option>
                   <option value="delivered">Delivered</option>
-                  <option value="returned">Returned</option>
                 </select>
 
                 <button
@@ -472,17 +468,6 @@ const AdminOrders = () => {
                 >
                   {isBusy ? "Updating..." : "Update Status"}
                 </button>
-
-                {!isCancelled && !isDelivered && !isShipped && (
-                  <button
-                    type="button"
-                    className="ship-btn"
-                    disabled={isBusy}
-                    onClick={() => quickShipOrder(order._id)}
-                  >
-                    {isBusy ? "Shipping..." : "Ship & Disable Cancel"}
-                  </button>
-                )}
               </div>
             </div>
           );

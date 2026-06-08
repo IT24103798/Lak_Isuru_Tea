@@ -2,9 +2,14 @@ import { useEffect, useState } from "react";
 import API from "../api/api";
 import locationData from "../data/locationData";
 import "../styles/AddressBook.css";
+import PhoneInputModule from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
+
+const PhoneInput = PhoneInputModule.default || PhoneInputModule;
 
 const emptyForm = {
   fullName: "",
+  email: "",
   phone: "",
   phoneNumber2: "",
   addressType: "HOME",
@@ -19,6 +24,45 @@ const emptyForm = {
   isDefaultBilling: false,
 };
 
+const cleanPhone = (value) => {
+  return String(value || "").replace(/[^\d]/g, "");
+};
+
+const formatPhoneForApi = (value) => {
+  const cleaned = cleanPhone(value);
+  return cleaned ? `+${cleaned}` : "";
+};
+
+const cleanAddressParts = (address) => {
+  const locationTokens = [
+    address.city,
+    address.district,
+    address.province,
+  ].filter(Boolean);
+
+  const streetParts = [address.addressLine1, address.addressLine2]
+    .filter(Boolean)
+    .map((part) =>
+      locationTokens.reduce((str, loc) => {
+        return str
+          .replace(new RegExp(`,?\\s*${loc}`, "gi"), "")
+          .trim()
+          .replace(/,\s*$/, "");
+      }, part)
+    )
+    .filter(Boolean);
+
+  return [
+    ...streetParts,
+    address.city,
+    address.district,
+    address.province,
+    address.postalCode,
+  ]
+    .filter(Boolean)
+    .join(", ");
+};
+
 const AddressBook = () => {
   const [addresses, setAddresses] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -29,23 +73,19 @@ const AddressBook = () => {
   const provinces = Object.keys(locationData);
 
   const districts = form.province
-    ? Object.keys(locationData[form.province])
+    ? Object.keys(locationData[form.province] || {})
     : [];
 
   const cities =
     form.province && form.district
-      ? locationData[form.province][form.district]
+      ? locationData[form.province]?.[form.district] || []
       : [];
 
   const loadAddresses = async () => {
     try {
       const { data } = await API.get("/addresses");
-
-      console.log("ADDRESS RESPONSE:", data);
-
       setAddresses(data.addresses || data || []);
-    } catch (error) {
-      console.log("ADDRESS LOAD ERROR:", error.response?.data || error.message);
+    } catch {
       setMessage("Failed to load addresses.");
     }
   };
@@ -75,6 +115,13 @@ const AddressBook = () => {
         };
       }
 
+      if (name === "postalCode") {
+        return {
+          ...prev,
+          postalCode: value.replace(/\D/g, ""),
+        };
+      }
+
       return {
         ...prev,
         [name]: type === "checkbox" ? checked : value,
@@ -82,16 +129,49 @@ const AddressBook = () => {
     });
   };
 
+  const handlePhoneChange = (fieldName, value) => {
+    setForm((prev) => ({
+      ...prev,
+      [fieldName]: cleanPhone(value),
+    }));
+  };
+
   const validateForm = () => {
     if (!form.fullName.trim()) return "Full name is required.";
+    if (!form.email.trim()) return "Email address is required.";
     if (!form.phone.trim()) return "Phone number is required.";
     if (!form.addressLine1.trim()) return "Address line 1 is required.";
     if (!form.addressLine2.trim()) return "Address line 2 is required.";
     if (!form.province) return "Province is required.";
     if (!form.district) return "District is required.";
     if (!form.city) return "City is required.";
-    if (!form.postalCode.trim()) return "Postcode is required.";
+
     return "";
+  };
+
+  const buildAddressPayload = () => {
+    const addressLine1 = form.addressLine1.trim();
+    const addressLine2 = form.addressLine2.trim();
+
+    return {
+      fullName: form.fullName.trim(),
+      email: form.email.trim(),
+      phone: formatPhoneForApi(form.phone),
+      phoneNumber1: formatPhoneForApi(form.phone),
+      phoneNumber2: formatPhoneForApi(form.phoneNumber2),
+      addressType: form.addressType === "OFFICE" ? "OFFICE" : "HOME",
+      addressLine: `${addressLine1}, ${addressLine2}`,
+      addressLine1,
+      addressLine2,
+      landmark: form.landmark.trim(),
+      province: form.province,
+      district: form.district,
+      city: form.city,
+      postalCode: form.postalCode.trim(),
+      isDefault: form.isDefaultShipping,
+      isDefaultShipping: form.isDefaultShipping,
+      isDefaultBilling: form.isDefaultBilling,
+    };
   };
 
   const handleSubmit = async (event) => {
@@ -101,30 +181,11 @@ const AddressBook = () => {
 
     if (validationError) {
       setMessage(validationError);
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
-    const addressData = {
-      fullName: form.fullName.trim(),
-      phone: form.phone.trim(),
-      phoneNumber1: form.phone.trim(),
-      phoneNumber2: form.phoneNumber2.trim(),
-
-      addressType: form.addressType,
-      addressLine: `${form.addressLine1.trim()}, ${form.addressLine2.trim()}`,
-      addressLine1: form.addressLine1.trim(),
-      addressLine2: form.addressLine2.trim(),
-      landmark: form.landmark.trim(),
-
-      province: form.province,
-      district: form.district,
-      city: form.city,
-      postalCode: form.postalCode.trim(),
-
-      isDefault: form.isDefaultShipping,
-      isDefaultShipping: form.isDefaultShipping,
-      isDefaultBilling: form.isDefaultBilling,
-    };
+    const addressData = buildAddressPayload();
 
     try {
       if (editingId) {
@@ -141,33 +202,32 @@ const AddressBook = () => {
       await loadAddresses();
     } catch (error) {
       setMessage(error.response?.data?.message || "Something went wrong.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
   const handleEdit = (address) => {
     setEditingId(address._id);
     setShowForm(true);
+    setMessage("");
 
     setForm({
       fullName: address.fullName || "",
-      phone: address.phone || address.phoneNumber1 || "",
-      phoneNumber2: address.phoneNumber2 || "",
-
-      addressType: address.addressType || "HOME",
+      email: address.email || "",
+      phone: cleanPhone(address.phone || address.phoneNumber1 || ""),
+      phoneNumber2: cleanPhone(address.phoneNumber2 || ""),
+      addressType: address.addressType === "OFFICE" ? "OFFICE" : "HOME",
       addressLine1: address.addressLine1 || "",
       addressLine2: address.addressLine2 || "",
       landmark: address.landmark || "",
-
       province: address.province || "",
       district: address.district || "",
       city: address.city || "",
-      postalCode: address.postalCode || "",
-
+      postalCode: String(address.postalCode || "").replace(/\D/g, ""),
       isDefaultShipping:
         address.isDefaultShipping !== undefined
           ? address.isDefaultShipping
           : address.isDefault || false,
-
       isDefaultBilling: address.isDefaultBilling || false,
     });
   };
@@ -177,7 +237,7 @@ const AddressBook = () => {
       await API.put(`/addresses/${id}/default-shipping`);
       setMessage("Default shipping address updated.");
       await loadAddresses();
-    } catch (error) {
+    } catch {
       setMessage("Failed to update default shipping address.");
     }
   };
@@ -187,7 +247,7 @@ const AddressBook = () => {
       await API.put(`/addresses/${id}/default-billing`);
       setMessage("Default billing address updated.");
       await loadAddresses();
-    } catch (error) {
+    } catch {
       setMessage("Failed to update default billing address.");
     }
   };
@@ -208,7 +268,7 @@ const AddressBook = () => {
               setMessage("");
             }}
           >
-            + ADD NEW ADDRESS
+            + Add New Address
           </button>
         </div>
 
@@ -219,7 +279,6 @@ const AddressBook = () => {
             <div className="address-table-header">
               <span>Full Name</span>
               <span>Address</span>
-              <span>Postcode</span>
               <span>Phone Number</span>
               <span>Status</span>
               <span>Action</span>
@@ -240,11 +299,9 @@ const AddressBook = () => {
                     <div className="address-detail">
                       <p>
                         <span className="address-type-pill">
-                          {address.addressType || "HOME"}
+                          {address.addressType === "OFFICE" ? "OFFICE" : "HOME"}
                         </span>
-                        {address.addressLine1}
-                        {address.addressLine2 &&
-                          `, ${address.addressLine2}`}
+                        {cleanAddressParts(address)}
                       </p>
 
                       {address.landmark && (
@@ -252,30 +309,19 @@ const AddressBook = () => {
                           Landmark: {address.landmark}
                         </p>
                       )}
-
-                      <p className="location-text">
-                        {address.province} - {address.district} -{" "}
-                        {address.city}
-                      </p>
-                    </div>
-
-                    <div className="address-postcode">
-                      {address.postalCode}
                     </div>
 
                     <div className="address-phone">
-                      {address.phone || address.phoneNumber1}
+                      {address.phone || address.phoneNumber1 || "-"}
                     </div>
 
                     <div className="address-default-labels">
-                      {(address.isDefaultShipping || address.isDefault) ? (
+                      {address.isDefaultShipping || address.isDefault ? (
                         <p>Default Shipping Address</p>
                       ) : (
                         <button
                           type="button"
-                          onClick={() =>
-                            handleSetDefaultShipping(address._id)
-                          }
+                          onClick={() => handleSetDefaultShipping(address._id)}
                         >
                           Make Shipping Default
                         </button>
@@ -286,9 +332,7 @@ const AddressBook = () => {
                       ) : (
                         <button
                           type="button"
-                          onClick={() =>
-                            handleSetDefaultBilling(address._id)
-                          }
+                          onClick={() => handleSetDefaultBilling(address._id)}
                         >
                           Make Billing Default
                         </button>
@@ -301,7 +345,7 @@ const AddressBook = () => {
                         className="edit-address-btn"
                         onClick={() => handleEdit(address)}
                       >
-                        EDIT
+                        Edit
                       </button>
                     </div>
                   </div>
@@ -323,32 +367,40 @@ const AddressBook = () => {
                   setShowForm(false);
                   setEditingId(null);
                   setForm(emptyForm);
+                  setMessage("");
                 }}
               >
                 Back to Address Book
               </button>
             </div>
 
-            <div className="address-type-row">
-              {["HOME", "OFFICE", "OTHER"].map((type) => (
-                <label
-                  key={type}
-                  className={
-                    form.addressType === type
-                      ? "address-type-card active"
-                      : "address-type-card"
-                  }
-                >
-                  <input
-                    type="radio"
-                    name="addressType"
-                    value={type}
-                    checked={form.addressType === type}
-                    onChange={handleChange}
-                  />
-                  <span>{type}</span>
-                </label>
-              ))}
+            <div className="form-group full-width">
+              <label>Address Type</label>
+
+              <div className="address-type-row">
+                {[
+                  { value: "HOME", label: "🏠 Home" },
+                  { value: "OFFICE", label: "🏢 Office" },
+                ].map((at) => (
+                  <label
+                    key={at.value}
+                    className={
+                      form.addressType === at.value
+                        ? "address-type-card active"
+                        : "address-type-card"
+                    }
+                  >
+                    <input
+                      type="radio"
+                      name="addressType"
+                      value={at.value}
+                      checked={form.addressType === at.value}
+                      onChange={handleChange}
+                    />
+                    {at.label}
+                  </label>
+                ))}
+              </div>
             </div>
 
             <div className="address-form-grid">
@@ -359,18 +411,51 @@ const AddressBook = () => {
                   name="fullName"
                   value={form.fullName}
                   onChange={handleChange}
-                  placeholder="Full Name"
+                  placeholder="Enter your full name"
                 />
               </div>
 
               <div className="form-group">
-                <label>Phone Number</label>
+                <label>Email Address</label>
                 <input
-                  type="tel"
-                  name="phone"
-                  value={form.phone}
+                  type="email"
+                  name="email"
+                  value={form.email}
                   onChange={handleChange}
-                  placeholder="071XXXXXXX"
+                  placeholder="Please enter your email address"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Phone Number 1</label>
+
+                <PhoneInput
+                  country="lk"
+                  enableSearch={true}
+                  value={form.phone}
+                  onChange={(value) => handlePhoneChange("phone", value)}
+                  inputProps={{
+                    name: "phone",
+                    required: true,
+                  }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>
+                  Phone Number 2{" "}
+                  <span className="optional-tag">Optional</span>
+                </label>
+
+                <PhoneInput
+                  country="lk"
+                  enableSearch={true}
+                  value={form.phoneNumber2}
+                  onChange={(value) => handlePhoneChange("phoneNumber2", value)}
+                  inputProps={{
+                    name: "phoneNumber2",
+                    required: false,
+                  }}
                 />
               </div>
 
@@ -381,7 +466,7 @@ const AddressBook = () => {
                   name="addressLine1"
                   value={form.addressLine1}
                   onChange={handleChange}
-                  placeholder="House no, building name"
+                  placeholder="House / Building no., Street / Road name"
                 />
               </div>
 
@@ -392,12 +477,14 @@ const AddressBook = () => {
                   name="addressLine2"
                   value={form.addressLine2}
                   onChange={handleChange}
-                  placeholder="Street name, area"
+                  placeholder="Area / Locality / Landmark"
                 />
               </div>
 
               <div className="form-group full-width">
-                <label>Landmark</label>
+                <label>
+                  Landmark <span className="optional-tag">Optional</span>
+                </label>
                 <input
                   type="text"
                   name="landmark"
@@ -458,13 +545,18 @@ const AddressBook = () => {
               </div>
 
               <div className="form-group">
-                <label>Postcode</label>
+                <label>
+                  Postal Code <span className="optional-tag">Optional</span>
+                </label>
                 <input
                   type="text"
                   name="postalCode"
                   value={form.postalCode}
                   onChange={handleChange}
-                  placeholder="Postcode"
+                  placeholder="e.g. 10345"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength="10"
                 />
               </div>
             </div>
@@ -492,7 +584,7 @@ const AddressBook = () => {
             </div>
 
             <button type="submit" className="save-address-main-btn">
-              {editingId ? "UPDATE ADDRESS" : "SAVE ADDRESS"}
+              {editingId ? "Update Address" : "Save Address"}
             </button>
           </form>
         )}
