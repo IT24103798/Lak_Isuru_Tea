@@ -171,10 +171,9 @@ const Payment = () => {
       }
     }
 
-  const validatePayment = () => {
-    if (!orderDraft) return "Order details not found.";
     return "";
   };
+
   const clearCheckoutStorage = () => {
     localStorage.removeItem("checkoutDraft");
     localStorage.removeItem("checkoutItems");
@@ -232,11 +231,6 @@ const Payment = () => {
       if (selectedPaymentMethod === "Cash on Delivery") {
         clearCheckoutStorage();
 
-      setOrderSuccess({
-        orderId: data.order?._id || "Confirmed",
-        total: orderDraft.total,
-        paymentMethod: selectedPaymentMethod,
-        customerName: normalizedCustomer.fullName,
         setOrderSuccess({
           orderId: createdOrder?._id || "Confirmed",
           total: orderDraft.total,
