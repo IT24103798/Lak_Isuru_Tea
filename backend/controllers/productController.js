@@ -19,9 +19,21 @@ const validateProductBody = ({ name, category, price, stock, image, description 
   return null;
 };
 
+const hasReviewablePurchase = async (userId, productId) => {
+  return Boolean(
+    await Order.exists({
+      user: userId,
+      "items.product": productId,
+      $or: [{ status: "delivered" }, { orderStatus: "To Review" }],
+    })
+  );
+};
+
 export const getProducts = async (req, res) => {
   try {
-    const products = await Product.find({}).sort({ createdAt: -1 }).lean();
+    const canViewHidden = req.user?.role === "admin" && req.query.includeHidden === "true";
+    const productFilter = canViewHidden ? {} : { isHidden: { $ne: true } };
+    const products = await Product.find(productFilter).sort({ createdAt: -1 }).lean();
     const salesTotals = await Order.aggregate([
       { $match: { status: { $nin: ["cancelled", "returned"] } } },
       { $unwind: "$items" },
@@ -33,8 +45,12 @@ export const getProducts = async (req, res) => {
       },
       { $sort: { soldQuantity: -1 } },
     ]);
+    const visibleProductIds = new Set(products.map((product) => product._id.toString()));
     const topSellingIds = new Set(
-      salesTotals.slice(0, TOP_SELLING_LIMIT).map((item) => item._id?.toString())
+      salesTotals
+        .filter((item) => visibleProductIds.has(item._id?.toString()))
+        .slice(0, TOP_SELLING_LIMIT)
+        .map((item) => item._id?.toString())
     );
     const salesByProductId = new Map(
       salesTotals.map((item) => [item._id?.toString(), item.soldQuantity])
@@ -58,7 +74,7 @@ export const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
 
-    if (!product) {
+    if (!product || (product.isHidden && req.user?.role !== "admin")) {
       return res.status(404).json({ message: "Product not found" });
     }
 
@@ -89,6 +105,7 @@ export const createProduct = async (req, res) => {
       image: req.body.image,
       description: req.body.description,
       featuredOnHome: Boolean(req.body.featuredOnHome),
+      isHidden: Boolean(req.body.isHidden),
     });
 
     res.status(201).json({
@@ -126,6 +143,7 @@ export const updateProduct = async (req, res) => {
     product.image = req.body.image;
     product.description = req.body.description;
     product.featuredOnHome = Boolean(req.body.featuredOnHome);
+    product.isHidden = Boolean(req.body.isHidden);
 
     const updatedProduct = await product.save();
 
@@ -136,6 +154,32 @@ export const updateProduct = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Server error while updating product",
+      error: error.message,
+    });
+  }
+};
+
+export const updateProductVisibility = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    product.isHidden = Boolean(req.body.isHidden);
+
+    const updatedProduct = await product.save();
+
+    res.status(200).json({
+      message: updatedProduct.isHidden
+        ? "Product hidden from customers"
+        : "Product visible to customers",
+      product: updatedProduct,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error while updating product visibility",
       error: error.message,
     });
   }
@@ -180,11 +224,7 @@ export const addProductReview = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    const hasPurchased = await Order.exists({
-      user: req.user._id,
-      "items.product": product._id,
-      status: { $nin: ["cancelled", "returned"] },
-    });
+    const hasPurchased = await hasReviewablePurchase(req.user._id, product._id);
 
     if (!hasPurchased) {
       return res.status(403).json({ message: "Only customers who purchased this product can review it" });
@@ -309,13 +349,7 @@ export const getReviewEligibility = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    const hasPurchased = Boolean(
-      await Order.exists({
-        user: req.user._id,
-        "items.product": product._id,
-        status: { $nin: ["cancelled", "returned"] },
-      })
-    );
+    const hasPurchased = await hasReviewablePurchase(req.user._id, product._id);
     const hasReviewed = product.reviews.some(
       (review) => review.user?.toString() === req.user._id.toString()
     );

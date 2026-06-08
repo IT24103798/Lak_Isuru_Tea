@@ -10,7 +10,7 @@ const AdminReviews = () => {
   useEffect(() => {
     const loadReviews = async () => {
       try {
-        const data = await getAllProducts();
+        const data = await getAllProducts({ includeHidden: true });
         setProducts(data.products || []);
       } catch (err) {
         setError(err.message || "Failed to load reviews");

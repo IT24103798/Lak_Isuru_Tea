@@ -81,6 +81,13 @@ export const createOrder = async (req, res) => {
 
     const paymentStatus =
       paymentMethod === "Cash on Delivery" ? "Pending" : "Paid";
+    const paymentStatus = "Pending";
+
+    const orderStatus =
+       paymentMethod === "Cash on Delivery" ? "To Ship" : "To Pay";
+
+    const status =
+      paymentMethod === "Cash on Delivery" ? "processing" : "pending";
 
     // Create order
     const order = await Order.create({

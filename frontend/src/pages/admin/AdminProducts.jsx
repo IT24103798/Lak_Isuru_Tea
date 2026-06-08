@@ -4,6 +4,7 @@ import {
   deleteProduct,
   getAllProducts,
   updateProduct,
+  updateProductVisibility,
 } from "../../services/productService";
 import { productCatalog } from "../../data/productCatalog";
 import "../../styles/AdminProducts.css";
@@ -18,6 +19,7 @@ const emptyForm = {
   image: "",
   description: "",
   featuredOnHome: false,
+  isHidden: false,
 };
 
 const findCatalogGroup = (category) => {
@@ -38,12 +40,13 @@ const AdminProducts = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [selectedTableCategory, setSelectedTableCategory] = useState("");
   const selectedCategoryGroup = findCatalogGroup(formData.category) || productCatalog[0];
 
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const data = await getAllProducts();
+      const data = await getAllProducts({ includeHidden: true });
       setProducts(data.products || []);
       setError("");
     } catch (err) {
@@ -128,6 +131,7 @@ const AdminProducts = () => {
       image: product.image || "",
       description: product.description || "",
       featuredOnHome: Boolean(product.featuredOnHome),
+      isHidden: Boolean(product.isHidden),
     });
     setMessage("");
     setError("");
@@ -154,11 +158,33 @@ const AdminProducts = () => {
     }
   };
 
+  const handleToggleVisibility = async (product) => {
+    try {
+      const nextIsHidden = !product.isHidden;
+
+      await updateProductVisibility(product._id, nextIsHidden);
+      setMessage(nextIsHidden ? "Product hidden from customers." : "Product visible to customers.");
+      setProducts((currentProducts) =>
+        currentProducts.map((currentProduct) =>
+          currentProduct._id === product._id
+            ? { ...currentProduct, isHidden: nextIsHidden }
+            : currentProduct
+        )
+      );
+      setError("");
+    } catch (err) {
+      setError(err.message || "Failed to update product visibility");
+    }
+  };
+
   const topSellingProducts = products
     .filter((product) => product.isTopSelling)
     .sort((firstProduct, secondProduct) => {
       return (secondProduct.soldQuantity || 0) - (firstProduct.soldQuantity || 0);
     });
+  const tableProducts = selectedTableCategory
+    ? products.filter((product) => product.category === selectedTableCategory)
+    : products;
 
   return (
     <div className="admin-products-page">
@@ -346,12 +372,31 @@ const AdminProducts = () => {
       </section>
 
       <section className="admin-product-list-card">
-        <h2>All Products</h2>
+        <div className="admin-product-list-heading">
+          <h2>All Products</h2>
+
+          <label>
+            Category
+            <select
+              value={selectedTableCategory}
+              onChange={(event) => setSelectedTableCategory(event.target.value)}
+            >
+              <option value="">All categories</option>
+              {productCatalog.map((group) => (
+                <option value={group.category} key={group.category}>
+                  {group.category}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
         {loading ? (
           <p>Loading products...</p>
         ) : products.length === 0 ? (
           <p>No products found. Add your first product above.</p>
+        ) : tableProducts.length === 0 ? (
+          <p>No products found in this category.</p>
         ) : (
           <div className="admin-product-table-wrap">
             <table className="admin-product-table">
@@ -364,12 +409,13 @@ const AdminProducts = () => {
                   <th>Tea Form</th>
                   <th>Price</th>
                   <th>Stock</th>
+                  <th>Visibility</th>
                   <th>Public Home</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {products.map((product) => (
+                {tableProducts.map((product) => (
                   <tr key={product._id}>
                     <td>
                       <img
@@ -390,21 +436,52 @@ const AdminProducts = () => {
                     <td>Rs. {product.price}</td>
                     <td>{product.stock}</td>
                     <td>
+                      {product.isHidden ? (
+                        <span className="product-flag hidden-flag">Hidden</span>
+                      ) : (
+                        <span className="product-flag visible-flag">Visible</span>
+                      )}
+                    </td>
+                    <td>
                       {product.isTopSelling && <span className="product-flag">Top selling</span>}
                       {product.featuredOnHome && <span className="product-flag">Shown by admin</span>}
                       {!product.isTopSelling && !product.featuredOnHome && "No"}
                     </td>
                     <td>
                       <div className="table-actions">
-                        <button type="button" onClick={() => handleEdit(product)}>
-                          Edit
+                        <button
+                          type="button"
+                          className="icon-action edit-action"
+                          onClick={() => handleEdit(product)}
+                          aria-label={`Edit ${product.name}`}
+                          title="Edit"
+                        >
+                          <i className="ti ti-pencil" aria-hidden="true"></i>
                         </button>
                         <button
                           type="button"
-                          className="danger-btn"
-                          onClick={() => handleDelete(product._id)}
+                          className={`icon-action ${product.isHidden ? "show-btn" : "hide-btn"}`}
+                          onClick={() => handleToggleVisibility(product)}
+                          aria-label={
+                            product.isHidden
+                              ? `Show ${product.name} to customers`
+                              : `Hide ${product.name} from customers`
+                          }
+                          title={product.isHidden ? "Show" : "Hide"}
                         >
-                          Delete
+                          <i
+                            className={product.isHidden ? "ti ti-eye" : "ti ti-eye-off"}
+                            aria-hidden="true"
+                          ></i>
+                        </button>
+                        <button
+                          type="button"
+                          className="icon-action danger-btn"
+                          onClick={() => handleDelete(product._id)}
+                          aria-label={`Delete ${product.name}`}
+                          title="Delete"
+                        >
+                          <i className="ti ti-trash" aria-hidden="true"></i>
                         </button>
                       </div>
                     </td>

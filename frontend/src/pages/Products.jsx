@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
+import { useAuth } from "../context/AuthContext";
 import { productCatalog } from "../data/productCatalog";
 import { getAllProducts } from "../services/productService";
 import "../styles/Home.css";
@@ -38,11 +39,29 @@ const teaGiftOptions =
 
 const teaFormOptions = ["Tea Bags", "Loose Tea"];
 
+const getCustomerStorageKey = (baseKey, userId) => `${baseKey}:${userId || "guest"}`;
+
+const readStoredArray = (key) => {
+  try {
+    const storedValue = localStorage.getItem(key);
+    const parsedValue = storedValue ? JSON.parse(storedValue) : [];
+
+    return Array.isArray(parsedValue) ? parsedValue : [];
+  } catch {
+    return [];
+  }
+};
+
 function Products() {
+  const { userInfo } = useAuth();
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
+  const [wishlistProductIds, setWishlistProductIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const isCustomerUser = userInfo && userInfo.role !== "admin";
+  const customerId = userInfo?._id || userInfo?.id;
+  const wishlistStorageKey = getCustomerStorageKey("lakIsuruWishlist", customerId);
 
   const searchTerm = searchParams.get("search") || "";
   const [selectedTeaType, setSelectedTeaType] = useState(
@@ -70,6 +89,24 @@ function Products() {
 
     loadProducts();
   }, []);
+
+  useEffect(() => {
+    if (!isCustomerUser) {
+      setWishlistProductIds([]);
+      return;
+    }
+
+    setWishlistProductIds(readStoredArray(wishlistStorageKey));
+  }, [isCustomerUser, wishlistStorageKey]);
+
+  const toggleWishlistProduct = (productId) => {
+    const nextWishlistIds = wishlistProductIds.includes(productId)
+      ? wishlistProductIds.filter((savedProductId) => savedProductId !== productId)
+      : [productId, ...wishlistProductIds].slice(0, 12);
+
+    setWishlistProductIds(nextWishlistIds);
+    localStorage.setItem(wishlistStorageKey, JSON.stringify(nextWishlistIds));
+  };
 
   const normalizedSearchTerm = searchTerm.trim().toLowerCase();
   const normalizedTeaType = selectedTeaType.trim().toLowerCase();
@@ -289,7 +326,13 @@ function Products() {
         {!loading && !error && filteredProducts.length > 0 && (
           <div className="product-grid">
             {filteredProducts.map((product) => (
-              <ProductCard product={product} key={product._id} />
+              <ProductCard
+                product={product}
+                key={product._id}
+                showFavorite={Boolean(isCustomerUser)}
+                isFavorite={wishlistProductIds.includes(product._id)}
+                onToggleFavorite={toggleWishlistProduct}
+              />
             ))}
           </div>
         )}

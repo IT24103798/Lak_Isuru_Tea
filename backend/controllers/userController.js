@@ -112,7 +112,7 @@ export const getUserProfile = async (req, res) => {
 // PUT /api/users/profile
 export const updateUserProfile = async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, phone, address } = req.body;
 
     const user = await User.findById(req.user._id);
 
@@ -134,13 +134,15 @@ export const updateUserProfile = async (req, res) => {
       });
     }
 
-    if (!/^[A-Za-z\s]+$/.test(name)) {
+    if (phone && !/^\+?[0-9]{7,15}$/.test(phone)) {
       return res.status(400).json({
-        message: "Name can contain only letters",
+        message: "Phone number must be valid",
       });
     }
 
     user.name = name.trim();
+    user.phone = phone || user.phone;
+    user.address = address !== undefined ? address : user.address;
 
     const updatedUser = await user.save();
 
@@ -151,6 +153,7 @@ export const updateUserProfile = async (req, res) => {
         name: updatedUser.name,
         email: updatedUser.email,
         phone: updatedUser.phone,
+        address: updatedUser.address,
         role: updatedUser.role,
         provider: updatedUser.provider,
       },
@@ -464,7 +467,7 @@ export const updateUser = async (req, res) => {
     if (user) {
       user.name = req.body.name || user.name;
       user.email = req.body.email || user.email;
-      user.role = req.body.role || user.role;
+      user.phone = req.body.phone || user.phone;
       user.isActive = req.body.isActive !== undefined ? req.body.isActive : user.isActive;
 
       const updatedUser = await user.save();
@@ -473,6 +476,7 @@ export const updateUser = async (req, res) => {
         _id: updatedUser._id,
         name: updatedUser.name,
         email: updatedUser.email,
+        phone: updatedUser.phone,
         role: updatedUser.role,
         isActive: updatedUser.isActive,
       });

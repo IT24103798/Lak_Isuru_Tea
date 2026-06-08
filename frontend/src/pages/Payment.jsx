@@ -69,6 +69,17 @@ const Payment = () => {
       address: address.address || fullAddress,
     };
   };
+  useEffect(() => {
+    const scriptId = "payhere-script";
+
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://www.payhere.lk/lib/payhere.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, []);
 
   const loadDefaultBillingAddress = async () => {
     try {
@@ -91,7 +102,12 @@ const Payment = () => {
     }
 
     setOrderDraft(savedDraft);
-    setSelectedPaymentMethod(savedDraft.paymentMethod || "Cash on Delivery");
+
+    if (savedDraft.paymentMethod === "Online Payment") {
+      setSelectedPaymentMethod("PayHere");
+    } else {
+      setSelectedPaymentMethod(savedDraft.paymentMethod || "Cash on Delivery");
+    }
     loadDefaultBillingAddress();
   }, [navigate]);
 
@@ -155,7 +171,13 @@ const Payment = () => {
       }
     }
 
+  const validatePayment = () => {
+    if (!orderDraft) return "Order details not found.";
     return "";
+  };
+  const clearCheckoutStorage = () => {
+    localStorage.removeItem("checkoutDraft");
+    localStorage.removeItem("checkoutItems");
   };
 
   const confirmOrder = async () => {
@@ -199,22 +221,95 @@ const Payment = () => {
         })),
 
         paymentMethod: selectedPaymentMethod,
-        paymentStatus:
-          selectedPaymentMethod === "Cash on Delivery" ? "Pending" : "Paid",
-        orderStatus: "To Ship",
+        paymentStatus: "Pending",
+        orderStatus:
+          selectedPaymentMethod === "Cash on Delivery" ? "To Ship" : "To Pay",
       };
 
       const { data } = await API.post("/orders", finalOrderData);
+      const createdOrder = data.order;
 
-      localStorage.removeItem("checkoutDraft");
-      localStorage.removeItem("checkoutItems");
+      if (selectedPaymentMethod === "Cash on Delivery") {
+        clearCheckoutStorage();
 
       setOrderSuccess({
         orderId: data.order?._id || "Confirmed",
         total: orderDraft.total,
         paymentMethod: selectedPaymentMethod,
         customerName: normalizedCustomer.fullName,
+        setOrderSuccess({
+          orderId: createdOrder?._id || "Confirmed",
+          total: orderDraft.total,
+          paymentMethod: selectedPaymentMethod,
+          customerName: orderDraft.customer.fullName,
+          orderStatus: "To Ship",
+        });
+
+        return;
+      }
+
+      const hashResponse = await API.post("/payments/payhere/hash", {
+        orderId: createdOrder._id,
+        amount: orderDraft.total,
       });
+
+      const payhereData = hashResponse.data;
+
+      if (!window.payhere) {
+        setError("PayHere payment script is still loading. Please try again.");
+        return;
+      }
+
+      window.payhere.onCompleted = async function (paymentId) {
+        await API.put(`/orders/${createdOrder._id}/pay`, {
+          paymentId,
+        });
+
+        clearCheckoutStorage();
+
+        setOrderSuccess({
+          orderId: createdOrder._id,
+          total: orderDraft.total,
+          paymentMethod: "PayHere",
+          customerName: orderDraft.customer.fullName,
+          orderStatus: "To Ship",
+        });
+      };
+
+      window.payhere.onDismissed = function () {
+        setError("Payment was cancelled before completion.");
+      };
+
+      window.payhere.onError = function () {
+        setError("PayHere payment failed. Please try again.");
+      };
+
+      const payment = {
+        sandbox: payhereData.sandbox,
+        merchant_id: payhereData.merchantId,
+        return_url: payhereData.returnUrl,
+        cancel_url: payhereData.cancelUrl,
+        notify_url: payhereData.notifyUrl,
+        order_id: payhereData.orderId,
+        items: "Lak Isuru Tea Order",
+        amount: payhereData.amount,
+        currency: payhereData.currency,
+        hash: payhereData.hash,
+
+        first_name: orderDraft.customer.fullName,
+        last_name: "",
+        email: orderDraft.customer.email,
+        phone: orderDraft.customer.phone,
+        address: `${orderDraft.customer.addressLine1}, ${orderDraft.customer.addressLine2}`,
+        city: orderDraft.customer.city,
+        country: "Sri Lanka",
+
+        delivery_address: `${orderDraft.customer.addressLine1}, ${orderDraft.customer.addressLine2}`,
+        delivery_city: orderDraft.customer.city,
+        delivery_country: "Sri Lanka",
+      };
+
+      window.payhere.startPayment(payment);
     } catch (err) {
         console.log("ORDER ERROR FULL:", err);
         console.log("ORDER ERROR DATA:", JSON.stringify(err.response?.data, null, 2));
@@ -266,7 +361,7 @@ const Payment = () => {
 
               <div>
                 <span>Order Status</span>
-                <strong>To Ship</strong>
+                <strong>{orderSuccess.orderStatus}</strong>
               </div>
             </div>
 
@@ -478,7 +573,7 @@ const Payment = () => {
 
                 <label
                   className={
-                    selectedPaymentMethod === "Online Payment"
+                    selectedPaymentMethod === "PayHere"
                       ? "payment-view-card active online"
                       : "payment-view-card online"
                   }
@@ -486,8 +581,8 @@ const Payment = () => {
                   <input
                     type="radio"
                     name="paymentMethod"
-                    value="Online Payment"
-                    checked={selectedPaymentMethod === "Online Payment"}
+                    value="PayHere"
+                    checked={selectedPaymentMethod === "PayHere"}
                     onChange={(event) =>
                       setSelectedPaymentMethod(event.target.value)
                     }
@@ -496,69 +591,13 @@ const Payment = () => {
                   <i className="ti ti-credit-card"></i>
 
                   <div>
-                    <h3>Online Payment</h3>
-                    <p>Pay securely using card payment.</p>
+                    <h3>PayHere Online Payment</h3>
+                    <p>Pay securely using PayHere sandbox payment gateway.</p>
                   </div>
                 </label>
               </div>
 
-              {selectedPaymentMethod === "Online Payment" && (
-                <div className="online-payment-form">
-                  <div className="secure-payment-note">
-                    <i className="ti ti-shield-lock"></i>
-                    <span>Secure online payment details</span>
-                  </div>
-
-                  <div className="payment-form-grid">
-                    <div className="payment-form-group full-width">
-                      <label>Card Holder Name</label>
-                      <input
-                        type="text"
-                        name="cardName"
-                        placeholder="Enter name on card"
-                        value={paymentDetails.cardName}
-                        onChange={handlePaymentChange}
-                      />
-                    </div>
-
-                    <div className="payment-form-group full-width">
-                      <label>Card Number</label>
-                      <input
-                        type="text"
-                        name="cardNumber"
-                        placeholder="0000 0000 0000 0000"
-                        value={paymentDetails.cardNumber}
-                        onChange={handlePaymentChange}
-                        maxLength="19"
-                      />
-                    </div>
-
-                    <div className="payment-form-group">
-                      <label>Expiry Date</label>
-                      <input
-                        type="text"
-                        name="expiryDate"
-                        placeholder="MM/YY"
-                        value={paymentDetails.expiryDate}
-                        onChange={handlePaymentChange}
-                        maxLength="5"
-                      />
-                    </div>
-
-                    <div className="payment-form-group">
-                      <label>CVV</label>
-                      <input
-                        type="password"
-                        name="cvv"
-                        placeholder="***"
-                        value={paymentDetails.cvv}
-                        onChange={handlePaymentChange}
-                        maxLength="4"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
+        
             </section>
           </main>
 
@@ -637,9 +676,9 @@ const Payment = () => {
               disabled={placingOrder}
             >
               {placingOrder
-                ? "Confirming Order..."
-                : selectedPaymentMethod === "Online Payment"
-                ? "Pay & Confirm Order"
+                ? "Processing..."
+                : selectedPaymentMethod === "PayHere"
+                ? "Pay with PayHere"
                 : "Confirm Order"}
 
               {!placingOrder && <i className="ti ti-check"></i>}

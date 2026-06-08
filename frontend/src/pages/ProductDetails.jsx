@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import API from "../api/api";
+import ProductCard from "../components/ProductCard";
 import {
   addProductReview,
   deleteProductReview,
+  getAllProducts,
   getProductById,
   getReviewEligibility,
   updateProductReview,
@@ -25,6 +27,7 @@ function ProductDetails() {
   const [reviewEligibility, setReviewEligibility] = useState(null);
   const [checkingReviewEligibility, setCheckingReviewEligibility] = useState(Boolean(user));
   const [editingReviewId, setEditingReviewId] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
 
   const reviews = useMemo(() => product?.reviews || [], [product]);
 
@@ -33,10 +36,27 @@ function ProductDetails() {
       try {
         setLoading(true);
         const data = await getProductById(id);
+        const currentProduct = data.product;
 
-        setProduct(data.product);
-        setQuantity(data.product.stock > 0 ? 1 : 0);
+        setProduct(currentProduct);
+        setQuantity(currentProduct.stock > 0 ? 1 : 0);
         setError("");
+
+        try {
+          const productsData = await getAllProducts();
+          const recommendations = (productsData.products || [])
+            .filter((relatedProduct) => relatedProduct._id !== currentProduct._id)
+            .filter(
+              (relatedProduct) =>
+                relatedProduct.category === currentProduct.category ||
+                relatedProduct.subcategory === currentProduct.subcategory
+            )
+            .slice(0, 4);
+
+          setRelatedProducts(recommendations);
+        } catch {
+          setRelatedProducts([]);
+        }
       } catch {
         setError("Failed to load product details. Please try again.");
       } finally {
@@ -46,6 +66,34 @@ function ProductDetails() {
 
     loadProduct();
   }, [id]);
+
+  useEffect(() => {
+    if (!product || !user || user.role === "admin") {
+      return;
+    }
+
+    const userId = user._id || user.id;
+    const storageKey = `lakIsuruRecentlyViewed:${userId || "guest"}`;
+    const recentProduct = {
+      _id: product._id,
+      name: product.name,
+      image: product.image,
+      price: product.price,
+      description: product.description,
+    };
+
+    try {
+      const storedProducts = JSON.parse(localStorage.getItem(storageKey)) || [];
+      const recentlyViewedProducts = [
+        recentProduct,
+        ...storedProducts.filter((storedProduct) => storedProduct._id !== product._id),
+      ].slice(0, 8);
+
+      localStorage.setItem(storageKey, JSON.stringify(recentlyViewedProducts));
+    } catch {
+      localStorage.setItem(storageKey, JSON.stringify([recentProduct]));
+    }
+  }, [product, user]);
 
   useEffect(() => {
     const loadReviewEligibility = async () => {
@@ -362,6 +410,18 @@ function ProductDetails() {
             <p className="review-status-note">Checking your review eligibility...</p>
           )}
 
+          {user &&
+            user.role !== "admin" &&
+            !checkingReviewEligibility &&
+            reviewEligibility &&
+            !reviewEligibility.canReview &&
+            !reviewEligibility.hasPurchased &&
+            !editingReviewId && (
+              <p className="review-status-note">
+                You can review this product after you purchase and receive it.
+              </p>
+            )}
+
           {user && !checkingReviewEligibility && (reviewEligibility?.canReview || editingReviewId) && (
             <form className="review-form" onSubmit={handleReviewSubmit}>
               <div className="review-form-heading">
@@ -471,6 +531,20 @@ function ProductDetails() {
             )}
           </div>
         </section>
+
+        {relatedProducts.length > 0 && (
+          <section className="you-may-like-section" aria-label="You may also like">
+            <div className="you-may-like-heading">
+              <h2>You May Also Like</h2>
+            </div>
+
+            <div className="you-may-like-grid">
+              {relatedProducts.map((relatedProduct) => (
+                <ProductCard product={relatedProduct} key={relatedProduct._id} />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );

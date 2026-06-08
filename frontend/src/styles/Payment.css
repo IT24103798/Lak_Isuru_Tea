@@ -860,3 +860,13 @@
     grid-template-columns: 1fr;
   }
 }
+/* Better PayHere card look */
+.payment-view-card.online.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.payment-view-card.online.active::after {
+  background: #2563eb;
+}
+
