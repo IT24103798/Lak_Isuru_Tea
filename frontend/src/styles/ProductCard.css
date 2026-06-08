@@ -150,11 +150,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  gap: 2px;
   color: #d8d8d8;
   font-size: 17px;
   line-height: 1;
   margin: 0 0 13px;
+}
+
+.product-card-rating .rating-number {
+  margin-right: 4px;
+  color: #143d24;
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .product-card-rating span.filled {

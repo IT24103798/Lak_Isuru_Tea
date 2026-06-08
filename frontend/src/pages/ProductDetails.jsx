@@ -30,6 +30,10 @@ function ProductDetails() {
   const [relatedProducts, setRelatedProducts] = useState([]);
 
   const reviews = useMemo(() => product?.reviews || [], [product]);
+  const writtenReviews = useMemo(
+    () => reviews.filter((review) => review.comment?.trim()),
+    [reviews]
+  );
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -210,19 +214,12 @@ function ProductDetails() {
       return;
     }
 
-    const trimmedComment = comment.trim();
-
-    if (!trimmedComment) {
-      alert("Please enter your review.");
-      return;
-    }
-
     try {
       setSubmittingReview(true);
 
       const reviewPayload = {
         rating: Number(rating),
-        comment: trimmedComment,
+        comment: comment.trim(),
       };
       const data = editingReviewId
         ? await updateProductReview(product._id, editingReviewId, reviewPayload)
@@ -243,7 +240,7 @@ function ProductDetails() {
   const handleEditReview = (review) => {
     setEditingReviewId(review._id);
     setRating(review.rating);
-    setComment(review.comment);
+    setComment(review.comment || "");
     document.querySelector(".reviews-section")?.scrollIntoView({ behavior: "smooth" });
   };
 
@@ -480,8 +477,8 @@ function ProductDetails() {
           </div>
 
           <div className="review-list">
-            {reviews.length > 0 ? (
-              reviews.map((review) => (
+            {writtenReviews.length > 0 ? (
+              writtenReviews.map((review) => (
                 <article
                   className={`review-item ${review.user === user?._id ? "own-review" : ""}`}
                   key={review._id}
@@ -505,7 +502,7 @@ function ProductDetails() {
                       <span>{"★".repeat(5 - review.rating)}</span>
                     </p>
                   </div>
-                  <p className="review-comment">{review.comment}</p>
+                  {review.comment && <p className="review-comment">{review.comment}</p>}
                   {review.user === user?._id && (
                     <div className="review-actions">
                       <button
@@ -527,7 +524,7 @@ function ProductDetails() {
                 </article>
               ))
             ) : (
-              <p className="empty-reviews">No reviews for this product yet.</p>
+              <p className="empty-reviews">No written reviews for this product yet.</p>
             )}
           </div>
         </section>

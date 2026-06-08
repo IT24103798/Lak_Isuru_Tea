@@ -643,7 +643,7 @@
   width: min(1120px, 100%);
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-auto-rows: 220px;
+  grid-auto-rows: 250px;
   gap: 18px;
   margin: 0 auto;
 }
@@ -652,6 +652,7 @@
   position: relative;
   display: flex;
   align-items: end;
+  min-height: 250px;
   overflow: hidden;
   border-radius: 8px;
   background-color: #143d24;
@@ -686,7 +687,7 @@
 
 .category-showcase-content {
   width: 100%;
-  padding: 30px;
+  padding: 24px;
   text-align: left;
 }
 
@@ -705,14 +706,14 @@
 
 .category-showcase-content h3 {
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 32px;
-  line-height: 1.1;
-  margin: 0 0 10px;
+  font-size: clamp(27px, 2.65vw, 34px);
+  line-height: 1.04;
+  margin: 0 0 12px;
   text-shadow: 0 2px 15px rgba(0, 0, 0, 0.4);
 }
 
 .category-showcase-card:first-child .category-showcase-content h3 {
-  font-size: 46px;
+  font-size: clamp(38px, 4vw, 46px);
 }
 
 .category-showcase-content p {
@@ -1079,7 +1080,7 @@
 
   .category-showcase-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: 190px;
+    grid-auto-rows: 220px;
     gap: 10px;
   }
 
@@ -1095,6 +1096,7 @@
   .category-showcase-content h3,
   .category-showcase-card:first-child .category-showcase-content h3 {
     font-size: 25px;
+    line-height: 1.08;
   }
 
   .category-showcase-content p {
@@ -1206,7 +1208,7 @@
   }
 
   .category-showcase-grid {
-    grid-auto-rows: 170px;
+    grid-auto-rows: 188px;
   }
 
   .category-showcase-content {
@@ -1220,7 +1222,7 @@
 
   .category-showcase-content h3,
   .category-showcase-card:first-child .category-showcase-content h3 {
-    font-size: 20px;
+    font-size: 22px;
   }
 
   .category-showcase-content p {
