@@ -525,19 +525,6 @@ const MyOrders = () => {
                       </button>
                     )}
 
-                    {currentStatus === "shipped" && (
-                      <button
-                        type="button"
-                        className="receive-btn"
-                        disabled={isBusy}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleOrderReceived(order._id);
-                        }}
-                      >
-                        {isBusy ? "Updating..." : "Order Received"}
-                      </button>
-                    )}
                   </div>
                 </div>
               );

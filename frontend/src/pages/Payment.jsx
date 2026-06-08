@@ -21,6 +21,54 @@ const Payment = () => {
 
   const navigate = useNavigate();
 
+  const normalizeAddressType = (type) => {
+    const value = String(type || "Home").toLowerCase();
+
+    if (value === "office") return "Office";
+    if (value === "home") return "Home";
+
+    return "Home";
+  };
+
+  const normalizePhone = (phone) => {
+    const cleaned = String(phone || "").replace(/[^\d]/g, "");
+    return cleaned ? `+${cleaned}` : "";
+  };
+
+  const normalizeAddressPayload = (address = {}) => {
+    const addressLine1 =
+      address.addressLine1 || address.addressLine || address.address || "";
+    const addressLine2 = address.addressLine2 || "";
+
+    const fullAddress = [
+      addressLine1,
+      addressLine2,
+      address.city,
+      address.district,
+      address.province,
+      address.postalCode,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    return {
+      ...address,
+      fullName: address.fullName || "",
+      email: address.email || "",
+      phone: normalizePhone(address.phone || address.phoneNumber1),
+      phoneNumber1: normalizePhone(address.phoneNumber1 || address.phone),
+      phoneNumber2: normalizePhone(address.phoneNumber2),
+      addressType: normalizeAddressType(address.addressType),
+      addressLine: addressLine1,
+      addressLine1,
+      addressLine2,
+      city: address.city || "",
+      district: address.district || "",
+      province: address.province || "",
+      postalCode: address.postalCode || "",
+      address: address.address || fullAddress,
+    };
+  };
   useEffect(() => {
     const scriptId = "payhere-script";
 
@@ -40,7 +88,7 @@ const Payment = () => {
       if (data.address) {
         setBillingAddress(data.address);
       }
-    } catch (error) {
+    } catch {
       console.log("No default billing address found.");
     }
   };
@@ -63,6 +111,66 @@ const Payment = () => {
     loadDefaultBillingAddress();
   }, [navigate]);
 
+  const handlePaymentChange = (event) => {
+    const { name, value } = event.target;
+
+    let formattedValue = value;
+
+    if (name === "cardNumber") {
+      formattedValue = value
+        .replace(/\D/g, "")
+        .replace(/(.{4})/g, "$1 ")
+        .trim()
+        .slice(0, 19);
+    }
+
+    if (name === "expiryDate") {
+      formattedValue = value
+        .replace(/\D/g, "")
+        .replace(/^(\d{2})(\d)/, "$1/$2")
+        .slice(0, 5);
+    }
+
+    if (name === "cvv") {
+      formattedValue = value.replace(/\D/g, "").slice(0, 4);
+    }
+
+    setPaymentDetails((prev) => ({
+      ...prev,
+      [name]: formattedValue,
+    }));
+  };
+
+  const validatePayment = () => {
+    if (!orderDraft) return "Order details not found.";
+
+    if (selectedPaymentMethod === "Online Payment") {
+      if (!paymentDetails.cardName.trim()) {
+        return "Card holder name is required.";
+      }
+
+      const cardNumberDigits = paymentDetails.cardNumber.replace(/\D/g, "");
+      if (!cardNumberDigits || cardNumberDigits.length < 12) {
+        return "Please enter a valid card number.";
+      }
+
+      if (!paymentDetails.expiryDate.trim()) {
+        return "Expiry date is required.";
+      }
+
+      if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(paymentDetails.expiryDate)) {
+        return "Expiry date must be in MM/YY format.";
+      }
+
+      if (!paymentDetails.cvv.trim()) {
+        return "CVV is required.";
+      }
+
+      if (paymentDetails.cvv.length < 3) {
+        return "Please enter a valid CVV.";
+      }
+    }
+
   const validatePayment = () => {
     if (!orderDraft) return "Order details not found.";
     return "";
@@ -77,34 +185,46 @@ const Payment = () => {
 
     if (validationError) {
       setError(validationError);
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
     try {
       setPlacingOrder(true);
       setError("");
-      const normalizeAddressType = (type) => {
-        const value = String(type || "Home").toLowerCase();
 
-        if (value === "home") return "Home";
-        if (value === "office") return "Office";
-        if (value === "other") return "Other";
-
-        return "Home";
-      };
+      const normalizedCustomer = normalizeAddressPayload(orderDraft.customer);
+      const normalizedShippingAddress = normalizeAddressPayload(
+        orderDraft.shippingAddress || orderDraft.customer
+      );
+      const normalizedBillingAddress = normalizeAddressPayload(
+        orderDraft.billingAddress || orderDraft.customer
+      );
 
       const finalOrderData = {
         ...orderDraft,
+
         customer: {
-          ...orderDraft.customer,
-          addressType: normalizeAddressType(orderDraft.customer.addressType),
+          ...normalizedCustomer,
+          billingAddress: normalizedBillingAddress,
         },
+
+        shippingAddress: normalizedShippingAddress,
+        billingAddress: normalizedBillingAddress,
+
+        items: (orderDraft.items || []).map((item) => ({
+          productId: item.productId || item.product || item._id,
+          name: item.name,
+          price: Number(item.price),
+          quantity: Number(item.quantity),
+          image: item.image,
+        })),
+
         paymentMethod: selectedPaymentMethod,
         paymentStatus: "Pending",
         orderStatus:
           selectedPaymentMethod === "Cash on Delivery" ? "To Ship" : "To Pay",
       };
-
 
       const { data } = await API.post("/orders", finalOrderData);
       const createdOrder = data.order;
@@ -112,6 +232,11 @@ const Payment = () => {
       if (selectedPaymentMethod === "Cash on Delivery") {
         clearCheckoutStorage();
 
+      setOrderSuccess({
+        orderId: data.order?._id || "Confirmed",
+        total: orderDraft.total,
+        paymentMethod: selectedPaymentMethod,
+        customerName: normalizedCustomer.fullName,
         setOrderSuccess({
           orderId: createdOrder?._id || "Confirmed",
           total: orderDraft.total,
@@ -186,28 +311,20 @@ const Payment = () => {
 
       window.payhere.startPayment(payment);
     } catch (err) {
-      console.log("ORDER ERROR:", err.response?.data || err.message);
+        console.log("ORDER ERROR FULL:", err);
+        console.log("ORDER ERROR DATA:", JSON.stringify(err.response?.data, null, 2));
 
-      setError(
-        err.response?.data?.message ||
-          err.response?.data?.error ||
-          "Failed to confirm order. Please try again."
-      );
-    } finally {
+        setError(
+            err.response?.data?.message ||
+              err.response?.data?.error ||
+              err.message ||
+              "Failed to confirm order. Please try again."
+          );
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }finally {
       setPlacingOrder(false);
     }
-  };
-
-  const formatDeliveryAddress = (customer = {}) => {
-    const parts = [
-      customer.addressLine1,
-      customer.city,
-      customer.district,
-      customer.province,
-      customer.postalCode,
-    ].filter(Boolean);
-
-    return parts.length ? parts.join(", ") : customer.address || "-";
   };
 
   if (orderSuccess) {
@@ -239,7 +356,7 @@ const Payment = () => {
 
               <div>
                 <span>Total Amount</span>
-                <strong>Rs. {orderSuccess.total.toLocaleString()}</strong>
+                <strong>Rs. {Number(orderSuccess.total).toLocaleString()}</strong>
               </div>
 
               <div>
@@ -286,7 +403,15 @@ const Payment = () => {
     );
   }
 
-  const { customer, items, cartItemsTotal, deliveryFee, total } = orderDraft;
+  const {
+    customer = {},
+    items = [],
+    cartItemsTotal = 0,
+    deliveryFee = 0,
+    total = 0,
+  } = orderDraft;
+
+  const displayCustomer = normalizeAddressPayload(customer);
 
   return (
     <div className="payment-page">
@@ -325,17 +450,17 @@ const Payment = () => {
               <div className="customer-details-row">
                 <div className="customer-detail-item">
                   <span>Full Name</span>
-                  <strong>{customer.fullName}</strong>
+                  <strong>{displayCustomer.fullName || "-"}</strong>
                 </div>
 
                 <div className="customer-detail-item">
                   <span>Email</span>
-                  <strong>{customer.email}</strong>
+                  <strong>{displayCustomer.email || "-"}</strong>
                 </div>
 
                 <div className="customer-detail-item">
                   <span>Phone Number</span>
-                  <strong>{customer.phone}</strong>
+                  <strong>{displayCustomer.phone || "-"}</strong>
                 </div>
               </div>
             </section>
@@ -350,33 +475,47 @@ const Payment = () => {
 
               <div className="payment-delivery-card">
                 <div className="payment-delivery-type">
-                  <i className="ti ti-home"></i>
-                  {customer.addressType || "Home"}
+                  <i
+                    className={
+                      displayCustomer.addressType === "OFFICE"
+                        ? "ti ti-building"
+                        : "ti ti-home"
+                    }
+                  ></i>
+                  {displayCustomer.addressType === "OFFICE" ? "Office" : "Home"}
                 </div>
 
                 <div className="payment-delivery-main">
-                  <h3>{customer.addressLine1 || customer.address || "-"}</h3>
+                  <h3>
+                    {displayCustomer.addressLine1 ||
+                      displayCustomer.address ||
+                      "-"}
+                  </h3>
+
+                  {displayCustomer.addressLine2 && (
+                    <p>{displayCustomer.addressLine2}</p>
+                  )}
                 </div>
 
                 <div className="payment-delivery-grid">
                   <div>
                     <span>City</span>
-                    <strong>{customer.city || "-"}</strong>
+                    <strong>{displayCustomer.city || "-"}</strong>
                   </div>
 
                   <div>
                     <span>District</span>
-                    <strong>{customer.district || "-"}</strong>
+                    <strong>{displayCustomer.district || "-"}</strong>
                   </div>
 
                   <div>
                     <span>Province</span>
-                    <strong>{customer.province || "-"}</strong>
+                    <strong>{displayCustomer.province || "-"}</strong>
                   </div>
 
                   <div>
                     <span>Postal Code</span>
-                    <strong>{customer.postalCode || "-"}</strong>
+                    <strong>{displayCustomer.postalCode || "-"}</strong>
                   </div>
                 </div>
               </div>
@@ -386,7 +525,13 @@ const Payment = () => {
                   <i className="ti ti-receipt"></i>
                   <span>
                     Billing address is saved as{" "}
-                    <b>{billingAddress.addressType || "Default"}</b>.
+                    <b>
+                      {normalizeAddressType(billingAddress.addressType) ===
+                      "OFFICE"
+                        ? "Office"
+                        : "Home"}
+                    </b>
+                    .
                   </span>
                 </div>
               )}
@@ -468,7 +613,13 @@ const Payment = () => {
                   <div className="payment-product">
                     <div className="payment-product-image">
                       {item.image ? (
-                        <img src={item.image} alt={item.name} />
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
                       ) : (
                         <i className="ti ti-leaf"></i>
                       )}
@@ -481,7 +632,10 @@ const Payment = () => {
                   </div>
 
                   <strong>
-                    Rs. {(item.price * item.quantity).toLocaleString()}
+                    Rs.{" "}
+                    {(
+                      Number(item.price) * Number(item.quantity)
+                    ).toLocaleString()}
                   </strong>
                 </div>
               ))}
@@ -491,15 +645,15 @@ const Payment = () => {
 
             <div className="payment-price-row">
               <span>Items Total</span>
-              <strong>Rs. {cartItemsTotal.toLocaleString()}</strong>
+              <strong>Rs. {Number(cartItemsTotal).toLocaleString()}</strong>
             </div>
 
             <div className="payment-price-row">
               <span>Delivery Fee</span>
               <strong>
-                {deliveryFee === 0
+                {Number(deliveryFee) === 0
                   ? "Free"
-                  : `Rs. ${deliveryFee.toLocaleString()}`}
+                  : `Rs. ${Number(deliveryFee).toLocaleString()}`}
               </strong>
             </div>
 
@@ -512,7 +666,7 @@ const Payment = () => {
 
             <div className="payment-total-row">
               <span>Total</span>
-              <strong>Rs. {total.toLocaleString()}</strong>
+              <strong>Rs. {Number(total).toLocaleString()}</strong>
             </div>
 
             <button
