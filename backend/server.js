@@ -8,13 +8,10 @@ import orderRoutes from "./routes/orderRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
 import addressRoutes from "./routes/addressRoutes.js";
 import chatbotRoutes from "./routes/chatbotRoutes.js";
-<<<<<<< HEAD
 import paymentRoutes from "./routes/paymentRoutes.js";
-=======
 import path from "path";
 
 const __dirname = path.resolve();
->>>>>>> d37e050 (Update Emails)
 
 dotenv.config();
 
@@ -36,11 +33,8 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/addresses", addressRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/chatbot", chatbotRoutes);
-<<<<<<< HEAD
 app.use("/api/payments", paymentRoutes);
-=======
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
->>>>>>> d37e050 (Update Emails)
 
 const PORT = Number(process.env.PORT) || 5000;
 
