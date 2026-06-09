@@ -175,7 +175,16 @@ const Register = () => {
                 checked={formData.agreeTerms}
                 onChange={handleChange}
               />
-              <span>I agree to the Terms and Privacy Policy</span>
+              <span>
+                I agree to the{" "}
+                <Link to="/terms-and-conditions">
+                  Terms
+                </Link>{" "}
+                and{" "}
+                <Link to="/privacy-policy">
+                  Privacy Policy
+                </Link>
+              </span>
             </label>
 
             <button className="auth-main-btn" type="submit" disabled={loading}>

@@ -208,10 +208,10 @@ export const addProductReview = async (req, res) => {
   try {
     const { rating, comment } = req.body;
     const numericRating = Number(rating);
-    const trimmedComment = comment?.trim();
+    const trimmedComment = comment?.trim() || "";
 
-    if (!Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5 || !trimmedComment) {
-      return res.status(400).json({ message: "Please fill all review fields" });
+    if (!Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5) {
+      return res.status(400).json({ message: "Please select a valid rating" });
     }
 
     if (trimmedComment.length > 500) {
@@ -264,10 +264,10 @@ export const updateProductReview = async (req, res) => {
   try {
     const { rating, comment } = req.body;
     const numericRating = Number(rating);
-    const trimmedComment = comment?.trim();
+    const trimmedComment = comment?.trim() || "";
 
-    if (!Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5 || !trimmedComment) {
-      return res.status(400).json({ message: "Please fill all review fields" });
+    if (!Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5) {
+      return res.status(400).json({ message: "Please select a valid rating" });
     }
 
     if (trimmedComment.length > 500) {
