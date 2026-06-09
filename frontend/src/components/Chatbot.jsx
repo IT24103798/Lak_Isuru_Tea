@@ -1,7 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import "../styles/Chatbot.css";
 import api from "../api/api";
-import { clarificationAnswer, fallbackAnswer, teaFaqData } from "../data/teaFaqData";
+import {
+  clarificationAnswer,
+  fallbackAnswer,
+  teaFaqData,
+} from "../data/teaFaqData";
 
 const faqEntries = teaFaqData.flatMap((section) => section.questions);
 
@@ -19,6 +23,34 @@ const findFaqAnswer = (message) => {
     return null;
   }
 
+  // Stop random short letters like "mm", "aa", "qq", "h" from matching FAQ
+  const allowedShortMessages = [
+    "hi",
+    "hey",
+    "hello",
+    "tea",
+    "price",
+    "order",
+    "gift",
+    "phone",
+    "email",
+  ];
+
+  if (
+    normalizedMessage.length < 3 &&
+    !allowedShortMessages.includes(normalizedMessage)
+  ) {
+    return null;
+  }
+
+  if (
+    normalizedMessage.length <= 3 &&
+    /^(.)\1+$/.test(normalizedMessage) &&
+    !allowedShortMessages.includes(normalizedMessage)
+  ) {
+    return null;
+  }
+
   const exactMatch = faqEntries.find(
     (entry) => normalizeText(entry.question) === normalizedMessage
   );
@@ -27,23 +59,129 @@ const findFaqAnswer = (message) => {
     return exactMatch.answer;
   }
 
-  const partialMatch = faqEntries.find((entry) => {
-    const normalizedQuestion = normalizeText(entry.question);
-    return (
-      normalizedMessage.includes(normalizedQuestion) ||
-      normalizedQuestion.includes(normalizedMessage)
-    );
-  });
+  const keywordRules = [
+    {
+      keywords: ["price", "cost", "how much", "rate"],
+      answer:
+        "💰 Prices depend on the tea type, package size, and product availability. Please check the Products page for the latest price.",
+    },
+    {
+      keywords: ["delivery", "deliver", "shipping", "ship"],
+      answer:
+        "🚚 Delivery details and delivery fee are shown during checkout. You can also check your order status in My Orders.",
+    },
+    {
+      keywords: ["payment", "pay", "card", "cash", "cod"],
+      answer:
+        "💳 You can choose the available payment method on the Payment page, such as Online Payment or Cash on Delivery if enabled.",
+    },
+    {
+      keywords: ["order", "place order", "buy", "purchase"],
+      answer:
+        "🛒 To place an order: go to Products → choose your tea → Add to Cart → Checkout → Payment. After placing the order, you can check the status in My Orders.",
+    },
+    {
+      keywords: ["cancel", "cancellation"],
+      answer:
+        "❌ You can request cancellation before the order is shipped. Go to My Orders, open the order details, and use the Cancel Order option if available.",
+    },
+    {
+      keywords: ["return", "refund", "damaged", "wrong product"],
+      answer:
+        "↩️ Sorry for the issue. Please contact Lak Isuru Tea support with your order ID and product details so our team can assist you.",
+    },
+    {
+      keywords: ["phone", "call", "contact", "number"],
+      answer:
+        "📞 You can contact Lak Isuru Tea at 0778646780 or 0776356412.",
+    },
+    {
+      keywords: ["email", "gmail", "mail"],
+      answer: "📧 You can email Lak Isuru Tea at luckisuru@gmail.com.",
+    },
+    {
+      keywords: ["address", "location", "where"],
+      answer: `🏢 Lak Isuru Tea - Showroom & Head Office
 
-  if (partialMatch) {
-    return partialMatch.answer;
+📍 Address:
+393/16, School Road,
+Thanthirimulla, Panadura
+
+🕒 Opening Hours:
+Mon–Sat 08:00 - 18:00
+
+📞 Phone:
+0778646780
+0776356412
+
+📧 Email:
+luckisuru@gmail.com
+
+🌐 You can also order online via our website.`,
+    },
+    {
+      keywords: ["open", "opening", "hours", "time"],
+      answer:
+        "🕒 Our opening hours are Monday to Saturday, 08:00 - 18:00.",
+    },
+    {
+      keywords: ["strong", "strongest"],
+      answer:
+        "💪 I recommend BOPF Black Tea if you like strong tea with rich color and bold flavor.",
+    },
+    {
+      keywords: ["gift", "present", "corporate"],
+      answer:
+        "🎁 For gifts, you can choose our Tea Gift Collections, Pettagam Gift Boxes, Reed Elephant Gifts, or Wooden Cart Tea Gifts depending on availability.",
+    },
+    {
+      keywords: ["green tea"],
+      answer:
+        "🍵 Yes. Green Tea is available depending on stock. It is a lighter and refreshing tea option.",
+    },
+    {
+      keywords: ["black tea"],
+      answer:
+        "🫖 Yes. We offer Ceylon Black Tea varieties such as OP, BOP, BOPF, and FP depending on availability.",
+    },
+  ];
+
+  const ruleMatch = keywordRules.find((rule) =>
+    rule.keywords.some((keyword) => normalizedMessage.includes(keyword))
+  );
+
+  if (ruleMatch) {
+    return ruleMatch.answer;
+  }
+
+  // Safer partial match
+  // Do not allow tiny text like "mm" to match words such as "recommend"
+  if (normalizedMessage.length >= 5) {
+    const partialMatch = faqEntries.find((entry) => {
+      const normalizedQuestion = normalizeText(entry.question);
+
+      return (
+        normalizedMessage.includes(normalizedQuestion) ||
+        normalizedQuestion.includes(normalizedMessage)
+      );
+    });
+
+    if (partialMatch) {
+      return partialMatch.answer;
+    }
   }
 
   const keywordMatch = faqEntries.find((entry) => {
     const normalizedQuestion = normalizeText(entry.question);
-    const keywords = normalizedQuestion.split(" ").filter(Boolean);
-    const hits = keywords.filter((keyword) => normalizedMessage.includes(keyword));
-    return keywords.length >= 3 && hits.length >= Math.min(3, keywords.length);
+    const keywords = normalizedQuestion
+      .split(" ")
+      .filter((word) => word.length >= 4);
+
+    const hits = keywords.filter((keyword) =>
+      normalizedMessage.includes(keyword)
+    );
+
+    return keywords.length >= 2 && hits.length >= 2;
   });
 
   return keywordMatch ? keywordMatch.answer : null;
@@ -56,18 +194,50 @@ const isLikelyGibberish = (message) => {
     return true;
   }
 
+  const faqAnswer = findFaqAnswer(message);
+
+  if (faqAnswer) {
+    return false;
+  }
+
+  const commonShortQuestions = [
+    "hi",
+    "hello",
+    "price",
+    "delivery",
+    "payment",
+    "order",
+    "cancel",
+    "return",
+    "phone",
+    "email",
+    "address",
+    "location",
+    "gift",
+    "tea",
+    "black tea",
+    "green tea",
+    "strong tea",
+  ];
+
+  if (commonShortQuestions.includes(normalizedMessage)) {
+    return false;
+  }
+
   const words = normalizedMessage.split(" ").filter(Boolean);
 
   if (/^(.)\1+$/.test(normalizedMessage) && normalizedMessage.length <= 4) {
     return true;
   }
 
-  if (words.length <= 2 && normalizedMessage.length <= 6) {
+  if (words.length <= 2 && normalizedMessage.length <= 4) {
     return true;
   }
 
   const meaningfulWords = words.filter((word) => word.length >= 3);
-  const shortWordRatio = words.length ? (words.length - meaningfulWords.length) / words.length : 0;
+  const shortWordRatio = words.length
+    ? (words.length - meaningfulWords.length) / words.length
+    : 0;
 
   return meaningfulWords.length === 0 || shortWordRatio > 0.7;
 };
@@ -78,7 +248,7 @@ function Chatbot() {
   const [messages, setMessages] = useState([
     {
       sender: "bot",
-      text: "Hello! I am Lak Isuru Tea AI Assistant. How can I help you today?",
+      text: "👋 Hello! I am Lak Isuru Tea AI Assistant. How can I help you today?",
     },
   ]);
   const [loading, setLoading] = useState(false);
@@ -86,12 +256,12 @@ function Chatbot() {
   const messagesEndRef = useRef(null);
 
   const quickQuestions = [
-    "What are your best sellers?",
-    "Do you have any discounts?",   
-    "Best tea for a gift",
+    "What tea products do you have?",
+    "Recommend a strong tea",
+    "Best tea for gift",
     "How to place an order?",
     "Delivery information",
-    "Recommend a strong tea",
+    "What payment methods do you accept?",
   ];
 
   const renderMessageText = (text) => {
@@ -101,7 +271,10 @@ function Chatbot() {
     const linkifyLine = (line) => {
       const parts = [];
       let lastIndex = 0;
-      const pattern = new RegExp(`${emailPattern.source}|${phonePattern.source}`, "g");
+      const pattern = new RegExp(
+        `${emailPattern.source}|${phonePattern.source}`,
+        "g"
+      );
 
       line.replace(pattern, (match, email, phone, offset) => {
         if (offset > lastIndex) {
@@ -110,14 +283,23 @@ function Chatbot() {
 
         if (email) {
           parts.push(
-            <a key={`${offset}-email`} href={`mailto:${match}`} className="chatbot-link">
+            <a
+              key={`${offset}-email`}
+              href={`mailto:${match}`}
+              className="chatbot-link"
+            >
               {match}
             </a>
           );
         } else if (phone) {
           const telValue = match.replace(/[^\d+]/g, "");
+
           parts.push(
-            <a key={`${offset}-phone`} href={`tel:${telValue}`} className="chatbot-link">
+            <a
+              key={`${offset}-phone`}
+              href={`tel:${telValue}`}
+              className="chatbot-link"
+            >
               {match}
             </a>
           );
@@ -136,10 +318,12 @@ function Chatbot() {
       return parts;
     };
 
-    return text.split("\n").map((line, lineIndex) => (
+    const lines = text.split("\n");
+
+    return lines.map((line, lineIndex) => (
       <React.Fragment key={`${lineIndex}-${line}`}>
         {linkifyLine(line)}
-        {lineIndex < text.split("\n").length - 1 ? <br /> : null}
+        {lineIndex < lines.length - 1 ? <br /> : null}
       </React.Fragment>
     ));
   };
@@ -162,7 +346,9 @@ function Chatbot() {
   const sendMessage = async (customMessage) => {
     const userMessage = customMessage || message;
 
-    if (!userMessage.trim()) return;
+    if (!userMessage.trim() || loading) {
+      return;
+    }
 
     const newUserMessage = {
       sender: "user",
@@ -206,22 +392,25 @@ function Chatbot() {
       });
 
       const botReply =
-        response.data.response ||
-        response.data.answer ||
-        fallbackAnswer;
+        response.data.response || response.data.answer || fallbackAnswer;
 
-      const botMessage = {
-        sender: "bot",
-        text: botReply,
-      };
-
-      setMessages((prev) => [...prev, botMessage]);
-    } catch (error) {
       setMessages((prev) => [
         ...prev,
         {
           sender: "bot",
-          text: "Sorry, the AI assistant is temporarily unavailable. Please try again later.",
+          text: botReply,
+        },
+      ]);
+    } catch (error) {
+      console.error("Chatbot frontend error:", error);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text:
+            fallbackAnswer ||
+            "Sorry, the AI assistant is temporarily unavailable. Please try again later.",
         },
       ]);
     } finally {
@@ -298,8 +487,11 @@ function Chatbot() {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") sendMessage();
+                if (e.key === "Enter") {
+                  sendMessage();
+                }
               }}
+              disabled={loading}
             />
 
             <button onClick={() => sendMessage()} disabled={loading}>
@@ -310,7 +502,6 @@ function Chatbot() {
       )}
     </>
   );
-  
 }
 
 export default Chatbot;
