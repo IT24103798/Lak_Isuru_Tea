@@ -21,7 +21,7 @@ function Navbar() {
       ? `?search=${encodeURIComponent(searchTerm)}`
       : "";
 
-    navigate(`/${searchQuery}#products`);
+    navigate(`/products${searchQuery}`);
   };
 
   const handleLogout = () => {
@@ -30,8 +30,16 @@ function Navbar() {
     navigate("/login");
   };
 
+  const handleHomeClick = () => {
+    setIsAccountMenuOpen(false);
+
+    if (location.pathname === "/" && !location.search && !location.hash) {
+      window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    }
+  };
+
   useEffect(() => {
-    const closeAccountMenu = (event) => {
+    const closeMenus = (event) => {
       if (
         event.key === "Escape" ||
         (accountMenuRef.current && !accountMenuRef.current.contains(event.target))
@@ -40,24 +48,50 @@ function Navbar() {
       }
     };
 
-    document.addEventListener("mousedown", closeAccountMenu);
-    document.addEventListener("keydown", closeAccountMenu);
+    document.addEventListener("mousedown", closeMenus);
+    document.addEventListener("keydown", closeMenus);
 
     return () => {
-      document.removeEventListener("mousedown", closeAccountMenu);
-      document.removeEventListener("keydown", closeAccountMenu);
+      document.removeEventListener("mousedown", closeMenus);
+      document.removeEventListener("keydown", closeMenus);
     };
   }, []);
 
   useEffect(() => {
     const updateActiveSection = () => {
+      if (location.pathname.startsWith("/products")) {
+        setActiveSection("products");
+        return;
+      }
+
       if (location.pathname !== "/") {
         setActiveSection(location.pathname.replace("/", "") || "home");
         return;
       }
 
-      const sectionIds = ["products", "about", "contact"];
+      const queryParams = new URLSearchParams(location.search);
 
+      if (
+        location.hash === "#products" ||
+        queryParams.has("category") ||
+        queryParams.has("subcategory") ||
+        queryParams.has("search")
+      ) {
+        setActiveSection("products");
+        return;
+      }
+
+      if (location.hash === "#about") {
+        setActiveSection("about");
+        return;
+      }
+
+      if (location.hash === "#contact") {
+        setActiveSection("contact");
+        return;
+      }
+
+      const sectionIds = ["about", "contact"];
       const currentSection = sectionIds.reduce((current, sectionId) => {
         const section = document.getElementById(sectionId);
         const activationLine = window.innerHeight * 0.45;
@@ -71,7 +105,6 @@ function Navbar() {
     };
 
     updateActiveSection();
-
     window.addEventListener("scroll", updateActiveSection, { passive: true });
     window.addEventListener("resize", updateActiveSection);
 
@@ -79,7 +112,7 @@ function Navbar() {
       window.removeEventListener("scroll", updateActiveSection);
       window.removeEventListener("resize", updateActiveSection);
     };
-  }, [location.pathname, location.hash]);
+  }, [location.pathname, location.hash, location.search]);
 
   const displayName = userInfo?.name || (isAdmin ? "Admin" : "Customer");
   const avatarLetter = displayName.charAt(0).toUpperCase();
@@ -87,10 +120,17 @@ function Navbar() {
   const getNavLinkClass = (section) =>
     activeSection === section ? "nav-link active" : "nav-link";
 
+  const getAdminNavLinkClass = (path) =>
+    location.pathname === path ? "nav-link active" : "nav-link";
+
   return (
     <nav className={`navbar ${isAdmin ? "admin-navbar" : ""}`}>
       <div className="nav-left">
-        <Link to={isAdmin ? "/admin/orders" : "/"} className="logo-link">
+        <Link
+          to={isAdmin ? "/admin/dashboard" : "/"}
+          className="logo-link"
+          onClick={!isAdmin ? handleHomeClick : undefined}
+        >
           <img
             src="/images/lak-isuru-logo.png"
             alt="Lak Isuru Tea Logo"
@@ -113,39 +153,62 @@ function Navbar() {
       <div className="nav-links">
         {!isAdmin && (
           <>
-            {!userInfo ? (
+            <Link to="/" className={getNavLinkClass("home")} onClick={handleHomeClick}>
+              Home
+            </Link>
+
+            <Link to="/products" className={getNavLinkClass("products")}>
+              Products
+            </Link>
+
+            {!userInfo && (
               <>
-                <Link to="/" className={getNavLinkClass("home")}>
-                  Home
-                </Link>
-
-                <Link to="/#products" className={getNavLinkClass("products")}>
-                  Products
-                </Link>
-
                 <Link to="/#about" className={getNavLinkClass("about")}>
                   About Us
                 </Link>
-
-                <Link to="/#contact" className={getNavLinkClass("contact")}>
-                  Contact Us
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link to="/" className={getNavLinkClass("home")}>
-                  Home
-                </Link>
-
-                <Link to="/#products" className={getNavLinkClass("products")}>
-                  Products
-                </Link>
-
-                <Link to="/cart" className={getNavLinkClass("cart")}>
-                  Cart
-                </Link>
               </>
             )}
+
+            {userInfo && (
+              <Link to="/cart" className={getNavLinkClass("cart")}>
+                Cart
+              </Link>
+            )}
+          </>
+        )}
+
+        {isAdmin && (
+          <>
+            <Link
+              to="/admin/dashboard"
+              className={getAdminNavLinkClass("/admin/dashboard")}
+            >
+              Dashboard
+            </Link>
+            <Link
+              to="/admin/users"
+              className={getAdminNavLinkClass("/admin/users")}
+            >
+              Users
+            </Link>
+            <Link
+              to="/admin/products"
+              className={getAdminNavLinkClass("/admin/products")}
+            >
+              Products
+            </Link>
+            <Link
+              to="/admin/orders"
+              className={getAdminNavLinkClass("/admin/orders")}
+            >
+              Orders
+            </Link>
+            <Link
+              to="/admin/reviews"
+              className={getAdminNavLinkClass("/admin/reviews")}
+            >
+              Reviews
+            </Link>
           </>
         )}
 
@@ -169,7 +232,14 @@ function Navbar() {
                   <span>{isAdmin ? "Admin" : "Customer"}</span>
                 </div>
 
-                {!isAdmin && (
+                {isAdmin ? (
+                  <Link
+                    to="/admin/profile"
+                    onClick={() => setIsAccountMenuOpen(false)}
+                  >
+                    Profile settings
+                  </Link>
+                ) : (
                   <>
                     <Link
                       to="/profile-settings"

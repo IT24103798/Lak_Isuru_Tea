@@ -4,17 +4,33 @@ import {
   deleteProduct,
   getAllProducts,
   updateProduct,
+  updateProductVisibility,
 } from "../../services/productService";
+import { productCatalog } from "../../data/productCatalog";
 import "../../styles/AdminProducts.css";
 
 const emptyForm = {
   name: "",
-  category: "Tea",
+  category: productCatalog[0].category,
+  subcategory: productCatalog[0].subcategories[0],
+  teaForm: "",
   price: "",
   stock: "",
   image: "",
   description: "",
+  featuredOnHome: false,
+  isHidden: false,
 };
+
+const findCatalogGroup = (category) => {
+  const normalizedCategory = String(category || "").trim().toLowerCase();
+
+  return productCatalog.find(
+    (group) => group.category.trim().toLowerCase() === normalizedCategory
+  );
+};
+
+const teaFormOptions = ["Tea Bags", "Loose Tea"];
 
 const AdminProducts = () => {
   const [products, setProducts] = useState([]);
@@ -24,11 +40,13 @@ const AdminProducts = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [selectedTableCategory, setSelectedTableCategory] = useState("");
+  const selectedCategoryGroup = findCatalogGroup(formData.category) || productCatalog[0];
 
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const data = await getAllProducts();
+      const data = await getAllProducts({ includeHidden: true });
       setProducts(data.products || []);
       setError("");
     } catch (err) {
@@ -39,14 +57,24 @@ const AdminProducts = () => {
   };
 
   useEffect(() => {
-    loadProducts();
+    const timerId = setTimeout(loadProducts, 0);
+
+    return () => {
+      clearTimeout(timerId);
+    };
   }, []);
 
   const handleChange = (event) => {
-    const { name, value } = event.target;
+    const { checked, name, type, value } = event.target;
     setFormData((current) => ({
       ...current,
-      [name]: value,
+      [name]: type === "checkbox" ? checked : value,
+      ...(name === "category"
+        ? {
+            subcategory:
+              findCatalogGroup(value)?.subcategories[0] || "",
+          }
+        : {}),
     }));
   };
 
@@ -87,14 +115,23 @@ const AdminProducts = () => {
   };
 
   const handleEdit = (product) => {
+    const catalogGroup = findCatalogGroup(product.category) || productCatalog[0];
+    const savedSubcategory = product.subcategory || "";
+
     setEditingProductId(product._id);
     setFormData({
       name: product.name || "",
-      category: product.category || "Tea",
+      category: catalogGroup.category,
+      subcategory: catalogGroup.subcategories.includes(savedSubcategory)
+        ? savedSubcategory
+        : "",
+      teaForm: product.teaForm || "",
       price: product.price ?? "",
       stock: product.stock ?? "",
       image: product.image || "",
       description: product.description || "",
+      featuredOnHome: Boolean(product.featuredOnHome),
+      isHidden: Boolean(product.isHidden),
     });
     setMessage("");
     setError("");
@@ -121,6 +158,34 @@ const AdminProducts = () => {
     }
   };
 
+  const handleToggleVisibility = async (product) => {
+    try {
+      const nextIsHidden = !product.isHidden;
+
+      await updateProductVisibility(product._id, nextIsHidden);
+      setMessage(nextIsHidden ? "Product hidden from customers." : "Product visible to customers.");
+      setProducts((currentProducts) =>
+        currentProducts.map((currentProduct) =>
+          currentProduct._id === product._id
+            ? { ...currentProduct, isHidden: nextIsHidden }
+            : currentProduct
+        )
+      );
+      setError("");
+    } catch (err) {
+      setError(err.message || "Failed to update product visibility");
+    }
+  };
+
+  const topSellingProducts = products
+    .filter((product) => product.isTopSelling)
+    .sort((firstProduct, secondProduct) => {
+      return (secondProduct.soldQuantity || 0) - (firstProduct.soldQuantity || 0);
+    });
+  const tableProducts = selectedTableCategory
+    ? products.filter((product) => product.category === selectedTableCategory)
+    : products;
+
   return (
     <div className="admin-products-page">
       <div className="admin-products-header">
@@ -132,6 +197,40 @@ const AdminProducts = () => {
 
       {message && <div className="admin-success">{message}</div>}
       {error && <div className="admin-error">{error}</div>}
+
+      <section className="admin-top-selling-card">
+        <div className="admin-section-heading">
+          <div>
+            <h2>Top Selling Products</h2>
+            <p>Calculated automatically from non-cancelled and non-returned orders.</p>
+          </div>
+        </div>
+
+        {loading ? (
+          <p className="admin-muted-text">Loading sales data...</p>
+        ) : topSellingProducts.length === 0 ? (
+          <p className="admin-muted-text">No sales data available yet.</p>
+        ) : (
+          <div className="top-selling-admin-grid">
+            {topSellingProducts.map((product, index) => (
+              <article className="top-selling-admin-item" key={product._id}>
+                <span className="top-selling-rank">#{index + 1}</span>
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  onError={(event) => {
+                    event.currentTarget.src = "/images/lak-isuru-logo.png";
+                  }}
+                />
+                <div>
+                  <h3>{product.name}</h3>
+                  <p>{product.soldQuantity || 0} sold</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="admin-product-form-card">
         <h2>{editingProductId ? "Update Product" : "Add New Product"}</h2>
@@ -151,14 +250,50 @@ const AdminProducts = () => {
 
           <label>
             Category
-            <input
-              type="text"
+            <select
               name="category"
               value={formData.category}
               onChange={handleChange}
-              placeholder="Tea"
               required
-            />
+            >
+              {productCatalog.map((group) => (
+                <option value={group.category} key={group.category}>
+                  {group.category}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Subcategory
+            <select
+              name="subcategory"
+              value={formData.subcategory}
+              onChange={handleChange}
+            >
+              <option value="">No subcategory</option>
+              {selectedCategoryGroup.subcategories.map((subcategory) => (
+                <option value={subcategory} key={subcategory}>
+                  {subcategory}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Tea Form
+            <select
+              name="teaForm"
+              value={formData.teaForm}
+              onChange={handleChange}
+            >
+              <option value="">Not specified</option>
+              {teaFormOptions.map((teaForm) => (
+                <option value={teaForm} key={teaForm}>
+                  {teaForm}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label>
@@ -211,6 +346,17 @@ const AdminProducts = () => {
             />
           </label>
 
+
+          <label className="admin-checkbox full-width">
+            <input
+              type="checkbox"
+              name="featuredOnHome"
+              checked={formData.featuredOnHome}
+              onChange={handleChange}
+            />
+            Show on public home page
+          </label>
+
           <div className="form-actions full-width">
             <button type="submit" disabled={saving}>
               {saving ? "Saving..." : editingProductId ? "Update Product" : "Add Product"}
@@ -226,12 +372,31 @@ const AdminProducts = () => {
       </section>
 
       <section className="admin-product-list-card">
-        <h2>All Products</h2>
+        <div className="admin-product-list-heading">
+          <h2>All Products</h2>
+
+          <label>
+            Category
+            <select
+              value={selectedTableCategory}
+              onChange={(event) => setSelectedTableCategory(event.target.value)}
+            >
+              <option value="">All categories</option>
+              {productCatalog.map((group) => (
+                <option value={group.category} key={group.category}>
+                  {group.category}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
         {loading ? (
           <p>Loading products...</p>
         ) : products.length === 0 ? (
           <p>No products found. Add your first product above.</p>
+        ) : tableProducts.length === 0 ? (
+          <p>No products found in this category.</p>
         ) : (
           <div className="admin-product-table-wrap">
             <table className="admin-product-table">
@@ -240,13 +405,17 @@ const AdminProducts = () => {
                   <th>Image</th>
                   <th>Name</th>
                   <th>Category</th>
+                  <th>Subcategory</th>
+                  <th>Tea Form</th>
                   <th>Price</th>
                   <th>Stock</th>
+                  <th>Visibility</th>
+                  <th>Public Home</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {products.map((product) => (
+                {tableProducts.map((product) => (
                   <tr key={product._id}>
                     <td>
                       <img
@@ -262,19 +431,57 @@ const AdminProducts = () => {
                       <span>{product.description}</span>
                     </td>
                     <td>{product.category}</td>
+                    <td>{product.subcategory || "-"}</td>
+                    <td>{product.teaForm || "-"}</td>
                     <td>Rs. {product.price}</td>
                     <td>{product.stock}</td>
                     <td>
+                      {product.isHidden ? (
+                        <span className="product-flag hidden-flag">Hidden</span>
+                      ) : (
+                        <span className="product-flag visible-flag">Visible</span>
+                      )}
+                    </td>
+                    <td>
+                      {product.isTopSelling && <span className="product-flag">Top selling</span>}
+                      {product.featuredOnHome && <span className="product-flag">Shown by admin</span>}
+                      {!product.isTopSelling && !product.featuredOnHome && "No"}
+                    </td>
+                    <td>
                       <div className="table-actions">
-                        <button type="button" onClick={() => handleEdit(product)}>
-                          Edit
+                        <button
+                          type="button"
+                          className="icon-action edit-action"
+                          onClick={() => handleEdit(product)}
+                          aria-label={`Edit ${product.name}`}
+                          title="Edit"
+                        >
+                          <i className="ti ti-pencil" aria-hidden="true"></i>
                         </button>
                         <button
                           type="button"
-                          className="danger-btn"
-                          onClick={() => handleDelete(product._id)}
+                          className={`icon-action ${product.isHidden ? "show-btn" : "hide-btn"}`}
+                          onClick={() => handleToggleVisibility(product)}
+                          aria-label={
+                            product.isHidden
+                              ? `Show ${product.name} to customers`
+                              : `Hide ${product.name} from customers`
+                          }
+                          title={product.isHidden ? "Show" : "Hide"}
                         >
-                          Delete
+                          <i
+                            className={product.isHidden ? "ti ti-eye" : "ti ti-eye-off"}
+                            aria-hidden="true"
+                          ></i>
+                        </button>
+                        <button
+                          type="button"
+                          className="icon-action danger-btn"
+                          onClick={() => handleDelete(product._id)}
+                          aria-label={`Delete ${product.name}`}
+                          title="Delete"
+                        >
+                          <i className="ti ti-trash" aria-hidden="true"></i>
                         </button>
                       </div>
                     </td>

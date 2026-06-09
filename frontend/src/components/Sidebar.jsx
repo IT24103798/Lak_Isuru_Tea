@@ -78,10 +78,10 @@ const Sidebar = () => {
           My Profile
         </button>
 
-        <button
+       <button
           type="button"
-          className="disabled-sidebar-link"
-          disabled
+          className={isActive("/address-book") ? "active" : ""}
+          onClick={() => navigate("/address-book")}
         >
           <i className="ti ti-books"></i>
           Address Book
@@ -107,15 +107,6 @@ const Sidebar = () => {
         >
           <i className="ti ti-package"></i>
           My Orders
-        </button>
-
-        <button
-          type="button"
-          className={isActive("/my-returns") ? "active" : ""}
-          onClick={() => navigate("/my-returns")}
-        >
-          <i className="ti ti-arrow-back-up"></i>
-          My Returns
         </button>
 
         <button

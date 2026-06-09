@@ -2,61 +2,24 @@ import { useState, useEffect, useCallback } from "react";
 import API from "../api/api";
 import { useNavigate } from "react-router-dom";
 import "../styles/Checkout.css";
+import locationData from "../data/locationData.js";
+import PhoneInputModule from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
 
-const locationData = {
-  Central: {
-    Kandy: ["Akurana", "Aladeniya", "Alawatugoda", "Aludeniya", "Ambatenna", "Ampitiya", "Angunawala", "Aniwatta", "Ankubura", "Ankumbura", "Aruppola", "Atabage", "Balagolla", "Balana", "Batugoda", "Bawlana", "Bopana", "Bowala", "Bowalawatta", "Dangolla", "Danthure", "Daulagala", "Dedunupitiya", "Dehianga", "Deiyannewela", "Dekinda", "Deltota", "Digana", "Dodamwala", "Dolosbage", "Doluwa", "Doragamuwa", "Eriyagama", "Etulgama", "Galaboda", "Galagedara", "Galaha", "Galhinna", "Gampola", "Gannoruwa", "Gelioya", "Getambe", "Godamunna", "Gonagantenna", "Greenwood", "Guhagoda", "Gunnepana", "Gurudeniya", "Haguranketha", "Halloluwa", "Handaganawa", "Handessa", "Hanguranketha", "Haragama", "Harankahawa", "Harispattuwa", "Hasalaka", "Hatharaliyadda", "Hedeniya", "Heerassagala", "Hewaheta", "Hijrapura", "Hindagala", "Hondiyadeniya", "Hunnasgiriya", "Imbulpitiya", "Inguru Oya", "Jambugahapitiya", "Kadugannawa", "Kahataliyadda", "Kalugala", "Kandy Town", "Kapuliyadde", "Karandagolla", "Katugastota", "Kengalla", "Ketakumbura", "Kiribathkumbura", "Kobbagala", "Kolongahawatte", "Kolongoda", "Kulugammana", "Kumbukkandura", "Kundasale", "Kurunduwatta", "Leemagahakotuwa", "Lewella", "Lunuketiya Maditta", "Madawala", "Madugalla", "Madulkele", "Mahadoraliyadda", "Mahaiyawa", "Mahakanda", "Mahamedagama", "Mailapitiya", "Makuldeniya", "Mallanda", "Mandaram Nuwara", "Mapakanda", "Marassana", "Maturata", "Mawatura", "Mawilmada", "Medamahanuwara", "Medawala Harispattuwa", "Meepitiya", "Menikdiwela", "Menikhinne", "Mimure", "Minigamuwa", "Minipe", "Mulgampola", "Muruthalawa", "Naranpanawa", "Nattarampotha", "Nawalapitiya Town", "Nugaliyadda", "Nugawela", "Pallekele", "Pallekotuwa", "Pallethalawinna", "Panwila", "Panwilatenna", "Paradeka", "Pasbage", "Pattitalawa", "Penithudumulla", "Peradeniya", "Pilawala", "Pilimthalawa", "Poholiyadda", "Polgahamula", "Polgolla", "Poramadulla", "Poththapitiya", "Pujapitiya", "Pupuressa", "Pussellawa", "Rajawella", "Rambukpitiya", "Rangala", "Rantembe", "Rathukohodigala", "Rikillagaskada", "Sangarajapura", "Senarathwela", "Soysakale", "Talatuoya", "Teldeniya", "Thalatuoya", "Thawalanthenna", "Thennekubura", "Uda Bowala", "Udahentenna", "Udahingulwala", "Uda Peradeniya", "Udathalawinna", "Udawatta", "Udispattuwa", "Ududumbara", "Uduwa", "Uduwahinna", "Uduwela", "Ulapane", "Ulpothagama", "Unuwinna", "Valapane", "Velamboda", "Wadiyagoda", "Warakawa", "Watadeniya", "Watapuluwa", "Wattappola", "Wattaranthenna", "Wattegama", "Weligalla", "Weligampola", "Wendaruwa", "Weniwalla", "Werellagama", "Wettawa", "Wilanagama", "Yahalatenna", "Yatihalagala"],
-    Matale: ["Akuramboda", "Alawatta", "Ambana", "Ataragallewa", "Bambaragaswewa", "Beligamuwa", "Dambulla", "Dankanda", "Devagiriya", "Dewahuwa", "Dullewa", "Dunkolawatta", "Dunuwilapitiya", "Elkaduwa", "Erawula Junction", "Etanawala", "Galewela", "Gammaduwa", "Gangala", "Gangala Puwakpitiya", "Handungamuwa", "Hattota Amuna", "Hettipola", "Illukkumbura", "Imbulgolla", "Inamaluwa", "Kaikawala", "Kalundawa", "Kandalama", "Karagahinna", "Katudeniya", "Kavudupelella", "Kibissa", "Kiwula", "Kongahawela", "Laggala Pallegama", "Leliambe", "Lenadora", "Madawala Ulpotha", "Madipola", "Mahawela", "Mananwatta", "Maraka", "Matale Town", "Melipitiya", "Metihakka", "Millawana", "Muwandeniya", "Nalanda", "Na ula", "Nugagolla", "Opalgala", "Ovilikanda", "Palapathwela", "Pallepola", "Perakanatta", "Pubbiliya", "Ranamuregama", "Rattota", "Selagama", "Sigiriya", "Talagoda Junction", "Talakiriyagama", "Udasgiriya", "Udatenna", "Ukuwela", "Wahacotte", "Walawela", "Wehigala", "Welangahawatte", "Wewalawewa", "Wilgamuwa", "Yatawatta"],
-    "Nuwara Eliya": ["Adhikarigama", "Agarapatana", "Ambagamuwa Udabulathgama", "Ambaliyadda", "Ambatalawa", "Ambewela", "Bambarakelle", "Barawardhanaoya", "Bogahawatta", "Bogawantalawa", "Bopattalawa", "Dagampitiya", "Dayagama Bazaar", "Degampitiya", "Denike", "Dikoya", "Dimbulapatana", "Doragala", "Dunukedeniya", "Galketiwala", "Ginigathena", "Gonakele", "Hakgala", "Halgran Oya", "Hangarapitiya", "Hapugastalawa", "Harangalagama", "Harasbedda", "Hatton", "Hawa Eliya", "Hedunuwewa", "Highforest", "Hitigegama", "Idamegama", "Kalaganwatta", "Kandapola", "Katukitula", "Keerthi Bandarapura", "Kelanigama", "Ketaboola", "Kotagala", "Kothmale New Town", "Kotmale", "Kottellena", "Kudagama", "Kumbalgamuwa", "Kumbukwela", "Kurupanawela", "Labookelle", "Labukele", "Landupita", "Laxapana", "Lindula", "Liyanwela", "Madulla", "Magastota", "Maldeniya", "Mandaramnuwara", "Maskeliya", "Maswela", "Mathurata", "Meethalawa", "Mipanawa", "Mipilimana", "Morahela", "Morahenagama", "Munwatta", "Nanuoya", "Nawathispane", "Nildandahinna", "Niyangandora", "Norwood", "Nuwara Eliya", "Nuwara Eliya Town", "Padiyapelella", "Palena", "Patana", "Pitawala", "Pundaluoya", "Pussalamankada", "Radella", "Ragala", "Ramboda", "Rawanagoda", "Rozella", "Rupaha", "Ruwaneliya", "Sadathenna", "Santhipura", "Talawakele", "Teripeha", "Thunhitiyawa", "Udamadura", "Udapussallawa", "Walapane", "Watagoda", "Watagoda Hanspattuwa", "Watawala", "Widulipura", "Wijebahukanda", "Yatimadura"],
-  },
+const PhoneInput = PhoneInputModule.default || PhoneInputModule;
 
-  Eastern: {
-    Ampara: ["Addalaichenai", "Akkaraipattu", "Ampara Town", "Bakmitiyawa", "Central Camp", "Dadayamtalawa", "Damana", "Damanewela", "Deegawapiya", "Dehiattakandiya", "Digamadulla", "Dorakumbura", "Gonagolla", "Hingurana", "Hulannuge", "Irakkamama", "Kalmunai", "Karativu", "Koknahara", "Kolamanthalawa", "Komari", "Lahugala", "Mahaoya", "Malwatta", "Mangalagama", "Marathamune", "Mawanagama", "Moragahapallama", "Namaloya", "Navithanveli", "Nawamedagama", "Nintavur", "Oluvil", "Padiyathalawa", "Pahalalanda", "Palamunai", "Panama", "Pannalagama", "Periyaneelavanai", "Pottuvil", "Rajagalatenna", "Sainthamaruthu", "Sammanthurai", "Serankada", "Siripura", "Siyambalawewa", "Tempitiya", "Thambiluvil", "Tirukkovil", "Uhana"],
-    Batticaloa: ["Ampilanthurai", "Araipattai", "Ayithiyamalai", "Bakiella", "Batticaloa Town", "Cheddipalayam", "Chenkaladi", "Eravur", "Kalkudah", "Kallar", "Kaluwanchikudi", "Kaluwankemy", "Kannankudah", "Karadiyanaru", "Kathiraveli", "Kattankudy", "Kiran", "Kirankulam", "Koddaikallar", "Koddamunai", "Kokkaddichcholai", "Kurukkalmadam", "Mandur", "Mankemi", "Miravodai", "Murakottanchanai", "Navagirinagar", "Navatkadu", "Oddamavadi", "Panichankemi", "Pankudavely", "Periyaporativu", "Periyapullumalai", "Pillaiyaradi", "Puliyanthivu", "Punanai", "Puthukudiyiruppu", "Puthur", "Thannamunai", "Thettativu", "Thikkodai", "Thirupalugamam", "Thuraineelavanai", "Unnichchai", "Vakaneri", "Vakarai", "Valaichenai", "Vantharumoolai", "Vellavely"],
-    Trincomalee: ["Agbopura", "Anna Nagar", "Arunagiri Nagar", "Buckmigama", "Chinabay", "Dehiwatte", "Deva Nagar", "Echchilampattai", "Galmetiyawa", "Gomarankadawala", "Kaddaiparichchan", "Kanniya", "Kantale", "Kavaddikudah", "Kiliveddy", "Kinniya", "Kuchchaveli", "Kumburupiddy", "Kurinchakemy", "Lankapatuna", "Linganagar", "Mahadivulwewa", "Maharugiramam", "Mallikativu", "Matikali", "Mawadichchenai", "Mihindapura", "Mullipothana", "Murugapuri", "Mutur", "Neelapola", "Nelsonpura", "Nilaveli", "Nithiyapuri", "Orrs Hill", "Palaiyoothu", "Pankulam", "Rottawewa", "Sampaltivu", "Sampur", "Samudragama", "Serunuwara", "Seruwila", "Sirajnagar", "Somapura", "Tampalakamam", "Thirukadaloor", "Tiriyayi", "Toppur", "Trincomalee Town", "Uppaveli", "Vellamanal", "Wanela"]
-  },
-
-  "North Central": {
-    Anuradhapura: ["Andiyagala", "Anuradhapura Town", "Awukana", "Dematawewa", "Dunumadalawa", "Elayapattuwa", "Eppawala", "Etaweeragollewa", "Galenbindunuwewa", "Galkadawala", "Galkiriyagama", "Galnewa", "Gambirigaswewa", "Gemunupura", "Gonahaddenawa", "Habarana", "Halmillawetiya", "Halmillewa", "Hidogama", "Horowpothana", "Hurulunikawewa", "Ihalagama", "Ipalogama", "Kahatagasdigiliya", "Kalaoya", "Kalawedi Ulpotha", "Karagahawewa", "Kebithigollawa", "Kekirawa", "Kendewa", "Kirigalwewa", "Madatugama", "Mahabulankulama", "Maha Elagamuwa", "Mahailluppallama", "Mahawilachchiya", "Mailagaswewa", "Maneruwa", "Maradankadawala", "Medawachchiya", "Meegodawewa", "Megodawewa", "Mihintale", "Morakewa", "Nachchaduwa", "Nochchiyagama", "Nuwaragam Palatha", "Padavi Siripura", "Padavi Siritissapura", "Padaviya", "Parakumpura", "Parangiyawadiya", "Parasangahawewa", "Pemaduwa", "Pulmoddai", "Rajanganaya", "Rambewa", "Ranorawa", "Saliyapura", "Siyambalewa", "Talawa", "Tambuttegama", "Telhiriyawa", "Thalawa", "Thambuttegama", "Thanthirimale", "Thirappane", "Tittagonewa", "Udunuwara Colony", "Wahalkada", "Welimuwapotana", "Welioya Project"],
-    Polonnaruwa: ["Aluthwewa", "Alutwewa", "Aralangawila", "Aselapura", "Attanakadawala", "Bakamuna", "Dalukana", "Damminna", "Dewagala", "Dimbulagala", "Divulankadawala", "Divuldamana", "Diyabeduma", "Diyasenpura", "Elahera", "Ellewewa", "Galamuna", "Galoya Junction", "Giritale", "Hansayapalama", "Hingurakdamana", "Hingurakgoda", "Jayanthipura", "Jayasiripura", "Kalingaela", "Kalukele Badanagala", "Kashyapapura", "Kawudulla", "Kawuduluwewa", "Kottapitiya", "Kumaragama", "Lakshauyana", "Maduruoya", "Maha Ambagaswewa", "Mahatalakolawewa", "Mahawela Sinhapura", "Mampitiya", "Manampitiya", "Medirigiriya", "Meegaswewa", "Minneriya", "Mutugala", "Nawasenapura", "Nelumwewa", "Nuwaragala", "Onegama", "Orubendi Siyambalawa", "Palugasdamana", "Parakrama Samudraya", "Pelatiyawa", "Pimburattewa", "Polonnaruwa Town", "Pulastigama", "Sevanapitiya", "Sinhagama", "Sungavila", "Talpotha", "Tamankaduwa", "Tambala", "Unagalavehera", "Welikanda", "Wijayabapura", "Yodaela", "Yudaganawa"],
-  },
-
-  Northern: {
-    Jaffna: ["Chavakachcheri", "Delft Island", "Eluthumadduval", "Jaffna Town", "Kankesanthurai", "Karainagar", "Kayts", "Kokuvil", "Mandaitivu", "Maviddapuram", "Nallur", "Point Pedro", "Puliyankoodal", "Puloly", "Pungudutheevu", "Saravanai", "Suruvil", "Vadamaradchy", "Valikamam East", "Valikamam North", "Valikamam South", "Valikamam West", "Valvettithurai"],
-    Kilinochchi: ["Akkarayankulam", "Aliyavalai", "Elephant Pass", "Iranamadu", "Iyyakachchi", "Jeyanthinagar", "Kaneshapuram", "Kilinochchi", "Mulliyan", "Pallai", "Parantan", "Paranthan", "Pooneryn", "Skanthapuram", "Uruthirapuram", "Vaddakachchi", "Vivekananthanagar"],
-    Mannar: ["Mannar", "Moorstreet", "Pallimunai", "Panankaddukoddu", "Perijakadai", "Pesalai", "Sinnakkadai", "Sivapuram", "Thalaimannar", "Uppukkulam"],
-    Mullaitivu: ["Alampil", "Chilawattai", "Kallappadu North", "Kallappadu South", "Karuppaddamurippu", "Mankulam", "Mulativu Town", "Mullivaikkal", "Mulliyawalai", "Muththaiyankaddukulam", "Naddan Kandal", "Oddusuddan", "Puthukkudiyiruppu", "Puthuvedduvan", "Selvapuram", "Thunukkai", "Udayarkaddu", "Vavunakkulam", "Visvamadukulam", "Yogapuram"],
-    Vavuniya: ["Bogaswewa", "Irattaperiyakulam", "Kachchakodiya", "Kalmadu", "Kalukunnammadu", "Kanagarayamkulam", "Kavutharimunai", "Madukanda", "Mamaduwa", "Murasumoddai", "Nedunkerny", "Omanthai", "Puliyankulam", "Purakari Nallur", "Ramanathapuram", "Thalaiyadi", "Uruthirapuram", "Vavuniya Town", "Veravil", "Weppankulam"],
-  },
-
-  "North Western": {
-    Kurunegala: ["Alawwa", "Ambanpola", "Ataragalla", "Awulegama", "Balalla", "Bamunukotuwa", "Bandara Koswatta", "Barampola", "Bogahamulla", "Bopitiya", "Bujjomuwa", "Dambadeniya", "Deegalla", "Demataluwa", "Diddeniya", "Divullegoda", "Dodangaslanda", "Etungahakotuwa", "Galgamuwa", "Giriulla", "Gokaralla", "Halmillawewa", "Heraliyawela", "Hettipola", "Hindagolla", "Hiruwalpola", "Horambawa", "Hulogedara", "Hulugalla", "Ibbagamuwa", "Ilukhena", "Indulgodakanda", "Inguruwatta", "Iriyagolla", "Ithanawatta", "Kadigawa", "Kahapathawala", "Kahapathwala", "Kalugamuwa", "Kanadeniyawala", "Kanattewewa", "Katupota", "Kekunagolla", "Keppitiwalana", "Kirimetiyawa", "Kirindigalla", "Kithalawa", "Kobeigane", "Kohilagedara", "Konwewa", "Kosdeniya", "Kosgolla", "Kotawehera", "Kudagalagamuwa", "Kudakathnoruwa", "Kuliyapitiya", "Kumbukgeta", "Kumbukwewa", "Kuratihena", "Kurunegala Town", "Labbala", "Lonahettiya", "Madahapola", "Madakumburumulla", "Madawakkulama", "Maduragoda", "Maeliya", "Mahagalkadawala", "Mahagirilla", "Mahamukalanyaya", "Mahananneriya", "Maharachchimulla", "Maho", "Makulpotha", "Makulwewa", "Malagane", "Malkaduwawa", "Malpitiya", "Mandapola", "Maspotha", "Mawathagama", "Meegalawa", "Meewellawa", "Melsiripura", "Metikumbura", "Metiyagane", "Minhettiya", "Minuwangete", "Mirihanegama", "Moragane", "Moragollagama", "Munamaldeniya", "Nabadewa", "Nagollagama", "Nagollagoda", "Nakkawatta", "Narammala", "Narangoda", "Nawatalwatta", "Nelliya", "Nikadalupotha", "Nikaweratiya", "Padeniya", "Padiwela", "Pahalagiribawa", "Pahamune", "Palukadawala", "Panadaragama", "Panagamuwa", "Panaliya", "Panliyadda", "Pannala", "Pansiyagama", "Periyakadneluwa", "Pihimbiya Ratmale", "Pihimbuwa", "Pilessa", "Polgahawela", "Polpitigama", "Pothuhera", "Puswelitenna", "Ridigama", "Sandalankawa", "Sirisethagama", "Siyambalagamuwa", "Solewewa", "Sunandapura", "Talawattegedara", "Tambutta", "Thalahitimulla", "Thalakolawewa", "Thalwita", "Thambagalla", "Tharana Udawela", "Thimbiriyawa", "Thorayaya", "Tisogama", "Torayaya", "Tuttiripitigama", "Udubaddawa", "Uhumiya", "Usgala Siyabmalangamuwa", "Wadakada", "Wadumunnegedara", "Wannilhalagama", "Wannirasnayakapura", "Warawewa", "Wariyapola", "Watuwatta", "Weerapokuna", "Welawa Junction", "Welipennagahamulla", "Wellagala", "Wellarawa", "Wellawa", "Wennoruwa", "Weuda", "Wewagama", "Yakwila", "Yatakalana"],
-    Puttalam: ["Adippala", "Anamaduwa", "Anavilundawa", "Andigama", "Angunawila", "Bangadeniya", "Baranankattuwa", "Battuluoya", "Bingiriya", "Bowatta", "Bujjampola", "Chilaw", "Daluwa", "Dankotuwa", "Dunkannawa", "Eluwankulama", "Ettale", "Ihala Kottaramulla", "Ihala Puliyankulama", "Ismail Puram", "Kakkapalliya", "Kalpitiya", "Karaitivu", "Karativponparappi", "Karuwalagaswewa", "Katuneriya", "Kirimundalama", "Kiula", "Kottukachchiya", "Kudawewa", "Kumarakattuwa", "Kuruketiyawa", "Lihiriyagama", "Lunuwila", "Madampe", "Madurankuliya", "Mahakumbukkadawala", "Mahauswewa", "Maha Uswewa", "Mahawewa", "Marawila", "Mudalakkuliya", "Mundel", "Muttibendivila", "Nainamadama", "Nalladarankattuwa", "Nattandiya", "Nawagattegama", "Norachcholai", "Palaviya", "Pallama", "Palliwasalturai", "Pothuwatawana", "Puttalam Town", "Rajakadaluwa", "Saliyawewa Junction", "Tabbowa", "Talawila Church", "Toduwawa", "Udappu", "Udappuwa", "Uriyawa", "Vanathawilluwa", "Waikkal", "Watugahamulla", "Weerakodiyana", "Wennappuwa", "Wilpotha", "Yogiyana"],
-  },
-
-  Sabaragamuwa: {
-    Kegalle: ["Alawatura", "Algama", "Aluthnuwara", "Ambalakanda", "Ambulugala", "Amitirigala", "Ampagala", "Anhettigama", "Aranayake", "Aruggammana", "Atale", "Batuwita", "Beligala", "Berannawa", "Bopitiya", "Boralankada", "Bossella", "Bulathkohupitiya", "Damunupola", "Daraniyagala", "Debathgama", "Dedigama", "Dedugala", "Deewala Pallegama", "Dehiowita", "Deldeniya", "Deloluwa", "Deraniyagala", "Dewalegama", "Dewanagala", "Dombemada", "Dorawaka", "Dunumala", "Galapitamada", "Galatara", "Galigamuwa", "Galpatha", "Ganithapura", "Gantuna", "Gonagala", "Hakabellawaka", "Hakahinna", "Hakbellawaka", "Hawadiwela", "Helamada", "Hemmatagama", "Hettimulla", "Hewadiwela", "Hingula", "Hinguralakanda", "Hiriwadunna", "Imbulana", "Imbulgasdeniya", "Kabagamuwa", "Kannattota", "Karawanella", "Kegalle Town", "Kehelpannala", "Kithulgala", "Kitulgala", "Kondeniya", "Kotiyakumbura", "Kudagama", "Lewangama", "Mahapallegama", "Maharangalla", "Makehelwala", "Malalpola", "Maliboda", "Malmaduwa", "Mawanella", "Migastenna", "Miyanawita", "Molagoda", "Morontota", "Nelumdeniya", "Niyadurupola", "Noori", "Parape", "Pattampitiya", "Pitagaldeniya", "Rambukkana", "Ruwanwella", "Seaforth Colony", "Talgaspitiya", "Teligama", "Tholangamuwa", "Thotawella", "Tulhiriya", "Tuntota", "Udagaldeniya", "Udapotha", "Udumulla", "Undugoda", "Ussapitiya", "Wahakula", "Waharaka", "Warakapola", "Watura", "Weeoya", "Wegalla", "Welihelatenna", "Weragala", "Yatagama", "Yatapana", "Yatiyantota", "Yattogoda"],
-    Ratnapura: ["Akarella", "Atakalanapnna", "Ayagama", "Balangoda", "Batatota", "Belihuloya", "Bolthumbe", "Bulutota", "Dambuluwana", "Dela", "Delwala", "Demuwatha", "Dodampe", "Doloswalakanda", "Dumbara Manana", "Eheliyagoda", "Ekamuthugama", "Elapatha", "Ellagawa", "Ellawala", "Embilipitiya", "Erathna", "Erepola", "Gabbela", "Gallella", "Gangeyaya", "Gawaragiriya", "Getahetta", "Gillimale", "Godagampola", "Godakawela", "Gurubewilagama", "Halpe", "Halwinna", "Handagiriya", "Hapugastenna", "Hatangala", "Hatarabage", "Hiramadagama", "Ihalagalagama", "Imbulpe", "Ittakanda", "Kahangama", "Kahawatte", "Kalawana", "Kalthota", "Kaltota", "Karandana", "Karangoda", "Karawita", "Kella Junction", "Kiribbanwewa", "Kiriella", "Kolambageara", "Kolombugama", "Kolonna", "Kudawa", "Kuruwita", "Madalagama", "Madampe", "Mahagama Colony", "Mahawalatenna", "Makandura Sabara", "Matuwagalagama", "Meddekanda", "Minipura Dumbara", "Mitipola", "Morahela", "Mulendiyawala", "Nawalakanda", "Nivithigala", "Omalpe", "Opanayaka", "Padalangala", "Pallebedda", "Pambagolla", "Panamura", "Panawala", "Parakaduwa", "Pebotuwa", "Pelmadulla", "Pimbura", "Pinnawala", "Rajawaka", "Rakwana", "Ranwala", "Rassagala", "Ratna Hangamuwa", "Ratnapura Town", "Samanalawewa", "Sevanagala", "Sri Palabaddala", "Sudagala", "Teppanawa", "Tunkama", "Udakarawita", "Udaniriella", "Udawalawe", "Ullinduwawa", "Veddagala", "Vijeriya", "Waleboda", "Watapotha", "Waturawa", "Weligepola", "Welipathayaya", "Wewelwatta", "Wikiliya"],
-    
-  },
-
-  Southern: {
-   Galle: ["Agaliya", "Ahangama", "Ahungalla", "Akmeemana", "Akuressa", "Aluthwala", "Ambalangoda", "Ampegama", "Amugoda", "Anangoda", "Angulugaha", "Ankokkawala", "Atakohota", "Avittawa", "Baddegama", "Balapitiya", "Banagala", "Batapola", "Benthota", "Boossa", "Dikkumbura", "Dodanduwa", "Ella Tanabaddegama", "Elpitiya", "Ethkandura", "Galle Town", "Gintota", "Godahena", "Gonagalpura", "Habaraduwa", "Haburugala", "Halvitigala Colony", "Hawpe", "Hikkaduwa", "Hiniduma", "Hiyare", "Ihalahewessa", "Ihala Walpola", "Imaduwa", "Induruwa", "Kahaduwa", "Kahawa", "Kananke Bazaar", "Karagoda", "Karandeniya", "Karapitiya", "Ketandola", "Koggala", "Kosgoda", "Kothalawala", "Kottawagama", "Kurundugahahethakma", "Madakumburamulla", "Magala North", "Magala South", "Magedara", "Malamura", "Malgalla Talangalla", "Mapalagama", "Mapalagama Central", "Mattaka", "Meda Keembiya", "Meetiyagoda", "Miriswatta", "Nagoda", "Nakiyadeniya", "Nawadagala", "Neluwa", "Nindana", "Opatha", "Panangala", "Pannimulla Panagoda", "Parana Thanayamgoda", "Pitigala", "Pitigala - North", "Poddala", "Porawagama", "Rantotuvila", "Rathgama", "Talagampola", "Talpe", "Tawalama", "Thalgaswala", "Udalamatta", "Udugama", "Unawatuna", "Uragasmanhandiya", "Wackwella", "Walahanduwa", "Wanchawela", "Wanduramba", "Warukandeniya", "Weihena", "Yakkalamulla", "Yatalamatta"],
-   Matara: ["Akuressa", "Alapaladeniya", "Aparekka", "Aturaliya", "Bengamuwa", "Beralapanathara", "Bopagoda", "Dampahala", "Deegala Lenama", "Deiyandara", "Dellawa", "Denagama", "Denipitiya", "Deniyaya", "Derangala", "Devinuwara", "Devundara", "Dikwella", "Diyagaha", "Diyalape", "Gandara", "Godagama", "Godapitiya", "Gomila Mawarala", "Hakmana", "Handugala", "Hithetiya", "Horapawita", "Kalubowitiyana", "Kamburugamuwa", "Kamburupitiya", "Karagoda Uyangoda", "Karaputugala", "Karatota", "Kekanadura", "Kiriweldola", "Kiriwelkele", "Kolawenigma", "Kotapola", "Kottegoda", "Lankagama", "Makandura", "Maliduwa", "Malimboda", "Maramba", "Matara", "Matara Town", "Mediripitiya", "Miella", "Mirissa", "Modara", "Moragala Kirillapone", "Morawaka", "Mulatiyana Junction", "Nadugala", "Naimana", "Narawelpita", "Nawimana", "Nupe", "Pahala Millawa", "Palatuwa", "Palena", "Pamburana", "Paragala", "Parapamulla", "Pasgoda", "Penetiyana", "Pitabeddara", "Pothdeniya", "Puhulwella", "Radawela", "Ransegoda", "Ratmale", "Rotumba", "Siyambalagoda", "Sultanagoda", "Talaramba", "Thelijjawila", "Thihagoda", "Thudawa", "Urubokka", "Urugamuwa", "Urumutta", "Uyanwatta", "Viharahena", "Walakanda", "Walasgala", "Walgama", "Wallasmulla", "Waralla", "Weligama", "Welihinda", "Wilpita", "Yatiyana"],
-   Hambantota: ["Ambalantota", "Angunakolapalassa", "Bandagiriya Colony", "Barawakumbuka", "Beliatta", "Beragama", "Beralihela", "Bowalagama", "Bundala", "Ellagala", "Gangulandeniya", "Getamanna", "Goda Koggalla", "Gonagamuwa Uduwila", "Gonnoruwa", "Hakuruwela", "Hambantota", "Hambantota Town", "Horewelagoda", "Hungama", "Ihala Beligala", "Ittademaliya", "Julampitiya", "Kahandamodara", "Kariyamaditta", "Katuwana", "Kawantissapura", "Kirama", "Kirinda", "Lunama", "Lunugamwehera", "Magama", "Mahagalwewa", "Mamadala", "Medamulana", "Middeniya", "Migahajandur", "Modarawana", "Mulkirigala", "Nakulugamuwa", "Netolpitiya", "Nihiluwa", "Padawkema", "Pahala Andarawewa", "Pallekanda", "Rammalawarapitiya", "Ranakeliya", "Ranmuduwewa", "Ranna", "Ratmalwala", "Ridiyagama", "Sooriyawewa", "Tangalle", "Tissamaharama", "Uda Gomadiya", "Udamattala", "Uswewa", "Vitharandeniya", "Walasmulla", "Weeraketiya", "Weerawila", "Weerawila New Town", "Wekandawela", "Weligatta", "Yatigala"],
-  },
-
-  Uva: {
-    Badulla: ["Akkarasiyaya", "Aluketiyawa", "Aluththarama", "Aluttaramma", "Ambadandegama", "Ambagahawatte", "Ambagasdowa", "Amunumulla", "Arawa", "Arawakumbura", "Arawatta", "Atakiriya", "Badulla Town", "Baduluoya", "Ballaketuwa", "Bambarapana", "Bandarawela", "Beramada", "Bibilegama", "Bogahakumbura", "Boragas", "Boralanda", "Bowela", "Dambana", "Demodara", "Diganatenna", "Dikkapitiya", "Dimbulana", "Divulapelessa", "Diyathalawa", "Dulgolla", "Egodawela", "Ella", "Ettempitiya", "Gadunna", "Galahagama", "Galauda", "Galedanda", "Galporuyaya", "Gamewela", "Gawarawela", "Girandurukotte", "Godunna", "Guruthalawa", "Haldummulla", "Hali-ela", "Hangunnawa", "Haputale", "Hawanakumbura", "Hebarawa", "Heeloya", "Helahalpe", "Helapupula", "Hewanakumbura", "Hingurukaduwa", "Hopton", "Idalgashinna", "Jangulla", "Kahataruppa", "Kalubululanda", "Kalugahakandura", "Kalupahana", "Kandaketiya", "Kandegedara", "Kandepuhulpola", "Kebillawela North", "Kebillawela South", "Kendagolla", "Keppetipola", "Keselpotha", "Ketawatta", "Kiriwanagama", "Koslanda", "Kotamuduna", "Kuruwitenna", "Kuttiyagolla", "Landewela", "Liyanagahawela", "Lunugala", "Lunuwatta", "Madulsima", "Mahiyangana", "Mahiyanganaya", "Makulella", "Maliyadda", "Mapakadawewa", "Maspanna", "Maussagolla", "Medawelagama", "Medawela Udukinda", "Meegahakivula", "Metigahatenna", "Mirahawatta", "Miriyabedda", "Miyanakandura", "Namunukula", "Narangala", "Nelumgama", "Nikapotha", "Nugatalawa", "Ohiya", "Pahalarathkinda", "Pallekiruwa", "Passara", "Pathanewatta", "Pattiyagedara", "Pelagahatenna", "Perawella", "Pitamaruwa", "Pitapola", "Poonagala", "Puhulpola", "Ratkarawwa", "Rideemaliyadda", "Rilpola", "Silmiyapura", "Sirimalgoda", "Sorabora Colony", "Soragune", "Soranathota", "Spring Valley", "Taldena", "Tennepanguwa", "Timbirigaspitiya", "Uduhawara", "Uraniya", "Uva Deegalla", "Uva Karandagolla", "Uva Mawelagama", "Uvaparanagama", "Uva Tenna", "Uva Tissapura", "Uva Uduwara", "Welimada", "Wewatta", "Wineethagama", "Yalagamuwa", "Yalwela"],
-    Monaragala: ["Angunakolawewa", "Ayiwela", "Badalkumbura", "Baduluwela", "Bakinigahawela", "Balaharuwa", "Bibile", "Buddama", "Buttala", "Dambagalla", "Diyakobala", "Dombagahawela", "Ekamutugama", "Ekiriyankumbura", "Ethimalewewa", "Ettiliwewa", "Galabedda", "Hambegamuwa", "Hulandawa", "Inginiyagala", "Kandaudapanguwa", "Kandawinna", "Kataragama", "Kiriibbanwewa", "Kotagama", "Kotawehera Mankada", "Kotiyagala", "Kudaoya", "Kumbukkana", "Mahagama Colony", "Marawa", "Mariarawa", "Medagana", "Monaragala", "Monaragala Town", "Moretuwegama", "Nakkala", "Nannapurawa", "Nelliyadda", "Nilgala", "Obbegoda", "Okkampitiya", "Pangura", "Pitakumbura", "Randeniya", "Ruwalwela", "Sella Kataragama", "Sewanagala", "Siyambalagane", "Siyambalanduwa", "Suriara", "Tanamalila", "Tanamalwila", "Uva Gangodagama", "Uva Kudaoya", "Uva Pelwatta", "Warunagama", "Wedikumbura", "Weherayaya Handapanagala", "Wellawaya", "Wilaoya"],
-  },
- 
-  Western: {
-  "Colombo (1 - 15)": ["Colombo 01 - Fort","Colombo 02 - Slave Island / Union Place","Colombo 03 - Kollupitiya (Colpetty)","Colombo 04 - Bambalapitiya","Colombo 05 - Narahenpita / Havelock Town / Kirulapone North","Colombo 07 - Cinnamon Gardens","Colombo 08 - Borella","Colombo 09 - Dematagoda","Colombo 10 - Maradana / Panchikawatte","Colombo 11 - Pettah","Colombo 12 - Hulftsdorp (Aluthkade)","Colombo 13 - Kotahena / Bloemendhal / Kochchikade","Colombo 14 - Grandpass","Colombo 15 - Mattakkuliya / Modara / Mutwal / Madampitiya"],
-  "Colombo - Greater": ["Aggona","Angoda","Angulana","Arawwala","Athurugiriya","Attidiya","Avissawella","Battaramulla","Beddagana","Bellanvila","Bokundara","Bope","Bopitiya","Boralesgamuwa","Borupana","Dahampura","Dedigamuwa","Dehiwala","Delkanda","Egoda Uyana","Embuldeniya","Gangodawila","Godagama","Gothatuwa","Habarakada","Hanwella","Himbutana","Hiripitya","Hokandara","Homagama","Jambugasmulla","Kaduwela","Kahathuduwa","Kaldemulla","Kalubowila","Katubedda","Katuwana","Katuwawala","Kawdana","Kesbewa","Kiriwattuduwa","Kohuwala","Kolonnawa","Kosgama","Koswatta","Kotikawatta","Kottawa","Kotte","Lunawa","Madapatha","Madiwela","Maharagama","Makumbura","Malabe","Mattegoda","Meegoda","Mirihana","Moratuwa","Mount Lavinia","Mullegama","Mulleriyawa","Mulleriyawa New Town","Napawela","Nawala","Nawinna","Nedimala","Niyadagala","Nugegoda","Obesekarapura","Orugodawatta","Padukka","Pagoda","Palanwatta","Peliyagoda","Pannipitiya","Pelawatta","Pepiliyana","Piliyandala","Pitipana Homagama","Polgasowita","Rajagiriya","Rathmalana","Rattanapitiya","Rukmale","Sapugaskande","Sedawatte","Siddamulla","Sri Jayawardenepura Kotte","Talangama","Talawatugoda","Thalawathugoda","Udahamulla","Waga","Watareka","Welikada","Welivita","Wellampitiya","Werahera","Wijerama"],
-  "Gampaha": ["Akaragama","Alawala","Aluthepola","Amandoluwa","Ambagaspitiya","Ambepussa","Amuhena","Andiambalama","Aramba","Badalgama","Ballapana","Bambukuliya","Bemmulla","Biyagama","Buthpitiya","Dagonna","Dalupotha","Daluwakotuwa","Dambaduraya","Dandugama","Danowita","Debahera","Dekatana","Delathura","Delgoda","Delpakadawara","Demalagama","Dewalapola","Dikkowita","Divulapitiya","Divuldeniya","Dompe","DRZ - QC Zone","Dunagaha","Dungalpitiya","Duwana","Ekala","Elakanda","Ellakkala","Enderamulla","Essella","Ethgala","Ethukala","Gampaha Town","Ganemulla","Godigomuwa","Gonawala","Gongithota","Heenatiyana","Heiyanthuduwa","Hekitta","Hendala","Henegama","Hiswella","Horampalla","Hunupitiya","Ihala Madampella","Indigahamula","Isuru Uyana","Ja-Ela","K.C De Silva Puraya","Kadawatha","Kadirana","Kalagedihena","Kaleliya","Kaluaggala","Kandana","Kandawala","Katana","Katiyala","Kattuwa","Katunayake","Katuwapitiya","Kelaniya","Kepungoda","Kerawalapitiya","Kimbulapitiya","Kiribathgoda","Kirillawala","Kirindiwela","Kitulwala","Kochchikade","Kotadeniyawa","Kotugada","Kowinna","Kudapaduwa","Kurana","Kuswala","Liyanagemulla","Lunugama","Mabodala","Mabole","Madampella","Madelgamuwa","Mahabage","Mahara","Makevita North","Makevita South","Makola","Malwana","Mawaramandiya","Meethirigala","Mellawagedara","Millathe","Millennium City","Minuwangoda","Mirigama","Miriswatte","Mudungoda","Munnakkara","Muthuwadiya","Nedagamuwa","Negombo","Nittambuwa","Pahala Mapitigama","Pamunugama","Peliyagoda","Pugoda","Radawana","Raddolugama","Ragama","Ranala","Seeduwa","Siyambalape","Thalahena","Thihariya","Udugampola","Veyangoda","Wattala","Weliweriya","Weweldeniya","Yakkala","Yatiyana"],
-  "Kalutara": ["Agalawatta","Alubomulla","Aluthgama","Anguruwathota","Arukgoda","Athwelthota","Baduraliya","Bandaragama","Beruwala","Bulathsinhala","China Fort","Dharga Town","Dodangoda","Horana","Ingiriya","Kalutara","Kalutara Town","Matugama","Panadura","Wadduwa","Waskaduwa","Welipenna","Yatadolawatta"]
-}
+const emptyAddress = {
+  fullName: "",
+  email: "",
+  phoneNumber1: "",
+  phoneNumber2: "",
+  addressType: "HOME",
+  addressLine1: "",
+  addressLine2: "",
+  province: "",
+  district: "",
+  city: "",
+  postalCode: "",
 };
 
 const Checkout = () => {
@@ -65,80 +28,181 @@ const Checkout = () => {
   const [placingOrder, setPlacingOrder] = useState(false);
   const [error, setError] = useState("");
 
-  const [checkoutData, setCheckoutData] = useState({
-  fullName: "",
-  email: "",
-  phoneNumber1: "",
-  phoneNumber2: "",
+  const [shippingData, setShippingData] = useState(emptyAddress);
+  const [billingData, setBillingData] = useState(emptyAddress);
 
-  addressType: "Home",
-  addressLine1: "",
-  addressLine2: "",
-  landmark: "",
-  province: "",
-  district: "",
-  city: "",
-  postalCode: "",
+  const [saveShippingAddress, setSaveShippingAddress] = useState(true);
+  const [saveBillingAddress, setSaveBillingAddress] = useState(true);
 
-  paymentMethod: "Cash on Delivery",
-  notes: "",
-});
+  const [billingSameAsShipping, setBillingSameAsShipping] = useState(true);
+
+  const [hasSavedShipping, setHasSavedShipping] = useState(false);
+  const [hasSavedBilling, setHasSavedBilling] = useState(false);
+
+  const [showShippingForm, setShowShippingForm] = useState(true);
+  const [showBillingForm, setShowBillingForm] = useState(true);
 
   const navigate = useNavigate();
+
+  const cleanPhone = (value) => {
+    return String(value || "").replace(/[^\d]/g, "");
+  };
+
+  const formatPhoneForApi = (value) => {
+    const cleaned = cleanPhone(value);
+    return cleaned ? `+${cleaned}` : "";
+  };
+
+  const handlePhoneChange = (section, fieldName, value) => {
+    const setter = section === "shipping" ? setShippingData : setBillingData;
+
+    setter((prev) => ({
+      ...prev,
+      [fieldName]: cleanPhone(value),
+    }));
+  };
 
   const loadUserDetails = useCallback(() => {
     try {
       const savedUser =
-        JSON.parse(localStorage.getItem("user")) ||
-        JSON.parse(localStorage.getItem("userInfo"));
+        JSON.parse(localStorage.getItem("userInfo")) ||
+        JSON.parse(localStorage.getItem("user"));
 
       if (savedUser) {
-        setCheckoutData((prev) => ({
-          ...prev,
+        const userDetails = {
           fullName:
             savedUser.name ||
             savedUser.fullName ||
             savedUser.username ||
             "",
           email: savedUser.email || "",
-          phoneNumber1:
+          phoneNumber1: cleanPhone(
             savedUser.phone ||
-            savedUser.phoneNumber ||
-            savedUser.mobile ||
-            "",
-        }));
+              savedUser.phoneNumber ||
+              savedUser.mobile ||
+              ""
+          ),
+        };
+
+        setShippingData((prev) => ({ ...prev, ...userDetails }));
+        setBillingData((prev) => ({ ...prev, ...userDetails }));
       }
-    } catch (err) {
+    } catch {
       console.log("No saved user details found.");
     }
   }, []);
 
-  const loadCart = useCallback(async () => {
-  try {
-    const selectedCheckoutItems = JSON.parse(
-      localStorage.getItem("checkoutItems")
-    );
+  const mapAddressToForm = (address, previousData = emptyAddress) => {
+    return {
+      ...previousData,
+      fullName: address.fullName || previousData.fullName,
+      email: address.email || previousData.email,
 
-    if (selectedCheckoutItems && selectedCheckoutItems.length > 0) {
-      setCart(selectedCheckoutItems);
-      setError("");
-      return;
+      phoneNumber1: cleanPhone(
+        address.phone || address.phoneNumber1 || previousData.phoneNumber1
+      ),
+
+      phoneNumber2: cleanPhone(
+        address.phoneNumber2 || previousData.phoneNumber2
+      ),
+
+      addressType:
+        address.addressType === "Office" || address.addressType === "OFFICE"
+          ? "OFFICE"
+          : "HOME",
+
+      addressLine1:
+        address.addressLine1 ||
+        address.addressLine ||
+        previousData.addressLine1,
+
+      addressLine2: address.addressLine2 || previousData.addressLine2,
+
+      province: address.province || previousData.province,
+      district: address.district || previousData.district,
+      city: address.city || previousData.city,
+
+      postalCode: String(
+        address.postalCode || previousData.postalCode || ""
+      ).replace(/\D/g, ""),
+    };
+  };
+
+  const loadDefaultShippingAddress = useCallback(async () => {
+    try {
+      const { data } = await API.get("/addresses/default");
+
+      if (data.address) {
+        setShippingData((prev) => mapAddressToForm(data.address, prev));
+        setHasSavedShipping(true);
+        setShowShippingForm(false);
+      } else {
+        setHasSavedShipping(false);
+        setShowShippingForm(true);
+      }
+    } catch {
+      setHasSavedShipping(false);
+      setShowShippingForm(true);
     }
+  }, []);
 
-    const { data } = await API.get("/cart");
-    setCart(data.cart || []);
-    setError("");
-  } catch (err) {
-    setError("Failed to load checkout details.");
-  } finally {
-    setLoading(false);
-  }
-}, []);
+  const loadDefaultBillingAddress = useCallback(async () => {
+    try {
+      const { data } = await API.get("/addresses/default-billing");
+
+      if (data.address) {
+        setBillingData((prev) => mapAddressToForm(data.address, prev));
+        setHasSavedBilling(true);
+        setShowBillingForm(false);
+      } else {
+        setHasSavedBilling(false);
+        setShowBillingForm(true);
+      }
+    } catch {
+      setHasSavedBilling(false);
+      setShowBillingForm(true);
+    }
+  }, []);
+
+  const loadCart = useCallback(async () => {
+    try {
+      const selectedCheckoutItems = JSON.parse(
+        localStorage.getItem("checkoutItems")
+      );
+
+      if (selectedCheckoutItems && selectedCheckoutItems.length > 0) {
+        setCart(selectedCheckoutItems);
+        setError("");
+        return;
+      }
+
+      const { data } = await API.get("/cart");
+      setCart(data.cart || []);
+      setError("");
+    } catch {
+      setError("Failed to load checkout details.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     loadUserDetails();
+    loadDefaultShippingAddress();
+    loadDefaultBillingAddress();
     loadCart();
-  }, [loadUserDetails, loadCart]);
+  }, [
+    loadUserDetails,
+    loadDefaultShippingAddress,
+    loadDefaultBillingAddress,
+    loadCart,
+  ]);
+
+  useEffect(() => {
+    if (billingSameAsShipping) {
+      setBillingData(shippingData);
+    }
+  }, [billingSameAsShipping, shippingData]);
 
   const cartItemsTotal = cart.reduce(
     (sum, item) => sum + Number(item.price) * Number(item.quantity),
@@ -146,218 +210,483 @@ const Checkout = () => {
   );
 
   const deliveryFee = cart.length === 0 ? 0 : cartItemsTotal >= 5000 ? 0 : 300;
-
   const total = cartItemsTotal + deliveryFee;
 
-  const handleChange = (event) => {
-  const { name, value } = event.target;
+  const getDistricts = (province) =>
+    province ? Object.keys(locationData[province] || {}) : [];
 
-  setCheckoutData((prev) => {
+  const getCities = (province, district) =>
+    province && district ? locationData[province]?.[district] || [] : [];
+
+ const handleAddressChange = (section, event) => {
+  const { name, value } = event.target;
+  const setter = section === "shipping" ? setShippingData : setBillingData;
+
+  setter((prev) => {
     if (name === "province") {
-      return {
-        ...prev,
-        province: value,
-        district: "",
-        city: "",
-      };
+      return { ...prev, province: value, district: "", city: "" };
     }
 
     if (name === "district") {
-      return {
-        ...prev,
-        district: value,
-        city: "",
-      };
+      return { ...prev, district: value, city: "" };
     }
 
-    return {
-      ...prev,
-      [name]: value,
-    };
+    if (name === "postalCode") {
+      return { ...prev, postalCode: value.replace(/\D/g, "") };
+    }
+
+    return { ...prev, [name]: value };
   });
 };
 
-  const provinces = Object.keys(locationData);
-
-  const districts = checkoutData.province
-   ? Object.keys(locationData[checkoutData.province])
-   : [];
-
-  const cities =
-   checkoutData.province && checkoutData.district
-    ? locationData[checkoutData.province][checkoutData.district]
-    : [];
+  const validateAddress = (data, type) => {
+    if (!data.fullName.trim()) return `${type} full name is required.`;
+    if (!data.email.trim()) return `${type} email is required.`;
+    if (!data.phoneNumber1.trim()) return `${type} phone number is required.`;
+    if (!data.addressLine1.trim()) return `${type} address line 1 is required.`;
+    if (!data.addressLine2.trim()) return `${type} address line 2 is required.`;
+    if (!data.province) return `${type} province is required.`;
+    if (!data.district) return `${type} district is required.`;
+    if (!data.city) return `${type} city is required.`;
+    return "";
+  };
 
   const validateForm = () => {
-    if (!checkoutData.fullName.trim()) {
-      return "Full name is required.";
+    const shippingError = validateAddress(shippingData, "Shipping");
+    if (shippingError) return shippingError;
+
+    if (!billingSameAsShipping) {
+      const billingError = validateAddress(billingData, "Billing");
+      if (billingError) return billingError;
     }
 
-    if (!checkoutData.email.trim()) {
-      return "Email is required.";
-    }
-
-    if (!checkoutData.phoneNumber1.trim()) {
-     return "Phone number 1 is required.";
-    }
-
-    if (!checkoutData.addressLine1.trim()) {
-      return "Address line 1 is required.";
-    }
-
-    if (!checkoutData.addressLine2.trim()) {
-      return "Address line 2 is required.";
-    }
-
-    if (!checkoutData.province) {
-      return "Province is required.";
-    }
-
-    if (!checkoutData.district) {
-      return "District is required.";
-    }
-
-    if (!checkoutData.city) {
-      return "City is required.";
-    }
-
-    if (!checkoutData.postalCode.trim()) {
-      return "Postal code is required.";
-   }
-
-    if (cart.length === 0) {
-      return "Your cart is empty.";
-    }
+    if (cart.length === 0) return "Your cart is empty.";
 
     return "";
   };
 
-  const saveDeliveryDetails = () => {
-  const validationError = validateForm();
+  const buildAddressPayload = (data) => {
+    const line1 = data.addressLine1.trim();
+    const line2 = data.addressLine2.trim();
+    const city = data.city.trim();
+    const district = data.district.trim();
+    const province = data.province.trim();
+    const postalCode = data.postalCode.trim();
 
-  if (validationError) {
-    setError(validationError);
-    return;
-  }
+    const addressParts = [
+      line1,
+      line2,
+      city,
+      district,
+      province,
+      postalCode,
+    ].filter(Boolean);
 
- const checkoutDraft = {
-  customer: {
-    fullName: checkoutData.fullName.trim(),
-    email: checkoutData.email.trim(),
+    const fullAddress = addressParts.join(", ");
 
-    phone: checkoutData.phoneNumber1.trim(),
-    phoneNumber1: checkoutData.phoneNumber1.trim(),
-    phoneNumber2: checkoutData.phoneNumber2.trim(),
-    
-    addressType: checkoutData.addressType,
-    addressLine1: checkoutData.addressLine1.trim(),
-    addressLine2: checkoutData.addressLine2.trim(),
-    landmark: checkoutData.landmark.trim(),
-    province: checkoutData.province,
-    district: checkoutData.district,
-    city: checkoutData.city,
-    postalCode: checkoutData.postalCode.trim(),
+    return {
+      fullName: data.fullName.trim(),
+      email: data.email.trim(),
+      phone: formatPhoneForApi(data.phoneNumber1),
+      phoneNumber1: formatPhoneForApi(data.phoneNumber1),
+      phoneNumber2: formatPhoneForApi(data.phoneNumber2),
+      addressType: data.addressType === "OFFICE" ? "OFFICE" : "HOME",
+      addressLine: line1,
+      addressLine1: line1,
+      addressLine2: line2,
+      province,
+      district,
+      city,
+      postalCode,
+      address: fullAddress,
+    };
+  };
 
-    address: `${checkoutData.addressLine1.trim()}, ${checkoutData.addressLine2.trim()}, ${checkoutData.city}, ${checkoutData.district}, ${checkoutData.province}`,
-    notes: checkoutData.notes.trim(),
-  },
+  const handleSaveAddressView = (type, data) => {
+    const validationError = validateAddress(
+      data,
+      type === "shipping" ? "Shipping" : "Billing"
+    );
 
-  items: cart.map((item) => ({
-    productId: item.productId,
-    name: item.name,
-    price: Number(item.price),
-    quantity: Number(item.quantity),
-    image: item.image,
-  })),
+    if (validationError) {
+      setError(validationError);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
 
-  cartItemsTotal,
-  deliveryFee,
-  total,
-
-  paymentMethod: "Cash on Delivery",
-  paymentStatus: "Pending",
-  orderStatus: "To Ship",
-};
-
-localStorage.setItem("checkoutDraft", JSON.stringify(checkoutDraft));
-navigate("/payment");
-};
-
-  const placeOrder = async (event) => {
-  event.preventDefault();
-
-  const validationError = validateForm();
-
-  if (validationError) {
-    setError(validationError);
-    return;
-  }
-
-  try {
-    setPlacingOrder(true);
     setError("");
 
-    const selectedPaymentMethod = checkoutData.paymentMethod;
+    if (type === "shipping") {
+      setHasSavedShipping(true);
+      setShowShippingForm(false);
+    } else {
+      setHasSavedBilling(true);
+      setShowBillingForm(false);
+    }
+  };
 
-    const orderData = {
-      customer: {
-        fullName: checkoutData.fullName.trim(),
-        email: checkoutData.email.trim(),
+  const saveDeliveryDetails = async () => {
+    const validationError = validateForm();
 
-        phone: checkoutData.phoneNumber1.trim(),
-        phoneNumber1: checkoutData.phoneNumber1.trim(),
-        phoneNumber2: checkoutData.phoneNumber2.trim(),
+    if (validationError) {
+      setError(validationError);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
 
-        addressType: checkoutData.addressType,
-        addressLine1: checkoutData.addressLine1.trim(),
-        addressLine2: checkoutData.addressLine2.trim(),
-        landmark: checkoutData.landmark.trim(),
-        province: checkoutData.province,
-        district: checkoutData.district,
-        city: checkoutData.city,
-        postalCode: checkoutData.postalCode.trim(),
+    setPlacingOrder(true);
 
-        address: `${checkoutData.addressLine1.trim()}, ${checkoutData.addressLine2.trim()}, ${checkoutData.city}, ${checkoutData.district}, ${checkoutData.province}`,
-        notes: checkoutData.notes.trim(),
-},
+    try {
+      const shippingPayload = buildAddressPayload(shippingData);
 
-      items: cart.map((item) => ({
-        productId: item.productId,
-        name: item.name,
-        price: Number(item.price),
-        quantity: Number(item.quantity),
-        image: item.image,
-      })),
+      const billingPayload = billingSameAsShipping
+        ? buildAddressPayload(shippingData)
+        : buildAddressPayload(billingData);
 
-      cartItemsTotal,
-      deliveryFee,
-      total,
+      const checkoutDraft = {
+        customer: {
+          ...shippingPayload,
+          billingAddress: billingPayload,
+          notes: "",
+        },
+        shippingAddress: shippingPayload,
+        billingAddress: billingPayload,
+        items: cart.map((item) => ({
+          productId: item.productId || item.product || item._id,
+          name: item.name,
+          price: Number(item.price),
+          quantity: Number(item.quantity),
+          image: item.image,
+        })),
+        cartItemsTotal,
+        deliveryFee,
+        total,
+        paymentMethod: "Cash on Delivery",
+        paymentStatus: "Pending",
+        orderStatus: "To Ship",
+      };
 
-      paymentMethod: selectedPaymentMethod,
-      paymentStatus:
-        selectedPaymentMethod === "Cash on Delivery" ? "Pending" : "Paid",
+      if (saveShippingAddress) {
+        await API.post("/addresses", {
+          ...shippingPayload,
+          isDefault: true,
+          isDefaultShipping: true,
+          isDefaultBilling: billingSameAsShipping,
+        });
 
-      orderStatus: "To Ship",
-    };
+        setHasSavedShipping(true);
+      }
 
-    await API.post("/orders", orderData);
+      if (!billingSameAsShipping && saveBillingAddress) {
+        await API.post("/addresses", {
+          ...billingPayload,
+          isDefault: false,
+          isDefaultShipping: false,
+          isDefaultBilling: true,
+        });
 
-    alert("✅ Your order has been confirmed successfully!");
+        setHasSavedBilling(true);
+      }
 
-    localStorage.removeItem("checkoutItems");
-    setCart([]);
-  } catch (err) {
-    console.log("ORDER ERROR:", err.response?.data || err.message);
+      localStorage.setItem("checkoutDraft", JSON.stringify(checkoutDraft));
+      navigate("/payment");
+    } catch (error) {
+      console.error("Checkout error:", error);
 
-    setError(
-      err.response?.data?.message ||
-        err.response?.data?.error ||
-        "Failed to place order. Please try again."
+      setError(
+        error.response?.data?.message ||
+          "Failed to continue to payment. Please try again."
+      );
+    } finally {
+      setPlacingOrder(false);
+    }
+  };
+
+  const renderSavedAddress = (data, title = "Saved Address") => {
+    const streetParts = [data.addressLine1, data.addressLine2].filter(Boolean);
+
+    const cleanStreetParts = streetParts
+      .map((part) =>
+        [data.city, data.district, data.province].reduce((str, loc) => {
+          if (!loc) return str;
+
+          return str
+            .replace(new RegExp(`,?\\s*${loc}`, "gi"), "")
+            .trim()
+            .replace(/,\s*$/, "");
+        }, part)
+      )
+      .filter(Boolean);
+
+    const finalAddress = [
+      ...cleanStreetParts,
+      data.city,
+      data.district,
+      data.province,
+      data.postalCode,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    return (
+      <div className="saved-shipping-row">
+        <div className="saved-address-title">
+          <span>{title}</span>
+        </div>
+
+        <div className="saved-address-grid">
+          <div className="saved-address-field">
+            <span className="saved-field-label">Name</span>
+            <strong className="saved-field-value">{data.fullName}</strong>
+          </div>
+
+          <div className="saved-address-field">
+            <span className="saved-field-label">Phone Number 1</span>
+            <strong className="saved-field-value">
+              {formatPhoneForApi(data.phoneNumber1)}
+            </strong>
+          </div>
+
+          {data.phoneNumber2 && (
+            <div className="saved-address-field">
+              <span className="saved-field-label">Phone Number 2</span>
+              <strong className="saved-field-value">
+                {formatPhoneForApi(data.phoneNumber2)}
+              </strong>
+            </div>
+          )}
+
+          <div className="saved-address-field full-width">
+            <span className="saved-field-label">Address</span>
+            <div className="saved-address-detail">
+              <span className="orange-address-badge">{data.addressType}</span>
+              <span className="saved-field-value">{finalAddress}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     );
-  } finally {
-    setPlacingOrder(false);
-  }
-};
+  };
+
+  const renderAddressForm = (type, data) => {
+    const provinces = Object.keys(locationData);
+    const districts = getDistricts(data.province);
+    const cities = getCities(data.province, data.district);
+    const isShipping = type === "shipping";
+
+    return (
+      <div className="checkout-form-area">
+        <div className="form-section-title address-section-title full-width">
+          <h3>{isShipping ? "Customer Details" : "Customer Billing Details"}</h3>
+          <p>
+            <i>
+              {isShipping
+                ? "Enter the customer contact information."
+                : "Enter the billing contact information."}
+            </i>
+          </p>
+        </div>
+
+        <div className="form-grid">
+          <div className="form-group">
+            <label>Full Name</label>
+            <input
+              type="text"
+              name="fullName"
+              placeholder="Please enter your full name"
+              value={data.fullName}
+              onChange={(e) => handleAddressChange(type, e)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Email Address</label>
+            <input
+              type="email"
+              name="email"
+              placeholder="Please enter your email address"
+              value={data.email}
+              onChange={(e) => handleAddressChange(type, e)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Phone Number 1</label>
+            <PhoneInput
+              country="lk"
+              enableSearch={true}
+              value={data.phoneNumber1}
+              onChange={(value) =>
+                handlePhoneChange(type, "phoneNumber1", value)
+              }
+              inputProps={{
+                name: "phoneNumber1",
+                required: true,
+              }}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>
+              Phone Number 2 <span className="optional-tag">Optional</span>
+            </label>
+            <PhoneInput
+              country="lk"
+              enableSearch={true}
+              value={data.phoneNumber2}
+              onChange={(value) =>
+                handlePhoneChange(type, "phoneNumber2", value)
+              }
+              inputProps={{
+                name: "phoneNumber2",
+                required: false,
+              }}
+            />
+          </div>
+
+          <div className="form-group full-width">
+            <div className="form-section-title address-section-title">
+              <h3>{isShipping ? "Shipping Address" : "Billing Address"}</h3>
+              <p>
+                <i>
+                  {isShipping
+                    ? "Enter the delivery address for this order."
+                    : "Enter the billing address for this order."}
+                </i>
+              </p>
+            </div>
+
+            <label>Address Type</label>
+
+            <div className="address-type-row">
+              {[
+                { value: "HOME", label: "🏠 Home" },
+                { value: "OFFICE", label: "🏢 Office" },
+              ].map((at) => (
+                <label
+                  key={at.value}
+                  className={
+                    data.addressType === at.value
+                      ? "address-type-card active"
+                      : "address-type-card"
+                  }
+                >
+                  <input
+                    type="radio"
+                    name="addressType"
+                    value={at.value}
+                    checked={data.addressType === at.value}
+                    onChange={(e) => handleAddressChange(type, e)}
+                  />
+                  {at.label}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group full-width">
+            <label>Address Line 1</label>
+            <input
+              type="text"
+              name="addressLine1"
+              placeholder="House / Building no. / Street / Road name"
+              value={data.addressLine1}
+              onChange={(e) => handleAddressChange(type, e)}
+            />
+          </div>
+
+          <div className="form-group full-width">
+            <label>Address Line 2</label>
+            <input
+              type="text"
+              name="addressLine2"
+              placeholder="Area / Locality / Landmark"
+              value={data.addressLine2}
+              onChange={(e) => handleAddressChange(type, e)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Province</label>
+            <select
+              name="province"
+              value={data.province}
+              onChange={(e) => handleAddressChange(type, e)}
+            >
+              <option value="">Select Province</option>
+              {provinces.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>District</label>
+            <select
+              name="district"
+              value={data.district}
+              onChange={(e) => handleAddressChange(type, e)}
+              disabled={!data.province}
+            >
+              <option value="">Select District</option>
+              {districts.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>City</label>
+            <select
+              name="city"
+              value={data.city}
+              onChange={(e) => handleAddressChange(type, e)}
+              disabled={!data.district}
+            >
+              <option value="">Select City</option>
+              {cities.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>
+              Postal Code <span className="optional-tag">Optional</span>
+            </label>
+            <input
+                type="text"
+                name="postalCode"
+                placeholder="e.g. 10345"
+                value={data.postalCode}
+                onChange={(e) => handleAddressChange(type, e)}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength="10"
+              />
+            </div>
+
+          <div className="form-group full-width">
+            <div className="address-save-action">
+              <button
+                type="button"
+                className="save-address-btn"
+                onClick={() => handleSaveAddressView(type, data)}
+              >
+                {isShipping ? "Save Shipping Details" : "Save Billing Details"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -376,292 +705,184 @@ navigate("/payment");
             className="back-btn"
             onClick={() => navigate("/cart")}
           >
-            <i className="ti ti-arrow-left"></i>
-            Back to Cart
+            <i className="ti ti-arrow-left"></i> Back to Cart
           </button>
 
           <div>
             <h1>Checkout</h1>
-            <p>Complete your delivery details and place your tea order.</p>
+            <p>Complete your delivery details and continue to payment.</p>
           </div>
         </div>
 
         {error && <div className="checkout-error">{error}</div>}
 
         <form
-            className="checkout-layout"
-            onSubmit={(event) => {
-              event.preventDefault();
-              saveDeliveryDetails();
-              
-            }}
-          >
-            
-          <div className="checkout-form-box">
-            <section className="checkout-section">
-              <div className="section-title">
-                <span>1</span>
+          className="checkout-layout"
+          onSubmit={(e) => {
+            e.preventDefault();
+            saveDeliveryDetails();
+          }}
+        >
+          <main className="checkout-left">
+            <section className="checkout-card shipping-card">
+              <div className="checkout-card-header">
                 <div>
-                  <h2>Customer Details</h2>
-                  <p>Enter your contact information.</p>
+                  <h2>Shipping Address</h2>
+                  <p className="section-subtitle">
+                    Delivery contact and location details
+                  </p>
                 </div>
+
+                {hasSavedShipping && (
+                  <button
+                    type="button"
+                    className="checkout-edit-btn"
+                    onClick={() => setShowShippingForm((prev) => !prev)}
+                  >
+                    {showShippingForm ? "Cancel Edit" : "Edit Details"}
+                  </button>
+                )}
               </div>
 
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Full Name</label>
-                  <input
-                    type="text"
-                    name="fullName"
-                    placeholder="Enter your full name"
-                    value={checkoutData.fullName}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Email Address</label>
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="example@gmail.com"
-                    value={checkoutData.email}
-                    onChange={handleChange}
-                  />
-                </div>
-
-                  <div className="form-group">
-                    <label>Phone Number 1</label>
-                    <input
-                      type="tel"
-                      name="phoneNumber1"
-                      placeholder="07XXXXXXXX"
-                      value={checkoutData.phoneNumber1}
-                      onChange={handleChange}
-                    />
-                  </div>
-
-                   <div className="form-group">
-                    <label>Phone Number 2</label>
-                    <input
-                        type="tel"
-                        name="phoneNumber2"
-                        placeholder="Optional"
-                        value={checkoutData.phoneNumber2}
-                        onChange={handleChange}
-                      />
-                  </div>
-              </div>
+              {!showShippingForm && hasSavedShipping
+                ? renderSavedAddress(shippingData, "Saved Shipping Details")
+                : renderAddressForm("shipping", shippingData)}
             </section>
 
-            <section className="checkout-section">
-  <div className="section-title">
-    <span>2</span>
-    <div>
-      <h2>Delivery Address</h2>
-      <p>Choose your address type and delivery location.</p>
-    </div>
-  </div>
-
-  <div className="address-type-row">
-    {["Home", "Office", "Other"].map((type) => (
-      <label
-        key={type}
-        className={
-          checkoutData.addressType === type
-            ? "address-type-card active"
-            : "address-type-card"
-        }
-      >
-        <input
-          type="radio"
-          name="addressType"
-          value={type}
-          checked={checkoutData.addressType === type}
-          onChange={handleChange}
-        />
-        <i
-          className={
-            type === "Home"
-              ? "ti ti-home"
-              : type === "Office"
-              ? "ti ti-building"
-              : "ti ti-map-pin"
-          }
-        ></i>
-        <span>{type}</span>
-      </label>
-    ))}
-  </div>
-
-  <div className="form-grid">
-    <div className="form-group">
-      <label>Address Line 1 *</label>
-      <input
-        type="text"
-        name="addressLine1"
-        placeholder="House no, building name"
-        value={checkoutData.addressLine1}
-        onChange={handleChange}
-      />
-    </div>
-
-    <div className="form-group">
-      <label>Address Line 2 *</label>
-      <input
-        type="text"
-        name="addressLine2"
-        placeholder="Street name, area"
-        value={checkoutData.addressLine2}
-        onChange={handleChange}
-      />
-    </div>
-
-    <div className="form-group full-width">
-      <label>Landmark</label>
-      <input
-        type="text"
-        name="landmark"
-        placeholder="Near school, temple, shop, junction etc. Optional"
-        value={checkoutData.landmark}
-        onChange={handleChange}
-      />
-    </div>
-
-    <div className="form-group">
-      <label>Province *</label>
-      <select
-        name="province"
-        value={checkoutData.province}
-        onChange={handleChange}
-      >
-        <option value="">Select province</option>
-        {provinces.map((province) => (
-          <option key={province} value={province}>
-            {province}
-          </option>
-        ))}
-      </select>
-    </div>
-
-    <div className="form-group">
-      <label>District *</label>
-      <select
-        name="district"
-        value={checkoutData.district}
-        onChange={handleChange}
-        disabled={!checkoutData.province}
-      >
-        <option value="">Select district</option>
-        {districts.map((district) => (
-          <option key={district} value={district}>
-            {district}
-          </option>
-        ))}
-      </select>
-    </div>
-
-    <div className="form-group">
-      <label>City *</label>
-      <select
-        name="city"
-        value={checkoutData.city}
-        onChange={handleChange}
-        disabled={!checkoutData.district}
-      >
-        <option value="">Select city</option>
-        {cities.map((city) => (
-          <option key={city} value={city}>
-            {city}
-          </option>
-        ))}
-      </select>
-    </div>
-
-    <div className="form-group">
-      <label>Postal Code *</label>
-      <input
-        type="text"
-        name="postalCode"
-        placeholder="Enter postal code"
-        value={checkoutData.postalCode}
-        onChange={handleChange}
-      />
-    </div>
-  </div>
-</section>
-
-          
-              
-          </div>
-
-          <aside className="checkout-summary-box">
-            <h2>My Order Details</h2>
-
-            <div className="checkout-summary-items">
-              {cart.map((item) => (
-                <div className="checkout-summary-item" key={item.productId}>
-                  <div className="checkout-product-info">
-                    <div className="checkout-product-image">
-                      {item.image ? (
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          onError={(event) => {
-                            event.currentTarget.style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <i className="ti ti-leaf"></i>
-                      )}
-                    </div>
-
-                    <div>
-                      <h3>{item.name}</h3>
-                      <p>Qty: {item.quantity}</p>
-                    </div>
-                  </div>
-
-                  <strong>
-                    Rs. {(Number(item.price) * Number(item.quantity)).toLocaleString()}
-                  </strong>
+            <section className="checkout-card billing-card">
+              <div className="checkout-card-header">
+                <div>
+                  <h2>Billing Address</h2>
+                  <p className="section-subtitle">
+                    Invoice and payment address details
+                  </p>
                 </div>
-              ))}
-            </div>
 
-            <div className="checkout-line"></div>
+                {!billingSameAsShipping && hasSavedBilling && (
+                  <button
+                    type="button"
+                    className="checkout-edit-btn"
+                    onClick={() => setShowBillingForm((prev) => !prev)}
+                  >
+                    {showBillingForm ? "Cancel Edit" : "Edit Details"}
+                  </button>
+                )}
+              </div>
 
-            <div className="checkout-price-row">
-              <span>Delivery Fee</span>
-              <strong>
-                {deliveryFee === 0
-                  ? "Free"
-                  : `Rs. ${deliveryFee.toLocaleString()}`}
-              </strong>
-            </div>
+              <label className="save-address-check billing-same-check">
+                <input
+                  type="checkbox"
+                  checked={billingSameAsShipping}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setBillingSameAsShipping(checked);
 
-            <div className="checkout-line"></div>
+                    if (checked) {
+                      setBillingData(shippingData);
+                      setShowBillingForm(false);
+                    } else {
+                      setShowBillingForm(!hasSavedBilling);
+                    }
+                  }}
+                />
+                <span>Billing address is same as shipping address</span>
+              </label>
 
-            <div className="checkout-total-row">
-              <span>Total</span>
-              <strong>Rs. {total.toLocaleString()}</strong>
-            </div>
+              {!billingSameAsShipping && (
+                <div className="billing-address-content">
+                  {!showBillingForm && hasSavedBilling
+                    ? renderSavedAddress(billingData, "Saved Billing Details")
+                    : renderAddressForm("billing", billingData)}
+                </div>
+              )}
+            </section>
+          </main>
 
-            <div className="checkout-delivery-box">
-              <i className="ti ti-truck-delivery"></i>
-              <span>
-                Estimated delivery: <b>2 - 4 business days</b>
-              </span>
-            </div>
+          <aside className="checkout-right">
+            <section className="checkout-summary-box">
+              <h2>My Order Details</h2>
 
-           <button
-              type="submit"
-              className="place-order-btn"
-              disabled={placingOrder || cart.length === 0}
-            >
-              Save & Continue to Payment
-              <i className="ti ti-arrow-right"></i>
-            </button>
+              <div className="checkout-summary-items">
+                {cart.map((item) => (
+                  <div
+                    className="checkout-summary-item"
+                    key={item.productId || item.product || item._id}
+                  >
+                    <div className="checkout-product-info">
+                      <div className="checkout-product-image">
+                        {item.image ? (
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <i className="ti ti-leaf"></i>
+                        )}
+                      </div>
+
+                      <div>
+                        <h3>{item.name}</h3>
+                        <p>Qty: {item.quantity}</p>
+                        <span className="stock-text">In stock</span>
+                      </div>
+                    </div>
+
+                    <strong>
+                      Rs.{" "}
+                      {(
+                        Number(item.price) * Number(item.quantity)
+                      ).toLocaleString()}
+                    </strong>
+                  </div>
+                ))}
+              </div>
+
+              <div className="checkout-line"></div>
+
+              <div className="checkout-price-row">
+                <span>Items Total</span>
+                <strong>Rs. {cartItemsTotal.toLocaleString()}</strong>
+              </div>
+
+              <div className="checkout-price-row">
+                <span>Delivery Fee</span>
+                <strong>
+                  {deliveryFee === 0
+                    ? "Free"
+                    : `Rs. ${deliveryFee.toLocaleString()}`}
+                </strong>
+              </div>
+
+              <div className="delivery-summary-row">
+                <div className="delivery-summary-icon">
+                  <i className="ti ti-truck-delivery"></i>
+                </div>
+
+                <div className="delivery-summary-text">
+                  <strong>Standard Delivery</strong>
+                  <span>2 – 4 business days</span>
+                </div>
+              </div>
+
+              <div className="checkout-line"></div>
+
+              <div className="checkout-total-row">
+                <span>Total</span>
+                <strong>Rs. {total.toLocaleString()}</strong>
+              </div>
+
+              <button
+                type="submit"
+                className="place-order-btn"
+                disabled={placingOrder || cart.length === 0}
+              >
+                {placingOrder ? "Processing..." : "Continue to Payment"}
+                <i className="ti ti-arrow-right"></i>
+              </button>
+            </section>
           </aside>
         </form>
       </div>

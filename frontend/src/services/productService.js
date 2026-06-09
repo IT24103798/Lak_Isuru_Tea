@@ -1,7 +1,9 @@
 import { apiRequest } from "../api/api";
 
-export const getAllProducts = async () => {
-  return apiRequest("/products");
+export const getAllProducts = async ({ includeHidden = false } = {}) => {
+  const query = includeHidden ? "?includeHidden=true" : "";
+
+  return apiRequest(`/products${query}`);
 };
 
 export const getProductById = async (id) => {
@@ -19,6 +21,13 @@ export const updateProduct = async (id, product) => {
   return apiRequest(`/products/${id}`, {
     method: "PUT",
     body: JSON.stringify(product),
+  });
+};
+
+export const updateProductVisibility = async (id, isHidden) => {
+  return apiRequest(`/products/${id}/visibility`, {
+    method: "PATCH",
+    body: JSON.stringify({ isHidden }),
   });
 };
 
@@ -43,5 +52,11 @@ export const updateProductReview = async (productId, reviewId, review) => {
   return apiRequest(`/products/${productId}/reviews/${reviewId}`, {
     method: "PUT",
     body: JSON.stringify(review),
+  });
+};
+
+export const deleteProductReview = async (productId, reviewId) => {
+  return apiRequest(`/products/${productId}/reviews/${reviewId}`, {
+    method: "DELETE",
   });
 };

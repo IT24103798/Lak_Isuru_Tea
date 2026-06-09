@@ -7,6 +7,24 @@ import "../styles/Profile.css";
 
 const PhoneInput = PhoneInputModule.default || PhoneInputModule;
 
+const formatPhoneForInput = (phone) => {
+  if (!phone) return "";
+
+  let cleaned = String(phone).replace(/\D/g, "");
+
+  // Convert old Sri Lankan local format: 0721446073 → 94721446073
+  if (cleaned.startsWith("0") && cleaned.length === 10) {
+    cleaned = `94${cleaned.substring(1)}`;
+  }
+
+  return cleaned;
+};
+
+const formatPhoneForSave = (phone) => {
+  const cleaned = String(phone).replace(/\D/g, "");
+  return cleaned ? `+${cleaned}` : "";
+};
+
 const Profile = () => {
   const { userInfo, login } = useAuth();
 
@@ -28,14 +46,13 @@ const Profile = () => {
       try {
         const { data } = await API.get("/users/profile");
 
+        const userData = data.user || data;
+
         const loadedProfile = {
-          name: data.name || data.user?.name || userInfo?.name || "",
-          email: data.email || data.user?.email || userInfo?.email || "",
-          phone:
-            data.phone?.replace("+", "") ||
-            data.user?.phone?.replace("+", "") ||
-            "",
-          address: data.address || data.user?.address || "",
+          name: userData.name || userInfo?.name || "",
+          email: userData.email || userInfo?.email || "",
+          phone: formatPhoneForInput(userData.phone || userInfo?.phone || ""),
+          address: userData.address || userInfo?.address || "",
         };
 
         setProfile(loadedProfile);
@@ -46,7 +63,7 @@ const Profile = () => {
         setProfile({
           name: userInfo?.name || "",
           email: userInfo?.email || "",
-          phone: userInfo?.phone ? userInfo.phone.replace("+", "") : "",
+          phone: formatPhoneForInput(userInfo?.phone || ""),
           address: userInfo?.address || "",
         });
       } finally {
@@ -58,9 +75,11 @@ const Profile = () => {
   }, [userInfo]);
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
     setProfile((previousProfile) => ({
       ...previousProfile,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
   };
 
@@ -87,8 +106,10 @@ const Profile = () => {
       return;
     }
 
-    if (!/^[0-9]{7,15}$/.test(profile.phone)) {
-      setError("Phone number must be valid.");
+    const cleanedPhone = String(profile.phone).replace(/\D/g, "");
+
+    if (!/^[0-9]{7,15}$/.test(cleanedPhone)) {
+      setError("Please enter a valid phone number.");
       return;
     }
 
@@ -96,8 +117,8 @@ const Profile = () => {
       setUpdating(true);
 
       const updateData = {
-        name: profile.name,
-        phone: `+${profile.phone}`,
+        name: profile.name.trim(),
+        phone: formatPhoneForSave(profile.phone),
         address: profile.address,
       };
 
@@ -108,9 +129,7 @@ const Profile = () => {
       const updatedProfile = {
         name: updatedUser.name || profile.name,
         email: updatedUser.email || profile.email,
-        phone: updatedUser.phone
-          ? updatedUser.phone.replace("+", "")
-          : profile.phone,
+        phone: formatPhoneForInput(updatedUser.phone || updateData.phone),
         address: updatedUser.address || profile.address,
       };
 
@@ -177,6 +196,7 @@ const Profile = () => {
               <div className="profile-detail-icon">
                 <i className="ti ti-user"></i>
               </div>
+
               <div>
                 <p className="profile-label">Full Name</p>
                 <p className="profile-value">{profile.name || "Not added"}</p>
@@ -187,6 +207,7 @@ const Profile = () => {
               <div className="profile-detail-icon">
                 <i className="ti ti-mail"></i>
               </div>
+
               <div>
                 <p className="profile-label">Email Address</p>
                 <p className="profile-value">{profile.email || "Not added"}</p>
@@ -197,10 +218,13 @@ const Profile = () => {
               <div className="profile-detail-icon">
                 <i className="ti ti-phone"></i>
               </div>
+
               <div>
                 <p className="profile-label">Phone Number</p>
                 <p className="profile-value">
-                  {profile.phone ? `+${profile.phone}` : "Not added"}
+                  {profile.phone
+                    ? `+${String(profile.phone).replace(/\D/g, "")}`
+                    : "Not added"}
                 </p>
               </div>
             </div>
@@ -209,6 +233,7 @@ const Profile = () => {
               <div className="profile-detail-icon">
                 <i className="ti ti-map-pin"></i>
               </div>
+
               <div>
                 <p className="profile-label">Address</p>
                 <p className="profile-value">
@@ -253,12 +278,15 @@ const Profile = () => {
                 onChange={handlePhoneChange}
                 enableSearch={true}
                 disableSearchIcon={true}
-                countryCodeEditable={false}
+                countryCodeEditable={true}
                 inputClass="custom-phone-input"
                 buttonClass="custom-phone-button"
                 dropdownClass="custom-phone-dropdown"
                 placeholder="Enter phone number"
               />
+              <small className="profile-help-text">
+                Select country code and enter your phone number.
+              </small>
             </div>
 
             <div className="profile-form-group">

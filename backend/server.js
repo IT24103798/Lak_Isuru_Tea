@@ -6,7 +6,12 @@ import userRoutes from "./routes/userRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
+import addressRoutes from "./routes/addressRoutes.js";
 import chatbotRoutes from "./routes/chatbotRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+import path from "path";
+
+const __dirname = path.resolve();
 
 dotenv.config();
 
@@ -16,16 +21,20 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
-  res.send("Luck Isru Tea API is running...");
+  res.send("Lak Isru Tea API is running...");
 });
 
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/addresses", addressRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/chatbot", chatbotRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 const PORT = Number(process.env.PORT) || 5000;
 

@@ -6,13 +6,13 @@ import {
 } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDZgXOBo5a99fogmjxXMOEAwbzcu-gWxRQ",
-  authDomain: "luck-isru-tea.firebaseapp.com",
-  projectId: "luck-isru-tea",
-  storageBucket: "luck-isru-tea.firebasestorage.app",
-  messagingSenderId: "449786834165",
-  appId: "1:449786834165:web:09c047d1dcbbe7cd24a9bc",
-  measurementId: "G-F4J7XGBB3G",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);

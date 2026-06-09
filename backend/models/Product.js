@@ -19,7 +19,7 @@ const reviewSchema = new mongoose.Schema(
     },
     comment: {
       type: String,
-      required: true,
+      default: "",
       trim: true,
       maxlength: 500,
     },
@@ -46,6 +46,17 @@ const productSchema = new mongoose.Schema(
       trim: true,
       default: "Tea",
     },
+    subcategory: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    teaForm: {
+      type: String,
+      enum: ["", "Tea Bags", "Loose Tea"],
+      default: "",
+      trim: true,
+    },
     price: {
       type: Number,
       required: [true, "Price is required"],
@@ -66,6 +77,14 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: [true, "Description is required"],
       trim: true,
+    },
+    featuredOnHome: {
+      type: Boolean,
+      default: false,
+    },
+    isHidden: {
+      type: Boolean,
+      default: false,
     },
     reviews: [reviewSchema],
   },

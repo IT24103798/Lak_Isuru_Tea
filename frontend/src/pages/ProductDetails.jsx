@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import API from "../api/api";
+import ProductCard from "../components/ProductCard";
 import {
   addProductReview,
+  deleteProductReview,
+  getAllProducts,
   getProductById,
   getReviewEligibility,
   updateProductReview,
 } from "../services/productService";
-import API from "../api/api";
 import "../styles/ProductDetails.css";
 
 function ProductDetails() {
@@ -24,19 +27,40 @@ function ProductDetails() {
   const [reviewEligibility, setReviewEligibility] = useState(null);
   const [checkingReviewEligibility, setCheckingReviewEligibility] = useState(Boolean(user));
   const [editingReviewId, setEditingReviewId] = useState(null);
+  const [relatedProducts, setRelatedProducts] = useState([]);
 
   const reviews = useMemo(() => product?.reviews || [], [product]);
+  const writtenReviews = useMemo(
+    () => reviews.filter((review) => review.comment?.trim()),
+    [reviews]
+  );
 
   useEffect(() => {
     const loadProduct = async () => {
       try {
         setLoading(true);
-
         const data = await getProductById(id);
+        const currentProduct = data.product;
 
-        setProduct(data.product);
-        setQuantity(data.product.stock > 0 ? 1 : 0);
+        setProduct(currentProduct);
+        setQuantity(currentProduct.stock > 0 ? 1 : 0);
         setError("");
+
+        try {
+          const productsData = await getAllProducts();
+          const recommendations = (productsData.products || [])
+            .filter((relatedProduct) => relatedProduct._id !== currentProduct._id)
+            .filter(
+              (relatedProduct) =>
+                relatedProduct.category === currentProduct.category ||
+                relatedProduct.subcategory === currentProduct.subcategory
+            )
+            .slice(0, 4);
+
+          setRelatedProducts(recommendations);
+        } catch {
+          setRelatedProducts([]);
+        }
       } catch {
         setError("Failed to load product details. Please try again.");
       } finally {
@@ -46,6 +70,34 @@ function ProductDetails() {
 
     loadProduct();
   }, [id]);
+
+  useEffect(() => {
+    if (!product || !user || user.role === "admin") {
+      return;
+    }
+
+    const userId = user._id || user.id;
+    const storageKey = `lakIsuruRecentlyViewed:${userId || "guest"}`;
+    const recentProduct = {
+      _id: product._id,
+      name: product.name,
+      image: product.image,
+      price: product.price,
+      description: product.description,
+    };
+
+    try {
+      const storedProducts = JSON.parse(localStorage.getItem(storageKey)) || [];
+      const recentlyViewedProducts = [
+        recentProduct,
+        ...storedProducts.filter((storedProduct) => storedProduct._id !== product._id),
+      ].slice(0, 8);
+
+      localStorage.setItem(storageKey, JSON.stringify(recentlyViewedProducts));
+    } catch {
+      localStorage.setItem(storageKey, JSON.stringify([recentProduct]));
+    }
+  }, [product, user]);
 
   useEffect(() => {
     const loadReviewEligibility = async () => {
@@ -102,7 +154,9 @@ function ProductDetails() {
   };
 
   const increaseQuantity = () => {
-    if (!product) return;
+    if (!product) {
+      return;
+    }
 
     setQuantity((currentQuantity) =>
       Math.min(product.stock || 0, currentQuantity + 1)
@@ -132,17 +186,16 @@ function ProductDetails() {
     }
 
     try {
-      const res = await API.post("/cart", {
+      await API.post("/cart", {
         productId: product._id,
         name: product.name,
         price: product.price,
-        quantity: quantity,
+        quantity,
         image: product.image,
       });
 
-      setQuantity(1);
-
       setCartMessage(`✓ ${quantity} × ${product.name} added to cart!`);
+      setQuantity(product.stock > 0 ? 1 : 0);
       setTimeout(() => setCartMessage(""), 3000);
     } catch (error) {
       alert(
@@ -161,19 +214,12 @@ function ProductDetails() {
       return;
     }
 
-    const trimmedComment = comment.trim();
-
-    if (!trimmedComment) {
-      alert("Please enter your review.");
-      return;
-    }
-
     try {
       setSubmittingReview(true);
 
       const reviewPayload = {
         rating: Number(rating),
-        comment: trimmedComment,
+        comment: comment.trim(),
       };
       const data = editingReviewId
         ? await updateProductReview(product._id, editingReviewId, reviewPayload)
@@ -188,6 +234,38 @@ function ProductDetails() {
       alert(error.message || "Failed to submit review. Please try again.");
     } finally {
       setSubmittingReview(false);
+    }
+  };
+
+  const handleEditReview = (review) => {
+    setEditingReviewId(review._id);
+    setRating(review.rating);
+    setComment(review.comment || "");
+    document.querySelector(".reviews-section")?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingReviewId(null);
+    setRating(5);
+    setComment("");
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm("Delete your review?")) {
+      return;
+    }
+
+    try {
+      const data = await deleteProductReview(product._id, reviewId);
+
+      setProduct(data.product);
+      setReviewEligibility({ canReview: true, hasPurchased: true, hasReviewed: false });
+
+      if (editingReviewId === reviewId) {
+        handleCancelEdit();
+      }
+    } catch (error) {
+      alert(error.message || "Failed to delete review. Please try again.");
     }
   };
 
@@ -211,23 +289,11 @@ function ProductDetails() {
       </div>
     );
   }
-  const handleEditReview = (review) => {
-    setEditingReviewId(review._id);
-    setRating(review.rating);
-    setComment(review.comment);
-    document.querySelector(".reviews-section")?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const handleCancelEdit = () => {
-    setEditingReviewId(null);
-    setRating(5);
-    setComment("");
-  };
 
   return (
     <div className="details-page">
       <main className="details-wrap">
-        <Link to="/#products" className="back-link">
+        <Link to="/products" className="back-link">
           Back to products
         </Link>
 
@@ -244,12 +310,13 @@ function ProductDetails() {
           </div>
 
           <div className="details-info">
-            <p className="details-rating">{averageRating}</p>
-
             <h1>{product.name}</h1>
-
-            <p className="details-price">Rs. {product.price}</p>
-
+            <p className="details-price">
+              <span className="price-currency">Rs.</span>
+              <span className="price-amount">
+                {product.price}
+              </span>
+            </p>
             <p className="details-description">{product.description}</p>
 
             <div className="purchase-panel">
@@ -264,9 +331,7 @@ function ProductDetails() {
                   >
                     -
                   </button>
-
                   <span>{quantity}</span>
-
                   <button
                     type="button"
                     onClick={increaseQuantity}
@@ -282,7 +347,7 @@ function ProductDetails() {
                   onClick={handleAddToCart}
                   disabled={product.stock <= 0}
                 >
-                  {product.stock > 0 ? "Add To Cart" : "Out of Stock"}
+                  {product.stock > 0 ? "Add To Cart" : "Out Of Stock"}
                 </button>
               </div>
 
@@ -342,6 +407,18 @@ function ProductDetails() {
             <p className="review-status-note">Checking your review eligibility...</p>
           )}
 
+          {user &&
+            user.role !== "admin" &&
+            !checkingReviewEligibility &&
+            reviewEligibility &&
+            !reviewEligibility.canReview &&
+            !reviewEligibility.hasPurchased &&
+            !editingReviewId && (
+              <p className="review-status-note">
+                You can review this product after you purchase and receive it.
+              </p>
+            )}
+
           {user && !checkingReviewEligibility && (reviewEligibility?.canReview || editingReviewId) && (
             <form className="review-form" onSubmit={handleReviewSubmit}>
               <div className="review-form-heading">
@@ -400,8 +477,8 @@ function ProductDetails() {
           </div>
 
           <div className="review-list">
-            {reviews.length > 0 ? (
-              reviews.map((review) => (
+            {writtenReviews.length > 0 ? (
+              writtenReviews.map((review) => (
                 <article
                   className={`review-item ${review.user === user?._id ? "own-review" : ""}`}
                   key={review._id}
@@ -410,8 +487,14 @@ function ProductDetails() {
                     <div className="review-customer">
                       <span className="review-avatar">{review.name.charAt(0).toUpperCase()}</span>
                       <div>
-                        <h3>{review.name}</h3>
-                        {review.verifiedPurchase && <small>Verified purchase</small>}
+                        <h3 className="review-name-line">
+                          <span>{review.name}</span>
+                          {review.verifiedPurchase && (
+                            <small className="verified-purchase">
+                              Verified purchase
+                            </small>
+                          )}
+                        </h3>
                       </div>
                     </div>
                     <p className="review-stars" aria-label={`${review.rating} out of 5 stars`}>
@@ -419,23 +502,46 @@ function ProductDetails() {
                       <span>{"★".repeat(5 - review.rating)}</span>
                     </p>
                   </div>
-                  <p className="review-comment">{review.comment}</p>
+                  {review.comment && <p className="review-comment">{review.comment}</p>}
                   {review.user === user?._id && (
-                    <button
-                      type="button"
-                      className="edit-review-button"
-                      onClick={() => handleEditReview(review)}
-                    >
-                      Edit review
-                    </button>
+                    <div className="review-actions">
+                      <button
+                        type="button"
+                        className="edit-review-button"
+                        onClick={() => handleEditReview(review)}
+                      >
+                        Edit review
+                      </button>
+                      <button
+                        type="button"
+                        className="delete-review-button"
+                        onClick={() => handleDeleteReview(review._id)}
+                      >
+                        Delete review
+                      </button>
+                    </div>
                   )}
                 </article>
               ))
             ) : (
-              <p className="empty-reviews">No reviews for this product yet.</p>
+              <p className="empty-reviews">No written reviews for this product yet.</p>
             )}
           </div>
         </section>
+
+        {relatedProducts.length > 0 && (
+          <section className="you-may-like-section" aria-label="You may also like">
+            <div className="you-may-like-heading">
+              <h2>You May Also Like</h2>
+            </div>
+
+            <div className="you-may-like-grid">
+              {relatedProducts.map((relatedProduct) => (
+                <ProductCard product={relatedProduct} key={relatedProduct._id} />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );

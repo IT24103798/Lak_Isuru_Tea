@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
@@ -12,7 +13,9 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPasswordOtp from "./pages/ResetPassword";
+import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
+import PolicyPage from "./pages/PolicyPage";
 
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
@@ -20,11 +23,13 @@ import Payment from "./pages/Payment";
 import OrderSuccess from "./pages/OrderSuccess";
 
 import MyOrders from "./pages/MyOrders";
-import MyReturns from "./pages/MyReturns";
 import MyCancellations from "./pages/MyCancellations";
 import Profile from "./pages/Profile";
+import AddressBook from "./pages/AddressBook";
+import Favorites from "./pages/Favorites";
 
 import AdminLayout from "./layouts/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminReviews from "./pages/admin/AdminReviews";
@@ -32,10 +37,24 @@ import AdminOrders from "./pages/admin/AdminOrders";
 
 const sidebarRoutes = [
   "/profile-settings",
+  "/address-book",
   "/my-orders",
-  "/my-returns",
   "/my-cancellations",
 ];
+
+const ScrollToTop = () => {
+  const { pathname, search, hash } = useLocation();
+
+  useEffect(() => {
+    if (hash) {
+      return;
+    }
+
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [pathname, search, hash]);
+
+  return null;
+};
 
 function App() {
   const location = useLocation();
@@ -45,6 +64,8 @@ function App() {
 
   return (
     <>
+      <ScrollToTop />
+
       {!isAdminPage && <Navbar />}
 
       {showSidebar && !isAdminPage ? (
@@ -63,19 +84,19 @@ function App() {
               />
 
               <Route
-                path="/my-orders"
+                path="/address-book"
                 element={
                   <ProtectedRoute>
-                    <MyOrders />
+                    <AddressBook />
                   </ProtectedRoute>
                 }
               />
 
               <Route
-                path="/my-returns"
+                path="/my-orders"
                 element={
                   <ProtectedRoute>
-                    <MyReturns />
+                    <MyOrders />
                   </ProtectedRoute>
                 }
               />
@@ -94,15 +115,20 @@ function App() {
       ) : (
         <main className="main-content" style={{ width: "100%" }}>
           <Routes>
-            {/* Public pages */}
             <Route path="/" element={<Home />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPasswordOtp />} />
+            <Route path="/products" element={<Products />} />
             <Route path="/products/:id" element={<ProductDetails />} />
+            <Route
+              path="/terms-and-conditions"
+              element={<PolicyPage type="terms-and-conditions" />}
+            />
+            <Route path="/privacy-policy" element={<PolicyPage type="privacy-policy" />} />
+            <Route path="/return-policy" element={<PolicyPage type="return-policy" />} />
 
-            {/* Customer protected pages without sidebar */}
             <Route
               path="/cart"
               element={
@@ -139,7 +165,15 @@ function App() {
               }
             />
 
-            {/* Admin pages */}
+            <Route
+              path="/favorites"
+              element={
+                <ProtectedRoute>
+                  <Favorites />
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path="/admin"
               element={
@@ -148,8 +182,8 @@ function App() {
                 </AdminRoute>
               }
             >
-              <Route index element={<AdminOrders />} />
-              <Route path="dashboard" element={<AdminOrders />} />
+              <Route index element={<AdminDashboard />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="profile" element={<Profile />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="users" element={<AdminUsers />} />
@@ -161,7 +195,7 @@ function App() {
       )}
 
       {!isAdminPage && <Footer />}
-      <Chatbot />
+      {!isAdminPage && <Chatbot />}
     </>
   );
 }

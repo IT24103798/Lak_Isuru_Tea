@@ -9,7 +9,6 @@ const TABS = [
   { label: "To Ship", filter: "processing" },
   { label: "To Receive", filter: "shipped" },
   { label: "To Review", filter: "delivered" },
-  { label: "Cancelled", filter: "cancelled" },
 ];
 
 const STEPS = ["Placed", "Packed", "On the Way", "To Review"];
@@ -36,7 +35,7 @@ const statusColorMap = {
   shipped: "purple",
   delivered: "teal",
   returned: "red",
-  cancelled: "gray",
+  cancelled: "Cancelled",
 };
 
 const normalizeStatus = (status = "") => status.toString().toLowerCase();
@@ -61,10 +60,17 @@ const MyOrders = () => {
 
   const loadOrders = useCallback(async () => {
     try {
-      const { data } = await API.get("/orders");
-      setOrders(data.orders || []);
+      setLoading(true);
       setError("");
+
+      const { data } = await API.get("/orders");
+
+      console.log("ORDERS RESPONSE:", data);
+
+      setOrders(data.orders || []);
     } catch (err) {
+      console.log("ORDERS LOAD ERROR:", err.response?.data || err.message);
+
       setError(
         err.response?.data?.message ||
           "Failed to load orders. Please login again."
@@ -77,7 +83,10 @@ const MyOrders = () => {
   useEffect(() => {
     loadOrders();
 
-    const interval = setInterval(loadOrders, 30000);
+    const interval = setInterval(() => {
+      loadOrders();
+    }, 30000);
+
     return () => clearInterval(interval);
   }, [loadOrders]);
 
@@ -384,179 +393,144 @@ const MyOrders = () => {
         )}
 
         <div className="orders-list">
-          {filteredOrders.map((order) => {
-            const currentStatus = normalizeStatus(order.status);
-            const color = getStatusColor(currentStatus);
-            const mainProduct = getMainProduct(order.items);
-            const extraCount = getExtraItemCount(order.items);
-            const totalQty = getOrderQty(order.items);
-            const isBusy = actionLoading === order._id;
+          {!loading &&
+            filteredOrders.map((order) => {
+              const currentStatus = normalizeStatus(order.status);
+              const color = getStatusColor(currentStatus);
+              const mainProduct = getMainProduct(order.items);
+              const extraCount = getExtraItemCount(order.items);
+              const totalQty = getOrderQty(order.items);
+              const isBusy = actionLoading === order._id;
 
-            return (
-              <div
-                className="order-card"
-                key={order._id}
-                onClick={() => openDetailsModal(order)}
-              >
-                <div className="order-card-top">
-                  <div className="order-product-block">
-                    <div className="order-image">
-                      {mainProduct?.image ? (
-                        <img
-                          src={mainProduct.image}
-                          alt={mainProduct.name}
-                          onError={(event) => {
-                            event.currentTarget.style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <i className="ti ti-leaf"></i>
-                      )}
-                    </div>
-
-                    <div className="order-info">
-                      <div className="order-title-row">
-                        <h3>{mainProduct?.name || "Tea Product"}</h3>
-
-                        {extraCount > 0 && (
-                          <span className="more-items-tag">
-                            +{extraCount} more item
-                            {extraCount > 1 ? "s" : ""}
-                          </span>
+              return (
+                <div
+                  className={`order-card ${
+                    currentStatus === "cancelled" ? "cancelled-order-card" : ""
+                  }`}
+                  key={order._id}
+                  onClick={() => openDetailsModal(order)}
+                >
+                  <div className="order-card-top">
+                    <div className="order-product-block">
+                      <div className="order-image">
+                        {mainProduct?.image ? (
+                          <img
+                            src={mainProduct.image}
+                            alt={mainProduct.name}
+                            onError={(event) => {
+                              event.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <i className="ti ti-leaf"></i>
                         )}
                       </div>
 
-                      <p className="order-id">
-                        Order #{order._id.slice(-8).toUpperCase()}
-                      </p>
+                      <div className="order-info">
+                        <div className="order-title-row">
+                          <h3>{mainProduct?.name || "Tea Product"}</h3>
 
-                      <div className="order-meta-row">
-                        <span>
-                          <i className="ti ti-shopping-bag"></i>
-                          Qty: {totalQty}
-                        </span>
+                          {extraCount > 0 && (
+                            <span className="more-items-tag">
+                              +{extraCount} more item
+                              {extraCount > 1 ? "s" : ""}
+                            </span>
+                          )}
+                        </div>
 
-                        <span>
-                          <i className="ti ti-calendar-event"></i>
-                          {formatDate(order.createdAt)}
-                        </span>
+                        <p className="order-id">
+                          Order #{order._id.slice(-8).toUpperCase()}
+                        </p>
 
-                        <span>
-                          <i className="ti ti-credit-card"></i>
-                          {order.paymentMethod ||
-                            order.customer?.paymentMethod ||
-                            "Cash on Delivery"}
-                        </span>
+                        <div className="order-meta-row">
+                          <span>
+                            <i className="ti ti-shopping-bag"></i>
+                            Qty: {totalQty}
+                          </span>
+
+                          <span>
+                            <i className="ti ti-calendar-event"></i>
+                            {formatDate(order.createdAt)}
+                          </span>
+
+                          <span>
+                            <i className="ti ti-credit-card"></i>
+                            {order.paymentMethod ||
+                              order.customer?.paymentMethod ||
+                              "Cash on Delivery"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="order-right-block">
+                      <span className={`order-badge badge-${color}`}>
+                        {getStatusLabel(currentStatus)}
+                      </span>
+
+                      <div className="order-total">
+                        Rs. {(order.totalPrice || 0).toLocaleString()}
                       </div>
                     </div>
                   </div>
 
-                  <div className="order-right-block">
-                    <span className={`order-badge badge-${color}`}>
-                      {getStatusLabel(currentStatus)}
-                    </span>
+                  <div className="order-price-grid">
+                    <div className="price-box">
+                      <label>Items Total</label>
+                      <strong>
+                        Rs. {(order.cartItemsTotal || 0).toLocaleString()}
+                      </strong>
+                    </div>
 
-                    <div className="order-total">
-                      Rs. {(order.totalPrice || 0).toLocaleString()}
+                    <div className="price-box">
+                      <label>Delivery Fee</label>
+                      <strong>
+                        {order.deliveryFee === 0
+                          ? "Free"
+                          : `Rs. ${(order.deliveryFee || 0).toLocaleString()}`}
+                      </strong>
+                    </div>
+
+                    <div className="price-box total-box">
+                      <label>Total</label>
+                      <strong>
+                        Rs. {(order.totalPrice || 0).toLocaleString()}
+                      </strong>
                     </div>
                   </div>
-                </div>
 
-                <div className="order-price-grid">
-                  <div className="price-box">
-                    <label>Items Total</label>
-                    <strong>
-                      Rs. {(order.cartItemsTotal || 0).toLocaleString()}
-                    </strong>
-                  </div>
+                  {renderProgress(currentStatus)}
 
-                  <div className="price-box">
-                    <label>Delivery Fee</label>
-                    <strong>
-                      {order.deliveryFee === 0
-                        ? "Free"
-                        : `Rs. ${(order.deliveryFee || 0).toLocaleString()}`}
-                    </strong>
-                  </div>
-
-                  <div className="price-box total-box">
-                    <label>Total</label>
-                    <strong>
-                      Rs. {(order.totalPrice || 0).toLocaleString()}
-                    </strong>
-                  </div>
-                </div>
-
-                {renderProgress(currentStatus)}
-
-                <div className="order-actions">
-                  <button
-                    type="button"
-                    className="outline-btn"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      openDetailsModal(order);
-                    }}
-                  >
-                    View Details
-                  </button>
-
-                  {currentStatus === "pending" && (
+                  <div className="order-actions">
                     <button
                       type="button"
-                      className="primary-btn"
-                      disabled={isBusy}
+                      className="outline-btn"
                       onClick={(event) => {
                         event.stopPropagation();
-                        handlePayNow(order._id);
+                        openDetailsModal(order);
                       }}
                     >
-                      {isBusy ? "Processing..." : "Pay Now"}
+                      View Details
                     </button>
-                  )}
 
-                  {currentStatus === "shipped" && (
-                    <button
-                      type="button"
-                      className="receive-btn"
-                      disabled={isBusy}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleOrderReceived(order._id);
-                      }}
-                    >
-                      {isBusy ? "Updating..." : "Order Received"}
-                    </button>
-                  )}
-
-                  {currentStatus === "delivered" && (
-                    <>
+                    {currentStatus === "pending" && (
                       <button
                         type="button"
-                        className="review-btn"
+                        className="primary-btn"
+                        disabled={isBusy}
                         onClick={(event) => {
                           event.stopPropagation();
+                          handlePayNow(order._id);
                         }}
                       >
-                        Write Review
+                        {isBusy ? "Processing..." : "Pay Now"}
                       </button>
+                    )}
 
-                      <button
-                        type="button"
-                        className="outline-btn"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          navigate("/");
-                        }}
-                      >
-                        Buy Again
-                      </button>
-                    </>
-                  )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       </main>
 
@@ -640,15 +614,17 @@ const MyOrders = () => {
                       <div>
                         <strong>{item.name}</strong>
                         <p>
-                          Qty: {item.quantity} × Rs. {" "}
+                          Qty: {item.quantity} × Rs.{" "}
                           {(item.price || 0).toLocaleString()}
                         </p>
                       </div>
                     </div>
 
                     <span>
-                      Rs. {" "}
-                      {((item.price || 0) * (item.quantity || 0)).toLocaleString()}
+                      Rs.{" "}
+                      {(
+                        (item.price || 0) * (item.quantity || 0)
+                      ).toLocaleString()}
                     </span>
                   </div>
                 ))}
@@ -754,7 +730,9 @@ const MyOrders = () => {
                   disabled={actionLoading === selectedOrder._id}
                   onClick={() => handlePayNow(selectedOrder._id)}
                 >
-                  {actionLoading === selectedOrder._id ? "Processing..." : "Pay Now"}
+                  {actionLoading === selectedOrder._id
+                    ? "Processing..."
+                    : "Pay Now"}
                 </button>
               )}
 
@@ -771,21 +749,7 @@ const MyOrders = () => {
                 </button>
               )}
 
-              {normalizeStatus(selectedOrder.status) === "delivered" && (
-                <>
-                  <button type="button" className="review-btn">
-                    Write Review
-                  </button>
-
-                  <button
-                    type="button"
-                    className="outline-btn"
-                    onClick={() => navigate("/")}
-                  >
-                    Buy Again
-                  </button>
-                </>
-              )}
+        
             </div>
 
             {canCancelOrder(selectedOrder.status) && (

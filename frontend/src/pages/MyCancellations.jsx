@@ -6,15 +6,21 @@ const MyCancellations = () => {
   const [cancellations, setCancellations] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-
   const [selectedOrder, setSelectedOrder] = useState(null);
 
   const loadCancellations = useCallback(async () => {
     try {
-      const { data } = await API.get("/orders/cancellations");
-      setCancellations(data.cancellations || []);
+      setLoading(true);
       setError("");
+
+      const { data } = await API.get("/orders/cancellations");
+
+      console.log("CANCELLATIONS RESPONSE:", data);
+
+      setCancellations(data.cancellations || []);
     } catch (err) {
+      console.log("CANCELLATIONS ERROR:", err.response?.data || err.message);
+
       setError(
         err.response?.data?.message ||
           "Failed to load cancellations. Please login again."
@@ -26,9 +32,6 @@ const MyCancellations = () => {
 
   useEffect(() => {
     loadCancellations();
-
-    const interval = setInterval(loadCancellations, 30000);
-    return () => clearInterval(interval);
   }, [loadCancellations]);
 
   const formatDate = (date) => {
@@ -54,7 +57,7 @@ const MyCancellations = () => {
   };
 
   const getOrderQty = (items = []) => {
-    return items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    return items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
   };
 
   const getMainProduct = (items = []) => {
@@ -68,7 +71,8 @@ const MyCancellations = () => {
   };
 
   const openCancelDetails = (order) => {
-    setCancelDetails(order);
+    console.log("OPEN CANCEL DETAILS:", order);
+    setSelectedOrder(order);
   };
 
   const closeCancelDetails = () => {
@@ -97,12 +101,15 @@ const MyCancellations = () => {
         </div>
 
         <div className="orders-toolbar cancellations-toolbar">
-          <div className="orders-summary-chip">
+          <div className="orders-summary-chip cancellations-summary-chip">
             <i className="ti ti-circle-x"></i>
-            <span>
-              {cancellations.length} Cancellation
-              {cancellations.length !== 1 ? "s" : ""}
-            </span>
+
+            <div>
+              <strong>{cancellations.length}</strong>
+              <span>
+                Cancellation{cancellations.length !== 1 ? "s" : ""}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -128,116 +135,115 @@ const MyCancellations = () => {
           </div>
         )}
 
-        <div className="orders-list">
-          {cancellations.map((order) => {
-            const mainProduct = getMainProduct(order.items);
-            const extraCount = getExtraItemCount(order.items);
-            const totalQty = getOrderQty(order.items);
+        {!loading && cancellations.length > 0 && (
+          <div className="orders-list">
+            {cancellations.map((order) => {
+              const mainProduct = getMainProduct(order.items);
+              const extraCount = getExtraItemCount(order.items);
+              const totalQty = getOrderQty(order.items);
 
-            return (
-              <div className="order-card" key={order._id}>
-                <div className="order-card-top">
-                  <div className="order-product-block">
-                    <div className="order-image">
-                      {mainProduct?.image ? (
-                        <img
-                          src={mainProduct.image}
-                          alt={mainProduct.name}
-                          onError={(event) => {
-                            event.currentTarget.style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <i className="ti ti-leaf"></i>
-                      )}
-                    </div>
-
-                    <div className="order-info">
-                      <div className="order-title-row">
-                        <h3>{mainProduct?.name || "Tea Product"}</h3>
-
-                        {extraCount > 0 && (
-                          <span className="more-items-tag">
-                            +{extraCount} more item
-                            {extraCount > 1 ? "s" : ""}
-                          </span>
+              return (
+                <div className="order-card cancellation-card" key={order._id}>
+                  <div className="order-card-top">
+                    <div className="order-product-block">
+                      <div className="order-image">
+                        {mainProduct?.image ? (
+                          <img
+                            src={mainProduct.image}
+                            alt={mainProduct.name}
+                            onError={(event) => {
+                              event.currentTarget.style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <i className="ti ti-leaf"></i>
                         )}
                       </div>
 
-                      <p className="order-id">
-                        Order #{order._id?.slice(-8).toUpperCase()}
-                      </p>
+                      <div className="order-info">
+                        <div className="order-title-row">
+                          <h3>{mainProduct?.name || "Tea Product"}</h3>
 
-                      <div className="order-meta-row">
-                        <span>
-                          <i className="ti ti-shopping-bag"></i>
-                          Qty: {totalQty}
-                        </span>
+                          {extraCount > 0 && (
+                            <span className="more-items-tag">
+                              +{extraCount} more item
+                              {extraCount > 1 ? "s" : ""}
+                            </span>
+                          )}
+                        </div>
 
-                        <span>
-                          <i className="ti ti-calendar-event"></i>
-                          Cancelled:{" "}
-                          {formatDate(order.cancelledAt || order.updatedAt)}
-                        </span>
+                        <p className="order-id">
+                          Order #{order._id?.slice(-8).toUpperCase()}
+                        </p>
 
-                        <span>
-                          <i className="ti ti-credit-card"></i>
-                          {order.paymentMethod || "Cash on Delivery"}
-                        </span>
+                        <div className="order-meta-row">
+                          <span>
+                            <i className="ti ti-shopping-bag"></i>
+                            Qty: {totalQty}
+                          </span>
+
+                          <span>
+                            <i className="ti ti-calendar-event"></i>
+                            Cancelled:{" "}
+                            {formatDate(order.cancelledAt || order.updatedAt)}
+                          </span>
+
+                          <span>
+                            <i className="ti ti-credit-card"></i>
+                            {order.paymentMethod || "Cash on Delivery"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="order-right-block">
+                      <span className="order-badge badge-gray">Cancelled</span>
+
+                      <div className="order-total">
+                        Rs. {(order.totalPrice || 0).toLocaleString()}
                       </div>
                     </div>
                   </div>
 
-                  <div className="order-right-block">
-                    <span className="order-badge badge-gray">Cancelled</span>
+                  <div className="order-price-grid">
+                    <div className="price-box">
+                      <label>Items Total</label>
+                      <strong>
+                        Rs. {(order.cartItemsTotal || 0).toLocaleString()}
+                      </strong>
+                    </div>
 
-                    <div className="order-total">
-                      Rs. {(order.totalPrice || 0).toLocaleString()}
+                    <div className="price-box">
+                      <label>Delivery Fee</label>
+                      <strong>
+                        {order.deliveryFee === 0
+                          ? "Free"
+                          : `Rs. ${(order.deliveryFee || 0).toLocaleString()}`}
+                      </strong>
+                    </div>
+
+                    <div className="price-box total-box">
+                      <label>Total</label>
+                      <strong>
+                        Rs. {(order.totalPrice || 0).toLocaleString()}
+                      </strong>
                     </div>
                   </div>
-                </div>
 
-                <div className="order-price-grid">
-                  <div className="price-box">
-                    <label>Items Total</label>
-                    <strong>
-                      Rs. {(order.cartItemsTotal || 0).toLocaleString()}
-                    </strong>
-                  </div>
-
-                  <div className="price-box">
-                    <label>Delivery Fee</label>
-                    <strong>
-                      {order.deliveryFee === 0
-                        ? "Free"
-                        : `Rs. ${(order.deliveryFee || 0).toLocaleString()}`}
-                    </strong>
-                  </div>
-
-                  <div className="price-box total-box">
-                    <label>Total</label>
-                    <strong>
-                      Rs. {(order.totalPrice || 0).toLocaleString()}
-                    </strong>
+                  <div className="order-actions">
+                    <button
+                      type="button"
+                      className="cancel-details-btn"
+                      onClick={() => openCancelDetails(order)}
+                    >
+                      View Cancel Details
+                    </button>
                   </div>
                 </div>
-
-                <div className="order-actions">
-                  <button
-                    type="button"
-                    className="cancel-details-btn"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      openCancelDetails(order);
-                    }}
-                  >
-                    View Cancel Details
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </main>
 
       {selectedOrder && (
@@ -248,6 +254,11 @@ const MyCancellations = () => {
           >
             <div className="cancel-popup-header">
               <div>
+                <span className="modal-eyebrow">
+                  <i className="ti ti-circle-x"></i>
+                  Cancelled Order
+                </span>
+
                 <h2>Cancellation Details</h2>
                 <p>Order #{selectedOrder._id?.slice(-8).toUpperCase()}</p>
               </div>
@@ -263,43 +274,34 @@ const MyCancellations = () => {
                   <label>Cancelled Date</label>
                   <p>
                     {formatDateTime(
-                      selectedOrder.cancelledAt ||
-                        selectedOrder.updatedAt
+                      selectedOrder.cancelledAt || selectedOrder.updatedAt
                     )}
                   </p>
                 </div>
 
                 <div className="cancel-form-field">
                   <label>Payment Method</label>
-                  <p>
-                    {selectedOrder.paymentMethod || "Cash on Delivery"}
-                  </p>
+                  <p>{selectedOrder.paymentMethod || "Cash on Delivery"}</p>
+                </div>
+
+                <div className="cancel-form-field">
+                  <label>Payment Status</label>
+                  <p>{selectedOrder.paymentStatus || "Cancelled"}</p>
                 </div>
 
                 <div className="cancel-form-field">
                   <label>Total Amount</label>
-                  <p>
-                    Rs. {(selectedOrder.totalPrice || 0).toLocaleString()}
-                  </p>
-                </div>
-
-                <div className="cancel-form-field">
-                  <label>Status</label>
-                  <p>Cancelled</p>
+                  <p>Rs. {(selectedOrder.totalPrice || 0).toLocaleString()}</p>
                 </div>
 
                 <div className="cancel-form-field full">
                   <label>Reason</label>
-                  <p>
-                    {selectedOrder.cancelReason || "No reason saved."}
-                  </p>
+                  <p>{selectedOrder.cancelReason || "No reason saved."}</p>
                 </div>
 
                 <div className="cancel-form-field full">
                   <label>Note</label>
-                  <p>
-                    {selectedOrder.cancelNote || "No additional note."}
-                  </p>
+                  <p>{selectedOrder.cancelNote || "No additional note."}</p>
                 </div>
               </div>
 
