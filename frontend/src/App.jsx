@@ -23,7 +23,6 @@ import Payment from "./pages/Payment";
 import OrderSuccess from "./pages/OrderSuccess";
 
 import MyOrders from "./pages/MyOrders";
-import MyReturns from "./pages/MyReturns";
 import MyCancellations from "./pages/MyCancellations";
 import Profile from "./pages/Profile";
 import AddressBook from "./pages/AddressBook";
@@ -40,7 +39,6 @@ const sidebarRoutes = [
   "/profile-settings",
   "/address-book",
   "/my-orders",
-  "/my-returns",
   "/my-cancellations",
 ];
 
@@ -99,15 +97,6 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <MyOrders />
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route
-                path="/my-returns"
-                element={
-                  <ProtectedRoute>
-                    <MyReturns />
                   </ProtectedRoute>
                 }
               />

@@ -35,7 +35,7 @@ const statusColorMap = {
   shipped: "purple",
   delivered: "teal",
   returned: "red",
-  cancelled: "gray",
+  cancelled: "Cancelled",
 };
 
 const normalizeStatus = (status = "") => status.toString().toLowerCase();
@@ -404,7 +404,9 @@ const MyOrders = () => {
 
               return (
                 <div
-                  className="order-card"
+                  className={`order-card ${
+                    currentStatus === "cancelled" ? "cancelled-order-card" : ""
+                  }`}
                   key={order._id}
                   onClick={() => openDetailsModal(order)}
                 >

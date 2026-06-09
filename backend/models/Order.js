@@ -90,6 +90,11 @@ const orderSchema = new mongoose.Schema(
       default: "Pending",
     },
 
+    shippingOption: {
+      type: String,
+      default: "Standard",
+    },
+
     orderStatus: {
       type: String,
       enum: [
@@ -98,7 +103,6 @@ const orderSchema = new mongoose.Schema(
         "To Receive",
         "To Review",
         "Cancelled",
-        "Returned",
       ],
       default: "To Pay",
     },
@@ -212,7 +216,6 @@ const orderSchema = new mongoose.Schema(
         "processing",
         "shipped",
         "delivered",
-        "returned",
         "cancelled",
       ],
       default: "pending",

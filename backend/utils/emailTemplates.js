@@ -78,7 +78,6 @@ const getProductRows = (order) => {
 
   return order.items
     .map((item) => {
-      const imageUrl = getImageUrl(item.image);
       const itemTotal = Number(item.price || 0) * Number(item.quantity || 0);
 
       return `
@@ -166,6 +165,7 @@ export const orderPlacedCustomerTemplate = (order) => {
         <p style="margin:8px 0;"><b>Order ID:</b> #${order._id}</p>
         <p style="margin:8px 0;"><b>Payment Method:</b> ${order.paymentMethod || "-"}</p>
         <p style="margin:8px 0;"><b>Payment Status:</b> ${order.paymentStatus || "-"}</p>
+        <p style="margin:8px 0;"><b>Shipping Option:</b> ${order.shippingOption || "Standard"}</p>
         <p style="margin:8px 0;"><b>Order Status:</b> ${order.orderStatus || "-"}</p>
       </div>
 
@@ -248,6 +248,7 @@ export const orderPlacedAdminTemplate = (order) => {
         <p style="margin:8px 0;"><b>Order ID:</b> #${order._id}</p>
         <p style="margin:8px 0;"><b>Payment Method:</b> ${order.paymentMethod || "-"}</p>
         <p style="margin:8px 0;"><b>Payment Status:</b> ${order.paymentStatus || "-"}</p>
+        <p style="margin:8px 0;"><b>Shipping Option:</b> ${order.shippingOption || "Standard"}</p>
         <p style="margin:8px 0;"><b>Order Status:</b> ${order.orderStatus || "-"}</p>
         <p style="margin:8px 0;"><b>Items Total:</b> Rs. ${formatCurrency(cartItemsTotal)}</p>
         <p style="margin:8px 0;"><b>Delivery Fee:</b> ${
@@ -310,6 +311,7 @@ export const orderDeliveredCustomerTemplate = (order) => {
         <p style="margin:8px 0;"><b>Total Amount:</b> Rs. ${formatCurrency(totalAmount)}</p>
         <p style="margin:8px 0;"><b>Payment Method:</b> ${order.paymentMethod || "-"}</p>
         <p style="margin:8px 0;"><b>Payment Status:</b> ${order.paymentStatus || "-"}</p>
+        <p style="margin:8px 0;"><b>Shipping Option:</b> ${order.shippingOption || "Standard"}</p>
         <p style="margin:8px 0;"><b>Order Status:</b> ${order.orderStatus || "Delivered"}</p>
       </div>
 
