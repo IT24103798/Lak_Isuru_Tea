@@ -2,7 +2,6 @@ import express from "express";
 import {
   createOrder,
   getMyOrders,
-  getMyReturns,
   getMyCancellations,
   markOrderPaid,
   cancelOrder,
@@ -20,7 +19,6 @@ const router = express.Router();
 router.post("/", protect, createOrder);
 
 router.get("/", protect, getMyOrders);
-router.get("/returns", protect, getMyReturns);
 router.get("/cancellations", protect, getMyCancellations);
 
 /* Admin routes */

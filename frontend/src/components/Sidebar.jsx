@@ -111,15 +111,6 @@ const Sidebar = () => {
 
         <button
           type="button"
-          className={isActive("/my-returns") ? "active" : ""}
-          onClick={() => navigate("/my-returns")}
-        >
-          <i className="ti ti-arrow-back-up"></i>
-          My Returns
-        </button>
-
-        <button
-          type="button"
           className={isActive("/my-cancellations") ? "active" : ""}
           onClick={() => navigate("/my-cancellations")}
         >

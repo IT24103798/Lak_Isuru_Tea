@@ -89,6 +89,8 @@ export const createOrder = async (req, res) => {
     const status =
       paymentMethod === "Cash on Delivery" ? "processing" : "pending";
 
+    const shippingOption = "Standard";
+
     // Create order
     const order = await Order.create({
       user: req.user._id,
@@ -99,6 +101,7 @@ export const createOrder = async (req, res) => {
       totalPrice: finalTotal,
       paymentMethod,
       paymentStatus,
+      shippingOption,
       orderStatus: "To Ship",
       status: "processing",
     });
@@ -180,23 +183,6 @@ export const getMyOrders = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Server error while loading orders.",
-      error: error.message,
-    });
-  }
-};
-
-// GET /api/orders/returns
-export const getMyReturns = async (req, res) => {
-  try {
-    const returns = await Order.find({
-      user: req.user._id,
-      status: "returned",
-    }).sort({ createdAt: -1 });
-
-    res.status(200).json({ returns });
-  } catch (error) {
-    res.status(500).json({
-      message: "Server error while loading returns.",
       error: error.message,
     });
   }
