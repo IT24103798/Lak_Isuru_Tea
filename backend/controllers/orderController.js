@@ -116,8 +116,23 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    // Remove user's cart after order is placed
-    await Cart.findOneAndDelete({ user: req.user._id });
+    // Remove only ordered products so selected checkout or Pay Now keeps other cart items.
+    const orderedProductIds = formattedItems.map((item) =>
+      String(item.product)
+    );
+    const cart = await Cart.findOne({ user: req.user._id });
+
+    if (cart) {
+      cart.items = cart.items.filter(
+        (item) => !orderedProductIds.includes(String(item.productId))
+      );
+
+      if (cart.items.length > 0) {
+        await cart.save();
+      } else {
+        await Cart.findOneAndDelete({ user: req.user._id });
+      }
+    }
 
     // Send emails without stopping order process if email fails
     try {

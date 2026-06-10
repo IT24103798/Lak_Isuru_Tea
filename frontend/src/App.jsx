@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
@@ -46,11 +46,17 @@ const ScrollToTop = () => {
   const { pathname, search, hash } = useLocation();
 
   useEffect(() => {
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+  }, []);
+
+  useLayoutEffect(() => {
     if (hash) {
       return;
     }
 
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [pathname, search, hash]);
 
   return null;
@@ -58,9 +64,11 @@ const ScrollToTop = () => {
 
 function App() {
   const location = useLocation();
+  const [sidebarOpenPath, setSidebarOpenPath] = useState(null);
 
   const isAdminPage = location.pathname.startsWith("/admin");
   const showSidebar = sidebarRoutes.includes(location.pathname);
+  const isSidebarOpen = sidebarOpenPath === location.pathname;
 
   return (
     <>
@@ -69,8 +77,39 @@ function App() {
       {!isAdminPage && <Navbar />}
 
       {showSidebar && !isAdminPage ? (
-        <div style={{ display: "flex" }}>
-          <Sidebar />
+        <div className="account-shell">
+          <button
+            type="button"
+            className={`mobile-sidebar-toggle ${isSidebarOpen ? "is-hidden" : ""}`}
+            onClick={() =>
+              setSidebarOpenPath(isSidebarOpen ? null : location.pathname)
+            }
+            aria-expanded={isSidebarOpen}
+          >
+            <i className={`ti ${isSidebarOpen ? "ti-x" : "ti-menu-2"}`}></i>
+            Menu
+          </button>
+
+          {isSidebarOpen && (
+            <button
+              type="button"
+              className="sidebar-drawer-backdrop"
+              aria-label="Close account menu"
+              onClick={() => setSidebarOpenPath(null)}
+            />
+          )}
+
+          <div className={`sidebar-drawer ${isSidebarOpen ? "open" : ""}`}>
+            <button
+              type="button"
+              className="sidebar-drawer-close"
+              aria-label="Close account menu"
+              onClick={() => setSidebarOpenPath(null)}
+            >
+              <i className="ti ti-x"></i>
+            </button>
+            <Sidebar />
+          </div>
 
           <main className="main-content" style={{ flex: 1, minWidth: 0 }}>
             <Routes>

@@ -1080,13 +1080,18 @@
 
   .category-showcase-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: 220px;
+    grid-auto-rows: 190px;
     gap: 10px;
   }
 
   .category-showcase-card:first-child {
     grid-column: 1 / -1;
-    grid-row: span 1;
+    grid-row: auto;
+  }
+
+  .category-showcase-card {
+    min-height: 0;
+    height: 100%;
   }
 
   .category-showcase-content {
@@ -1095,7 +1100,7 @@
 
   .category-showcase-content h3,
   .category-showcase-card:first-child .category-showcase-content h3 {
-    font-size: 25px;
+    font-size: 24px;
     line-height: 1.08;
   }
 
@@ -1208,11 +1213,18 @@
   }
 
   .category-showcase-grid {
-    grid-auto-rows: 188px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 158px;
+    gap: 10px;
+  }
+
+  .category-showcase-card:first-child {
+    grid-column: 1 / -1;
+    grid-row: auto;
   }
 
   .category-showcase-content {
-    padding: 14px;
+    padding: 12px;
   }
 
   .category-showcase-content small {
@@ -1222,15 +1234,23 @@
 
   .category-showcase-content h3,
   .category-showcase-card:first-child .category-showcase-content h3 {
-    font-size: 22px;
+    font-size: 21px;
   }
 
   .category-showcase-content p {
     display: none;
   }
 
+  .category-showcase-card:first-child .category-showcase-content p {
+    display: block;
+    max-width: 30ch;
+    font-size: 12px;
+    line-height: 1.35;
+    margin-bottom: 8px;
+  }
+
   .category-showcase-content > span {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .tea-knowledge-grid {
@@ -1382,4 +1402,69 @@
   font-size: 18px;
   font-weight: bold;
   margin-top: 25px;
+}
+
+@media (max-width: 768px) {
+  .home-page .hero-content h1 {
+    font-size: 27px !important;
+    line-height: 1.16 !important;
+  }
+
+  .home-page .hero-content p,
+  .home-page .about-copy p,
+  .home-page .customer-dashboard-hero p,
+  .home-page .tea-knowledge-copy p,
+  .home-page .category-showcase-content p,
+  .home-page .section-subtitle {
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+  }
+
+  .home-page .hero-btn,
+  .home-page .favorites-shortcut-button,
+  .home-page .product-filter-select,
+  .home-page .product-stock-toggle,
+  .home-page .category-showcase-content > span {
+    font-size: 12px !important;
+  }
+
+  .home-page .customer-home-intro h1,
+  .home-page .customer-dashboard-hero h1,
+  .home-page .products-section h2,
+  .home-page .about-copy h2,
+  .home-page .category-showcase-heading h2,
+  .home-page .tea-knowledge-heading h2 {
+    font-size: 24px !important;
+    line-height: 1.15 !important;
+  }
+
+  .home-page .top-picks-header h3,
+  .home-page .tea-knowledge-copy h3 {
+    font-size: 20px !important;
+    line-height: 1.18 !important;
+  }
+
+  .home-page .category-showcase-content h3,
+  .home-page .category-showcase-card:first-child .category-showcase-content h3 {
+    font-size: 19px !important;
+    line-height: 1.08 !important;
+  }
+
+  .home-page .top-pick-copy h4 {
+    font-size: 13px !important;
+  }
+
+  .home-page .top-pick-copy p,
+  .home-page .top-pick-copy small,
+  .home-page .selected-filter-chip,
+  .home-page .tea-knowledge-details li,
+  .home-page .tea-knowledge-points small {
+    font-size: 11px !important;
+  }
+
+  .home-page .top-pick-copy strong,
+  .home-page .status-message,
+  .home-page .error-message {
+    font-size: 13px !important;
+  }
 }

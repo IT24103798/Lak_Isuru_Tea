@@ -2,7 +2,7 @@
   width: 100%;
   background: #fff200;
   min-height: 60px;
-  padding: 6px 8%;
+  padding: 6px 4%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -10,7 +10,6 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   box-sizing: border-box;
 }
 
@@ -37,10 +36,47 @@
   border-radius: 4px;
 }
 
+.navbar-search-wrap {
+  position: relative;
+}
+
+.navbar-search-toggle {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #000000;
+  cursor: pointer;
+  font-size: 22px;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.navbar-search-toggle:hover,
+.navbar-search-wrap.open .navbar-search-toggle {
+  background: rgba(22, 138, 47, 0.14);
+  color: #168a2f;
+}
+
+.navbar-search-panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 130;
+  width: min(360px, calc(100vw - 32px));
+  padding: 10px;
+  background: #ffffff;
+  border: 1px solid #dfe9e2;
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
 .navbar-search {
-  width: min(380px, 30vw);
-  min-width: 140px;
-  padding: 6px 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
   border: 2px solid #168a2f;
   border-radius: 10px;
   background: #ffffff;
@@ -232,7 +268,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 10px 4px 4px;
+  padding: 4px 12px 4px 5px;
   background: #168a2f;
   border: none;
   border-radius: 24px;
@@ -246,15 +282,23 @@
 }
 
 .account-avatar {
-  width: 34px;
-  height: 34px;
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
+  overflow: hidden;
   background: #ffffff;
   border-radius: 50%;
   color: #168a2f;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 800;
+}
+
+.account-avatar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
 .account-chevron {
@@ -314,25 +358,19 @@
 
 @media (max-width: 768px) {
   .navbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-    padding: 12px 5%;
+    min-height: 54px;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
   }
 
   .nav-left {
-    justify-content: center;
-  }
-
-  .navbar-search {
-    width: min(400px, 100%);
-    min-width: 0;
-    margin: 0 auto;
+    flex: 0 0 auto;
   }
 
   .nav-logo {
-    width: 96px;
-    height: 50px;
+    width: 76px;
+    height: 38px;
   }
 
   .brand-name {
@@ -340,10 +378,11 @@
   }
 
   .nav-links {
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 14px;
-    font-size: 16px;
+    flex: 1;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 12px;
+    font-size: 15px;
   }
 
   .nav-links a.nav-link::after,
@@ -378,10 +417,38 @@
 
   .account-menu-button {
     max-width: 100%;
+    padding: 3px;
   }
 
   .account-name {
-    max-width: 160px;
+    display: none;
+  }
+
+  .account-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .navbar-search-toggle {
+    width: 30px;
+    height: 30px;
+    font-size: 21px;
+  }
+
+  .navbar-search-panel {
+    position: fixed;
+    top: 62px;
+    left: 10px;
+    right: 10px;
+    width: auto;
+  }
+
+  .register-link {
+    padding: 7px 12px;
+  }
+
+  .account-name {
+    max-width: 120px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -394,12 +461,22 @@
 
 @media (max-width: 420px) {
   .nav-links {
-    gap: 12px;
-    font-size: 15px;
+    gap: 9px;
+    font-size: 14px;
   }
 
   .nav-logo {
-    width: 86px;
-    height: 44px;
+    width: 70px;
+    height: 36px;
+  }
+
+  .nav-links a,
+  .nav-links button.nav-link {
+    font-weight: 700;
+  }
+
+  .navbar-search-toggle {
+    width: 28px;
+    height: 28px;
   }
 }

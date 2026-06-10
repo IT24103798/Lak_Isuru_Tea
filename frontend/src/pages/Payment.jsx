@@ -111,6 +111,12 @@ const Payment = () => {
     loadDefaultBillingAddress();
   }, [navigate]);
 
+  useEffect(() => {
+    if (orderSuccess) {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
+  }, [orderSuccess]);
+
   const handlePaymentChange = (event) => {
     const { name, value } = event.target;
 

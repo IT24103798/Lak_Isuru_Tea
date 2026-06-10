@@ -76,6 +76,22 @@ const Login = () => {
       if (loggedUser.role === "admin") {
         navigate("/admin/dashboard");
       } else {
+        const pendingPayNowItem = sessionStorage.getItem("pendingPayNowItem");
+
+        if (pendingPayNowItem) {
+          try {
+            localStorage.setItem(
+              "checkoutItems",
+              JSON.stringify([JSON.parse(pendingPayNowItem)])
+            );
+            sessionStorage.removeItem("pendingPayNowItem");
+            navigate("/checkout");
+            return;
+          } catch {
+            sessionStorage.removeItem("pendingPayNowItem");
+          }
+        }
+
         sessionStorage.setItem("showWelcomeBack", "true");
         navigate("/");
       }

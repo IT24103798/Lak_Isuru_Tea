@@ -170,8 +170,9 @@ function Products() {
       .join(" ")
       .toLowerCase();
 
+    const productName = (product.name || "").trim().toLowerCase();
     const matchesSearch =
-      !normalizedSearchTerm || searchableText.includes(normalizedSearchTerm);
+      !normalizedSearchTerm || productName.includes(normalizedSearchTerm);
     const matchesTeaType =
       !normalizedTeaType ||
       (product.category || "").trim().toLowerCase() === normalizedTeaType;

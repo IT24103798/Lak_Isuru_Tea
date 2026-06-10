@@ -1667,6 +1667,120 @@
   }
 }
 
+@media (max-width: 768px) {
+  .myorders-main,
+  .cancellations-page,
+  .mycancellations-page {
+    font-size: 13px;
+  }
+
+  .orders-eyebrow,
+  .modal-eyebrow {
+    font-size: 0.68rem;
+    padding: 0.32rem 0.62rem;
+  }
+
+  .orders-title,
+  .cancellations-title,
+  .mycancellations-title {
+    font-size: clamp(1.45rem, 7vw, 2rem);
+    letter-spacing: -0.035em;
+  }
+
+  .orders-subtitle,
+  .cancellations-subtitle,
+  .mycancellations-subtitle {
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+
+  .search-box input,
+  .orders-tab,
+  .orders-summary-chip,
+  .cancellations-summary-chip,
+  .state-card,
+  .cancel-error-box,
+  .cancel-label,
+  .cancel-agree,
+  .orders-policy-note,
+  .cancel-form-warning {
+    font-size: 0.78rem;
+  }
+
+  .orders-summary-chip i,
+  .cancellations-summary-chip i {
+    width: 28px;
+    height: 28px;
+  }
+
+  .orders-tab span,
+  .more-items-tag,
+  .order-badge,
+  .price-box label,
+  .cancellation-price-box label,
+  .progress-labels span,
+  .modal-quick-summary span,
+  .modal-total-box span,
+  .modal-info-grid span,
+  .section-title-row span,
+  .cancel-form-field label {
+    font-size: 0.68rem;
+  }
+
+  .order-title-row h3,
+  .section-title-row h3,
+  .cancel-form-box h3 {
+    font-size: 0.96rem;
+    line-height: 1.2;
+  }
+
+  .order-id,
+  .order-meta-row span,
+  .modal-product-row p,
+  .cancel-warning p,
+  .cancel-popup-header p,
+  .cancel-form-field p {
+    font-size: 0.74rem;
+    line-height: 1.4;
+  }
+
+  .order-total {
+    font-size: 1rem;
+  }
+
+  .price-box strong,
+  .cancellation-price-box strong,
+  .modal-quick-summary strong,
+  .modal-product-row strong,
+  .modal-total-box strong {
+    font-size: 0.86rem;
+  }
+
+  .modal-total-box .grand-total strong,
+  .cancellations-summary-chip strong {
+    font-size: 1rem;
+  }
+
+  .primary-btn,
+  .outline-btn,
+  .receive-btn,
+  .review-btn,
+  .danger-modal-btn,
+  .cancel-details-btn,
+  .cancel-detail-btn,
+  .cancel-order-btn,
+  .refresh-btn {
+    font-size: 0.76rem;
+    padding: 0.65rem 0.85rem;
+  }
+
+  .modal-hero h2,
+  .cancel-popup-header h2 {
+    font-size: 1.2rem;
+    letter-spacing: -0.025em;
+  }
+}
+
 .badge-cancelled {
   background: #b91c1c !important;
   color: #ffffff !important;

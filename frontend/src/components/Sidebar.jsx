@@ -7,6 +7,9 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
+  const [profilePhoto, setProfilePhoto] = useState(
+    () => localStorage.getItem("lakIsuruProfilePhoto") || ""
+  );
 
   const getStoredUser = () => {
     try {
@@ -52,6 +55,20 @@ const Sidebar = () => {
     loadUserDetails();
   }, [loadUserDetails]);
 
+  useEffect(() => {
+    const syncProfilePhoto = () => {
+      setProfilePhoto(localStorage.getItem("lakIsuruProfilePhoto") || "");
+    };
+
+    window.addEventListener("storage", syncProfilePhoto);
+    window.addEventListener("lakIsuruProfilePhotoChange", syncProfilePhoto);
+
+    return () => {
+      window.removeEventListener("storage", syncProfilePhoto);
+      window.removeEventListener("lakIsuruProfilePhotoChange", syncProfilePhoto);
+    };
+  }, []);
+
   const isActive = (path) => location.pathname === path;
 
   const userName = user?.name || user?.fullName || user?.username || "Customer";
@@ -61,7 +78,9 @@ const Sidebar = () => {
   return (
     <aside className="orders-sidebar-pro">
       <div className="sidebar-profile-card">
-        <div className="sidebar-avatar">{avatarLetter}</div>
+        <div className="sidebar-avatar">
+          {profilePhoto ? <img src={profilePhoto} alt="" /> : avatarLetter}
+        </div>
         <h3>{userName}</h3>
         <p>{userEmail}</p>
       </div>
@@ -122,11 +141,12 @@ const Sidebar = () => {
       <button
         type="button"
         className="sidebar-shop-btn"
-        onClick={() => navigate("/")}
+        onClick={() => navigate("/products")}
       >
         <i className="ti ti-shopping-bag"></i>
         Continue Shopping
       </button>
+
     </aside>
   );
 };
