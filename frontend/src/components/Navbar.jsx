@@ -9,9 +9,14 @@ function Navbar() {
   const { userInfo, logout } = useAuth();
 
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState(
+    () => localStorage.getItem("lakIsuruProfilePhoto") || ""
+  );
   const [activeSection, setActiveSection] = useState("home");
 
   const accountMenuRef = useRef(null);
+  const searchRef = useRef(null);
 
   const isAdmin = userInfo?.role === "admin";
 
@@ -22,6 +27,10 @@ function Navbar() {
       : "";
 
     navigate(`/products${searchQuery}`);
+  };
+
+  const closeSearch = () => {
+    setIsSearchOpen(false);
   };
 
   const handleLogout = () => {
@@ -46,14 +55,29 @@ function Navbar() {
       ) {
         setIsAccountMenuOpen(false);
       }
+
+      if (
+        event.key === "Escape" ||
+        (searchRef.current && !searchRef.current.contains(event.target))
+      ) {
+        setIsSearchOpen(false);
+      }
+    };
+
+    const syncProfilePhoto = () => {
+      setProfilePhoto(localStorage.getItem("lakIsuruProfilePhoto") || "");
     };
 
     document.addEventListener("mousedown", closeMenus);
     document.addEventListener("keydown", closeMenus);
+    window.addEventListener("storage", syncProfilePhoto);
+    window.addEventListener("lakIsuruProfilePhotoChange", syncProfilePhoto);
 
     return () => {
       document.removeEventListener("mousedown", closeMenus);
       document.removeEventListener("keydown", closeMenus);
+      window.removeEventListener("storage", syncProfilePhoto);
+      window.removeEventListener("lakIsuruProfilePhotoChange", syncProfilePhoto);
     };
   }, []);
 
@@ -139,20 +163,43 @@ function Navbar() {
         </Link>
       </div>
 
-      {!isAdmin && (
-        <input
-          type="search"
-          className="navbar-search"
-          value={new URLSearchParams(location.search).get("search") || ""}
-          onChange={handleSearchChange}
-          placeholder="Search products..."
-          aria-label="Search products"
-        />
-      )}
-
       <div className="nav-links">
         {!isAdmin && (
           <>
+            <div
+              className={`navbar-search-wrap ${isSearchOpen ? "open" : ""}`}
+              ref={searchRef}
+            >
+              <button
+                type="button"
+                className="navbar-search-toggle"
+                aria-expanded={isSearchOpen}
+                aria-label="Search products"
+                onClick={() => setIsSearchOpen((isOpen) => !isOpen)}
+              >
+                <i className="ti ti-search"></i>
+              </button>
+
+              {isSearchOpen && (
+                <div className="navbar-search-panel">
+                  <input
+                    type="search"
+                    className="navbar-search"
+                    value={new URLSearchParams(location.search).get("search") || ""}
+                    onChange={handleSearchChange}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        closeSearch();
+                      }
+                    }}
+                    placeholder="Search product names..."
+                    aria-label="Search product names"
+                    autoFocus
+                  />
+                </div>
+              )}
+            </div>
+
             <Link to="/" className={getNavLinkClass("home")} onClick={handleHomeClick}>
               Home
             </Link>
@@ -221,7 +268,9 @@ function Navbar() {
               aria-label={`Open account menu for ${displayName}`}
               onClick={() => setIsAccountMenuOpen((isOpen) => !isOpen)}
             >
-              <span className="account-avatar">{avatarLetter}</span>
+              <span className="account-avatar">
+                {profilePhoto ? <img src={profilePhoto} alt="" /> : avatarLetter}
+              </span>
               <span className="account-name">{displayName}</span>
             </button>
 

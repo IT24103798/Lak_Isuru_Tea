@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import API from "../api/api";
 import ProductCard from "../components/ProductCard";
 import {
@@ -14,6 +14,7 @@ import "../styles/ProductDetails.css";
 
 function ProductDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const user = useMemo(() => JSON.parse(localStorage.getItem("userInfo")), []);
 
   const [product, setProduct] = useState(null);
@@ -163,36 +164,45 @@ function ProductDetails() {
     );
   };
 
-  const handleAddToCart = async () => {
+  const validatePurchaseSelection = () => {
     if (!product || product.stock <= 0) {
       alert("This product is currently out of stock.");
-      return;
+      return false;
     }
 
     if (quantity < 1) {
       alert("Please select a valid quantity.");
-      return;
+      return false;
     }
 
     if (quantity > product.stock) {
       alert(`Only ${product.stock} items available in stock.`);
+      return false;
+    }
+
+    return true;
+  };
+
+  const getCartPayload = () => ({
+    productId: product._id,
+    name: product.name,
+    price: product.price,
+    quantity,
+    image: product.image,
+  });
+
+  const handleAddToCart = async () => {
+    if (!validatePurchaseSelection()) {
       return;
     }
 
     if (!user) {
-      alert("Please login first to add products to cart.");
-      window.location.href = "/login";
+      navigate("/login");
       return;
     }
 
     try {
-      await API.post("/cart", {
-        productId: product._id,
-        name: product.name,
-        price: product.price,
-        quantity,
-        image: product.image,
-      });
+      await API.post("/cart", getCartPayload());
 
       setCartMessage(`✓ ${quantity} × ${product.name} added to cart!`);
       setQuantity(product.stock > 0 ? 1 : 0);
@@ -203,6 +213,23 @@ function ProductDetails() {
           "Failed to add to cart. Please try again."
       );
     }
+  };
+
+  const handlePayNow = async () => {
+    if (!validatePurchaseSelection()) {
+      return;
+    }
+
+    const cartPayload = getCartPayload();
+
+    if (!user) {
+      sessionStorage.setItem("pendingPayNowItem", JSON.stringify(cartPayload));
+      navigate("/login");
+      return;
+    }
+
+    localStorage.setItem("checkoutItems", JSON.stringify([cartPayload]));
+    navigate("/checkout");
   };
 
   const handleReviewSubmit = async (event) => {
@@ -348,6 +375,15 @@ function ProductDetails() {
                   disabled={product.stock <= 0}
                 >
                   {product.stock > 0 ? "Add To Cart" : "Out Of Stock"}
+                </button>
+
+                <button
+                  type="button"
+                  className="pay-now-button"
+                  onClick={handlePayNow}
+                  disabled={product.stock <= 0}
+                >
+                  Pay Now
                 </button>
               </div>
 

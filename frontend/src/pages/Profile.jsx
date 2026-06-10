@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import API from "../api/api";
 import PhoneInputModule from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
@@ -34,6 +34,11 @@ const Profile = () => {
     phone: "",
     address: "",
   });
+  const [profilePhoto, setProfilePhoto] = useState(
+    () => localStorage.getItem("lakIsuruProfilePhoto") || ""
+  );
+  const [isPhotoViewerOpen, setIsPhotoViewerOpen] = useState(false);
+  const profilePhotoInputRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -57,7 +62,7 @@ const Profile = () => {
 
         setProfile(loadedProfile);
         setError("");
-      } catch (err) {
+      } catch {
         setError("Failed to load profile. Please login again.");
 
         setProfile({
@@ -88,6 +93,37 @@ const Profile = () => {
       ...previousProfile,
       phone: value,
     }));
+  };
+
+  const handleProfilePhotoChange = (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const imageData = reader.result;
+
+      setProfilePhoto(imageData);
+      localStorage.setItem("lakIsuruProfilePhoto", imageData);
+      window.dispatchEvent(new Event("lakIsuruProfilePhotoChange"));
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  const handleDeleteProfilePhoto = () => {
+    setProfilePhoto("");
+    setIsPhotoViewerOpen(false);
+    localStorage.removeItem("lakIsuruProfilePhoto");
+    window.dispatchEvent(new Event("lakIsuruProfilePhotoChange"));
+
+    if (profilePhotoInputRef.current) {
+      profilePhotoInputRef.current.value = "";
+    }
   };
 
   const handleUpdate = async (e) => {
@@ -168,9 +204,63 @@ const Profile = () => {
 
       <div className="profile-card">
         <div className="profile-header">
-          <div className="profile-avatar">
-            {profile.name ? profile.name.charAt(0).toUpperCase() : "U"}
+          <div className="profile-photo-wrap">
+            <button
+              type="button"
+              className="profile-avatar profile-photo-button"
+              onClick={() => profilePhoto && setIsPhotoViewerOpen(true)}
+              aria-label={profilePhoto ? "View profile photo" : "Profile photo placeholder"}
+            >
+              {profilePhoto ? (
+                <img src={profilePhoto} alt="Profile" />
+              ) : (
+                <span>{profile.name ? profile.name.charAt(0).toUpperCase() : "U"}</span>
+              )}
+            </button>
+            <input
+              ref={profilePhotoInputRef}
+              type="file"
+              accept="image/*"
+              className="profile-photo-input"
+              onChange={handleProfilePhotoChange}
+              aria-label="Choose profile photo"
+            />
+            <div className="profile-photo-actions">
+              <button
+                type="button"
+                onClick={() => profilePhotoInputRef.current?.click()}
+              >
+                {profilePhoto ? "Change" : "Add photo"}
+              </button>
+              {profilePhoto && (
+                <button type="button" onClick={handleDeleteProfilePhoto}>
+                  Delete
+                </button>
+              )}
+            </div>
           </div>
+
+          {isPhotoViewerOpen && profilePhoto && (
+            <div
+              className="profile-photo-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Profile photo preview"
+              onClick={() => setIsPhotoViewerOpen(false)}
+            >
+              <div className="profile-photo-modal-card" onClick={(event) => event.stopPropagation()}>
+                <button
+                  type="button"
+                  className="profile-photo-modal-close"
+                  onClick={() => setIsPhotoViewerOpen(false)}
+                  aria-label="Close profile photo preview"
+                >
+                  x
+                </button>
+                <img src={profilePhoto} alt="Profile preview" />
+              </div>
+            </div>
+          )}
 
           <div className="profile-info">
             <h2>{profile.name || "User"}</h2>
@@ -229,18 +319,6 @@ const Profile = () => {
               </div>
             </div>
 
-            <div className="profile-detail-row">
-              <div className="profile-detail-icon">
-                <i className="ti ti-map-pin"></i>
-              </div>
-
-              <div>
-                <p className="profile-label">Address</p>
-                <p className="profile-value">
-                  {profile.address || "Not added"}
-                </p>
-              </div>
-            </div>
           </div>
         ) : (
           <form className="profile-form" onSubmit={handleUpdate}>
@@ -287,17 +365,6 @@ const Profile = () => {
               <small className="profile-help-text">
                 Select country code and enter your phone number.
               </small>
-            </div>
-
-            <div className="profile-form-group">
-              <label>Address</label>
-              <textarea
-                name="address"
-                value={profile.address}
-                onChange={handleChange}
-                placeholder="Enter your address"
-                rows="4"
-              ></textarea>
             </div>
 
             <div className="profile-actions">

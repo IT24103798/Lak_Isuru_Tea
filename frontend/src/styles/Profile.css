@@ -75,6 +75,100 @@
   flex-shrink: 0;
 }
 
+.profile-photo-wrap {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.profile-photo-button {
+  position: relative;
+  overflow: hidden;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+}
+
+.profile-photo-button img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.profile-photo-input {
+  display: none;
+}
+
+.profile-photo-button:hover {
+  box-shadow: 0 0 0 4px rgba(22, 138, 47, 0.16);
+}
+
+.profile-photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.profile-photo-actions button {
+  border: 1px solid rgba(22, 138, 47, 0.24);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #168a2f;
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-weight: 800;
+  padding: 5px 9px;
+}
+
+.profile-photo-actions button:hover {
+  background: #e9f8ef;
+}
+
+.profile-photo-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.profile-photo-modal-card {
+  position: relative;
+  width: min(420px, 92vw);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.profile-photo-modal-card img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.profile-photo-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.62);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
 .profile-info {
   flex: 1;
 }

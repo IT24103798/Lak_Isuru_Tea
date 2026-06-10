@@ -16,7 +16,6 @@ const TikTokIcon = () => (
 const socialLinks = [
   { name: "Facebook", url: "https://www.facebook.com", icon: <FacebookIcon />, className: "facebook" },
   { name: "Instagram", url: "https://www.instagram.com", icon: "", className: "instagram" },
-  { name: "TikTok", url: "https://www.tiktok.com", icon: <TikTokIcon />, className: "tiktok" },
 ];
 
 const Footer = () => {
