@@ -15,7 +15,8 @@ const STEPS = ["Placed", "Packed", "On the Way", "To Review"];
 
 const statusStepMap = {
   pending: 0,
-  processing: 1,
+  processing: 0, 
+  packed: 1,
   shipped: 2,
   delivered: 3,
 };
@@ -23,19 +24,20 @@ const statusStepMap = {
 const statusLabelMap = {
   pending: "To Pay",
   processing: "To Ship",
+  packed: "Packed",
   shipped: "To Receive",
   delivered: "To Review",
-  returned: "Returned",
   cancelled: "Cancelled",
 };
 
 const statusColorMap = {
   pending: "amber",
   processing: "blue",
+  packed: "green",
   shipped: "purple",
   delivered: "teal",
   returned: "red",
-  cancelled: "Cancelled",
+  cancelled: "red",
 };
 
 const normalizeStatus = (status = "") => status.toString().toLowerCase();
@@ -85,7 +87,7 @@ const MyOrders = () => {
 
     const interval = setInterval(() => {
       loadOrders();
-    }, 30000);
+    }, 60000);
 
     return () => clearInterval(interval);
   }, [loadOrders]);
@@ -247,7 +249,6 @@ const MyOrders = () => {
       customer.city,
       customer.district,
       customer.province,
-      customer.postalCode,
     ].filter(Boolean);
 
     return parts.length ? parts.join(", ") : "-";
@@ -467,10 +468,6 @@ const MyOrders = () => {
                       <span className={`order-badge badge-${color}`}>
                         {getStatusLabel(currentStatus)}
                       </span>
-
-                      <div className="order-total">
-                        Rs. {(order.totalPrice || 0).toLocaleString()}
-                      </div>
                     </div>
                   </div>
 
@@ -651,11 +648,6 @@ const MyOrders = () => {
                 <p>
                   <span>Email</span>
                   {selectedOrder.customer?.email || "-"}
-                </p>
-
-                <p>
-                  <span>City</span>
-                  {selectedOrder.customer?.city || "-"}
                 </p>
 
                 <p className="full">
