@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import API from "../api/api";
 import "../styles/MyOrders.css";
 
@@ -41,8 +40,6 @@ const statusColorMap = {
 const normalizeStatus = (status = "") => status.toString().toLowerCase();
 
 const MyOrders = () => {
-  const navigate = useNavigate();
-
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState("");
   const [cancelError, setCancelError] = useState("");
@@ -81,13 +78,16 @@ const MyOrders = () => {
   }, []);
 
   useEffect(() => {
-    loadOrders();
+    const timerId = setTimeout(loadOrders, 0);
 
     const interval = setInterval(() => {
       loadOrders();
     }, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timerId);
+      clearInterval(interval);
+    };
   }, [loadOrders]);
 
   const showSuccess = (message) => {
@@ -467,10 +467,6 @@ const MyOrders = () => {
                       <span className={`order-badge badge-${color}`}>
                         {getStatusLabel(currentStatus)}
                       </span>
-
-                      <div className="order-total">
-                        Rs. {(order.totalPrice || 0).toLocaleString()}
-                      </div>
                     </div>
                   </div>
 
