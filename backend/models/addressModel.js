@@ -80,11 +80,6 @@ const addressSchema = new mongoose.Schema(
       trim: true,
     },
 
-    postalCode: {
-      type: Number,
-      trim: true,
-    },
-
     isDefault: {
       type: Boolean,
       default: false,

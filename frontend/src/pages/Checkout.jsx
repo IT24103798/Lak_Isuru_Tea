@@ -19,7 +19,6 @@ const emptyAddress = {
   province: "",
   district: "",
   city: "",
-  postalCode: "",
 };
 
 const Checkout = () => {
@@ -121,10 +120,6 @@ const Checkout = () => {
       province: address.province || previousData.province,
       district: address.district || previousData.district,
       city: address.city || previousData.city,
-
-      postalCode: String(
-        address.postalCode || previousData.postalCode || ""
-      ).replace(/\D/g, ""),
     };
   };
 
@@ -230,11 +225,6 @@ const Checkout = () => {
     if (name === "district") {
       return { ...prev, district: value, city: "" };
     }
-
-    if (name === "postalCode") {
-      return { ...prev, postalCode: value.replace(/\D/g, "") };
-    }
-
     return { ...prev, [name]: value };
   });
 };
@@ -271,7 +261,6 @@ const Checkout = () => {
     const city = data.city.trim();
     const district = data.district.trim();
     const province = data.province.trim();
-    const postalCode = data.postalCode.trim();
 
     const addressParts = [
       line1,
@@ -279,7 +268,6 @@ const Checkout = () => {
       city,
       district,
       province,
-      postalCode,
     ].filter(Boolean);
 
     const fullAddress = addressParts.join(", ");
@@ -297,7 +285,6 @@ const Checkout = () => {
       province,
       district,
       city,
-      postalCode,
       address: fullAddress,
     };
   };
@@ -423,7 +410,6 @@ const Checkout = () => {
       data.city,
       data.district,
       data.province,
-      data.postalCode,
     ]
       .filter(Boolean)
       .join(", ");
@@ -656,21 +642,6 @@ const Checkout = () => {
             </select>
           </div>
 
-          <div className="form-group">
-            <label>
-              Postal Code <span className="optional-tag">Optional</span>
-            </label>
-            <input
-                type="text"
-                name="postalCode"
-                placeholder="e.g. 10345"
-                value={data.postalCode}
-                onChange={(e) => handleAddressChange(type, e)}
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength="10"
-              />
-            </div>
 
           <div className="form-group full-width">
             <div className="address-save-action">
