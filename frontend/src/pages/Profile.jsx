@@ -3,6 +3,11 @@ import API from "../api/api";
 import PhoneInputModule from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import { useAuth } from "../context/AuthContext";
+import {
+  getProfilePhotoStorageKey,
+  getStoredProfilePhoto,
+  notifyProfilePhotoChange,
+} from "../utils/profilePhotoStorage";
 import "../styles/Profile.css";
 
 const PhoneInput = PhoneInputModule.default || PhoneInputModule;
@@ -35,7 +40,7 @@ const Profile = () => {
     address: "",
   });
   const [profilePhoto, setProfilePhoto] = useState(
-    () => localStorage.getItem("lakIsuruProfilePhoto") || ""
+    () => getStoredProfilePhoto(userInfo)
   );
   const [isPhotoViewerOpen, setIsPhotoViewerOpen] = useState(false);
   const profilePhotoInputRef = useRef(null);
@@ -61,6 +66,12 @@ const Profile = () => {
         };
 
         setProfile(loadedProfile);
+        const loadedProfilePhoto = userData.profileImage || getStoredProfilePhoto(userData);
+
+        setProfilePhoto(loadedProfilePhoto);
+        if (loadedProfilePhoto) {
+          localStorage.setItem(getProfilePhotoStorageKey(userData), loadedProfilePhoto);
+        }
         setError("");
       } catch {
         setError("Failed to load profile. Please login again.");
@@ -104,22 +115,66 @@ const Profile = () => {
 
     const reader = new FileReader();
 
-    reader.onload = () => {
+    reader.onload = async () => {
       const imageData = reader.result;
 
       setProfilePhoto(imageData);
-      localStorage.setItem("lakIsuruProfilePhoto", imageData);
-      window.dispatchEvent(new Event("lakIsuruProfilePhotoChange"));
+      localStorage.setItem(getProfilePhotoStorageKey(userInfo), imageData);
+      notifyProfilePhotoChange();
+
+      try {
+        const { data } = await API.put("/users/profile", {
+          name: profile.name.trim() || userInfo?.name || "User",
+          phone: formatPhoneForSave(profile.phone || userInfo?.phone || ""),
+          address: profile.address,
+          profileImage: imageData,
+        });
+        const updatedUser = data.user || data;
+
+        if (data.token && login) {
+          login({
+            ...updatedUser,
+            token: data.token,
+          });
+        }
+
+        setSuccess("Profile photo updated successfully.");
+        setError("");
+      } catch (err) {
+        setError(err.response?.data?.message || "Failed to update profile photo.");
+      }
     };
 
     reader.readAsDataURL(file);
   };
 
-  const handleDeleteProfilePhoto = () => {
+  const handleDeleteProfilePhoto = async () => {
     setProfilePhoto("");
     setIsPhotoViewerOpen(false);
-    localStorage.removeItem("lakIsuruProfilePhoto");
-    window.dispatchEvent(new Event("lakIsuruProfilePhotoChange"));
+    localStorage.removeItem(getProfilePhotoStorageKey(userInfo));
+    notifyProfilePhotoChange();
+
+    try {
+      const { data } = await API.put("/users/profile", {
+        name: profile.name.trim() || userInfo?.name || "User",
+        phone: formatPhoneForSave(profile.phone || userInfo?.phone || ""),
+        address: profile.address,
+        profileImage: "",
+      });
+      const updatedUser = data.user || data;
+
+      if (data.token && login) {
+        login({
+          ...updatedUser,
+          token: data.token,
+        });
+      }
+
+      setSuccess("Profile photo removed successfully.");
+      setError("");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to remove profile photo.");
+    }
 
     if (profilePhotoInputRef.current) {
       profilePhotoInputRef.current.value = "";
@@ -156,6 +211,7 @@ const Profile = () => {
         name: profile.name.trim(),
         phone: formatPhoneForSave(profile.phone),
         address: profile.address,
+        profileImage: profilePhoto,
       };
 
       const { data } = await API.put("/users/profile", updateData);

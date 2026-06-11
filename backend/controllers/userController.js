@@ -42,6 +42,7 @@ export const registerUser = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
+        profileImage: user.profileImage,
         role: user.role,
       },
       token: generateToken(user._id),
@@ -77,6 +78,7 @@ export const loginUser = async (req, res) => {
           name: user.name,
           email: user.email,
           phone: user.phone,
+          profileImage: user.profileImage,
           role: user.role,
         },
         token: generateToken(user._id),
@@ -112,7 +114,7 @@ export const getUserProfile = async (req, res) => {
 // PUT /api/users/profile
 export const updateUserProfile = async (req, res) => {
   try {
-    const { name, phone, address } = req.body;
+    const { name, phone, address, profileImage } = req.body;
 
     const user = await User.findById(req.user._id);
 
@@ -143,6 +145,7 @@ export const updateUserProfile = async (req, res) => {
     user.name = name.trim();
     user.phone = phone || user.phone;
     user.address = address !== undefined ? address : user.address;
+    user.profileImage = profileImage !== undefined ? profileImage : user.profileImage;
 
     const updatedUser = await user.save();
 
@@ -154,6 +157,7 @@ export const updateUserProfile = async (req, res) => {
         email: updatedUser.email,
         phone: updatedUser.phone,
         address: updatedUser.address,
+        profileImage: updatedUser.profileImage,
         role: updatedUser.role,
         provider: updatedUser.provider,
       },
@@ -348,6 +352,7 @@ export const socialLogin = async (req, res) => {
     if (user) {
       user.provider = provider;
       user.providerId = providerId;
+      user.profileImage = user.profileImage || photoURL || "";
       await user.save();
     } else {
       user = await User.create({
@@ -368,6 +373,7 @@ export const socialLogin = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
+        profileImage: user.profileImage,
         role: user.role,
         provider: user.provider,
       },

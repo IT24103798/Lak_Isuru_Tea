@@ -207,12 +207,15 @@ function AdminDashboard() {
 
       {error && <div className="admin-error">{error}</div>}
 
-      <section className="admin-summary-grid" aria-label="Store summary">
-        <article className="admin-summary-card">
+      <section
+        className="admin-summary-grid admin-dashboard-summary-grid"
+        aria-label="Store summary"
+      >
+        <article className="admin-summary-card admin-dashboard-summary-card">
           <span>Total Products</span>
           <strong>{loading ? "..." : dashboardSummary.totalProducts}</strong>
         </article>
-        <article className="admin-summary-card">
+        <article className="admin-summary-card admin-dashboard-summary-card">
           <span>Total Revenue</span>
           <strong>
             {loading
@@ -220,7 +223,7 @@ function AdminDashboard() {
               : `Rs. ${dashboardSummary.totalRevenue.toLocaleString()}`}
           </strong>
         </article>
-        <article className="admin-summary-card">
+        <article className="admin-summary-card admin-dashboard-summary-card">
           <span>Pending Orders</span>
           <strong>{loading ? "..." : dashboardSummary.pendingOrders}</strong>
         </article>
