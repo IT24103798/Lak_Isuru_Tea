@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import {
+  PROFILE_PHOTO_CHANGE_EVENT,
+  getStoredProfilePhoto,
+} from "../utils/profilePhotoStorage";
 import "../styles/Navbar.css";
 
 function Navbar() {
@@ -11,7 +15,7 @@ function Navbar() {
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState(
-    () => localStorage.getItem("lakIsuruProfilePhoto") || ""
+    () => getStoredProfilePhoto(userInfo)
   );
   const [activeSection, setActiveSection] = useState("home");
 
@@ -64,22 +68,29 @@ function Navbar() {
       }
     };
 
-    const syncProfilePhoto = () => {
-      setProfilePhoto(localStorage.getItem("lakIsuruProfilePhoto") || "");
-    };
-
     document.addEventListener("mousedown", closeMenus);
     document.addEventListener("keydown", closeMenus);
-    window.addEventListener("storage", syncProfilePhoto);
-    window.addEventListener("lakIsuruProfilePhotoChange", syncProfilePhoto);
 
     return () => {
       document.removeEventListener("mousedown", closeMenus);
       document.removeEventListener("keydown", closeMenus);
-      window.removeEventListener("storage", syncProfilePhoto);
-      window.removeEventListener("lakIsuruProfilePhotoChange", syncProfilePhoto);
     };
   }, []);
+
+  useEffect(() => {
+    const syncProfilePhoto = () => {
+      setProfilePhoto(getStoredProfilePhoto(userInfo));
+    };
+
+    syncProfilePhoto();
+    window.addEventListener("storage", syncProfilePhoto);
+    window.addEventListener(PROFILE_PHOTO_CHANGE_EVENT, syncProfilePhoto);
+
+    return () => {
+      window.removeEventListener("storage", syncProfilePhoto);
+      window.removeEventListener(PROFILE_PHOTO_CHANGE_EVENT, syncProfilePhoto);
+    };
+  }, [userInfo]);
 
   useEffect(() => {
     const updateActiveSection = () => {

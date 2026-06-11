@@ -1,7 +1,7 @@
 import Product from "../models/Product.js";
 import Order from "../models/Order.js";
 
-const TOP_SELLING_LIMIT = 4;
+const TOP_SELLING_LIMIT = 3;
 
 const validateProductBody = ({ name, category, price, stock, image, description }) => {
   if (!name || !category || price === undefined || stock === undefined || !image || !description) {

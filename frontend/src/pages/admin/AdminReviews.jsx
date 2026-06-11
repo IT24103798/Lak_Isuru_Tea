@@ -23,7 +23,13 @@ const AdminReviews = () => {
   }, []);
 
   const reviewedProducts = useMemo(
-    () => products.filter((product) => product.reviews?.length),
+    () =>
+      products
+        .map((product) => ({
+          ...product,
+          reviews: (product.reviews || []).filter((review) => review.comment?.trim()),
+        }))
+        .filter((product) => product.reviews.length),
     [products]
   );
   const totalReviews = reviewedProducts.reduce(

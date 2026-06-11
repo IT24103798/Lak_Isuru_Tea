@@ -1,15 +1,17 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import API from "../api/api";
+import {
+  PROFILE_PHOTO_CHANGE_EVENT,
+  getStoredProfilePhoto,
+} from "../utils/profilePhotoStorage";
 import "../styles/Sidebar.css";
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
-  const [profilePhoto, setProfilePhoto] = useState(
-    () => localStorage.getItem("lakIsuruProfilePhoto") || ""
-  );
+  const [profilePhoto, setProfilePhoto] = useState("");
 
   const getStoredUser = () => {
     try {
@@ -52,22 +54,27 @@ const Sidebar = () => {
   }, []);
 
   useEffect(() => {
-    loadUserDetails();
+    const timerId = setTimeout(loadUserDetails, 0);
+
+    return () => {
+      clearTimeout(timerId);
+    };
   }, [loadUserDetails]);
 
   useEffect(() => {
     const syncProfilePhoto = () => {
-      setProfilePhoto(localStorage.getItem("lakIsuruProfilePhoto") || "");
+      setProfilePhoto(getStoredProfilePhoto(user));
     };
 
+    syncProfilePhoto();
     window.addEventListener("storage", syncProfilePhoto);
-    window.addEventListener("lakIsuruProfilePhotoChange", syncProfilePhoto);
+    window.addEventListener(PROFILE_PHOTO_CHANGE_EVENT, syncProfilePhoto);
 
     return () => {
       window.removeEventListener("storage", syncProfilePhoto);
-      window.removeEventListener("lakIsuruProfilePhotoChange", syncProfilePhoto);
+      window.removeEventListener(PROFILE_PHOTO_CHANGE_EVENT, syncProfilePhoto);
     };
-  }, []);
+  }, [user]);
 
   const isActive = (path) => location.pathname === path;
 
