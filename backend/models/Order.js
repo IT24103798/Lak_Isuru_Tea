@@ -180,6 +180,12 @@ const orderSchema = new mongoose.Schema(
         trim: true,
       },
 
+      postalCode: {
+        type: String,
+        default: "",
+        trim: true,
+      },
+
       address: {
         type: String,
         default: "",
@@ -208,12 +214,11 @@ const orderSchema = new mongoose.Schema(
       enum: [
         "pending",
         "processing",
-        "packed",
         "shipped",
         "delivered",
         "cancelled",
       ],
-      default: "processing",
+      default: "pending",
     },
 
     cancelReason: {

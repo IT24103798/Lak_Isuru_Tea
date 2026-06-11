@@ -36,10 +36,10 @@ const addAddress = async (req, res) => {
       });
     }
 
-    if (!fullName || !phone || !province || !district || !city) {
+    if (!fullName || !phone || !province || !district || !city || !postalCode) {
       return res.status(400).json({
         message:
-          "Full name, phone number, province, district, city are required.",
+          "Full name, phone number, province, district, city, and postcode are required.",
       });
     }
 
@@ -51,43 +51,6 @@ const addAddress = async (req, res) => {
 
     const finalAddressLine =
       addressLine || `${addressLine1.trim()}, ${addressLine2.trim()}`;
-
-    const finalAddressType = addressType || "HOME";
-
-    const normalizeText = (value) =>
-      String(value || "")
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, " ");
-
-    const normalizePhone = (value) =>
-      String(value || "").replace(/[^\d]/g, "");
-
-    const allUserAddresses = await Address.find({ user: userId });
-
-    const duplicateAddress = allUserAddresses.find((item) => {
-      const itemAddressLine =
-        item.addressLine ||
-        `${item.addressLine1 || ""}, ${item.addressLine2 || ""}`;
-
-      return (
-        normalizeText(item.fullName) === normalizeText(fullName) &&
-        normalizePhone(item.phone || item.phoneNumber1) === normalizePhone(phone) &&
-        normalizeText(item.addressType) === normalizeText(finalAddressType) &&
-        normalizeText(itemAddressLine) === normalizeText(finalAddressLine) &&
-        normalizeText(item.province) === normalizeText(province) &&
-        normalizeText(item.district) === normalizeText(district) &&
-        normalizeText(item.city) === normalizeText(city)
-      );
-    });
-
-    if (duplicateAddress) {
-      return res.status(200).json({
-        message: "This address is already saved. Existing address used.",
-        address: duplicateAddress,
-        alreadyExists: true,
-      });
-    }
 
     const makeShippingDefault = Boolean(isDefaultShipping || isDefault);
     const makeBillingDefault = Boolean(isDefaultBilling);
@@ -119,8 +82,8 @@ const addAddress = async (req, res) => {
       phoneNumber1: phoneNumber1 || phone,
       phoneNumber2: phoneNumber2 || "",
 
-      addressType: finalAddressType,
-      addressLine: finalAddressLine.trim(),
+      addressType: addressType || "HOME",
+      addressLine: finalAddressLine,
       addressLine1: addressLine1 || finalAddressLine,
       addressLine2: addressLine2 || "",
       landmark: landmark || "",
@@ -128,7 +91,7 @@ const addAddress = async (req, res) => {
       province,
       district,
       city,
-      postalCode: postalCode || "",
+      postalCode,
 
       isDefault: makeShippingDefault,
       isDefaultShipping: makeShippingDefault,
@@ -138,7 +101,6 @@ const addAddress = async (req, res) => {
     res.status(201).json({
       message: "Address added successfully",
       address,
-      alreadyExists: false,
     });
   } catch (error) {
     console.log("ADD ADDRESS ERROR:", error);
@@ -258,6 +220,7 @@ const updateAddress = async (req, res) => {
       province,
       district,
       city,
+      postalCode,
       isDefault,
       isDefaultShipping,
       isDefaultBilling,
@@ -302,6 +265,7 @@ const updateAddress = async (req, res) => {
     address.province = province || address.province;
     address.district = district || address.district;
     address.city = city || address.city;
+    address.postalCode = postalCode || address.postalCode;
 
     address.isDefault = makeShippingDefault;
     address.isDefaultShipping = makeShippingDefault;

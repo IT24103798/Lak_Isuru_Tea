@@ -281,7 +281,6 @@ export const cancelOrder = async (req, res) => {
 
     if (
       order.status === "shipped" ||
-      order.status === "shipped" ||
       order.status === "delivered" ||
       order.status === "returned"
     ) {
@@ -405,32 +404,17 @@ export const updateOrderStatus = async (req, res) => {
     const { status } = req.body;
 
     const allowedStatuses = [
+      "pending",
       "processing",
-      "packed",
       "shipped",
       "delivered",
+      "returned",
       "cancelled",
     ];
 
-    const statusTextMap = {
-      processing: "To Ship",
-      packed: "To Pack",
-      shipped: "To Receive",
-      delivered: "To Review",
-      cancelled: "Cancelled",
-    };
-
-    const validNextStatuses = {
-      processing: ["packed", "cancelled"],
-      packed: ["shipped"],
-      shipped: ["delivered"],
-      delivered: [],
-      cancelled: [],
-    };
-
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
-        message: "Invalid order status",
+        message: "Invalid order status.",
       });
     }
 
@@ -438,66 +422,81 @@ export const updateOrderStatus = async (req, res) => {
 
     if (!order) {
       return res.status(404).json({
-        message: "Order not found",
+        message: "Order not found.",
       });
     }
 
     if (order.status === "cancelled") {
       return res.status(400).json({
-        message: "Cancelled order status cannot be changed.",
-      });
-    }
-
-    if (order.status === "delivered") {
-      return res.status(400).json({
-        message: "This order is already delivered and completed.",
-      });
-    }
-
-    if (order.status === status) {
-      return res.status(400).json({
-        message: `This order is already marked as ${statusTextMap[status]}.`,
-      });
-    }
-
-    const nextStatuses = validNextStatuses[order.status] || [];
-
-    if (!nextStatuses.includes(status)) {
-      return res.status(400).json({
-        message: `Invalid status change. Current status is ${
-          statusTextMap[order.status] || order.status
-        }.`,
+        message: "Cancelled orders cannot be updated.",
       });
     }
 
     order.status = status;
-    order.orderStatus = statusTextMap[status];
 
-    if (status === "packed") {
-      order.packedAt = new Date();
+    if (status === "pending") {
+      order.orderStatus = "To Pay";
+      order.paymentStatus = "Pending";
+    }
+
+    if (status === "processing") {
+      order.orderStatus = "To Ship";
     }
 
     if (status === "shipped") {
-      order.shippedAt = new Date();
+      order.orderStatus = "To Receive";
     }
 
     if (status === "delivered") {
-      order.deliveredAt = new Date();
+      order.orderStatus = "To Review";
+    }
+
+    if (status === "returned") {
+      order.orderStatus = "Returned";
     }
 
     if (status === "cancelled") {
+      order.orderStatus = "Cancelled";
+      order.paymentStatus =
+        order.paymentStatus === "Paid" ? "Refund Pending" : "Cancelled";
+
       order.cancelledAt = new Date();
+      order.cancelReason = order.cancelReason || "Cancelled by admin";
+      order.cancelNote = order.cancelNote || "";
+
+      // Restore stock when admin cancels order
+      for (const item of order.items) {
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: {
+            stock: Number(item.quantity),
+          },
+        });
+      }
     }
 
-    const updatedOrder = await order.save();
+    await order.save();
 
-    res.json({
-      message: "Order status updated successfully",
-      order: updatedOrder,
+    // Customer delivered email when admin marks order as delivered
+    if (status === "delivered") {
+      try {
+        await sendEmail(
+          order.customer.email,
+          `Your Lak Isuru Tea order has been delivered - #${order._id}`,
+          "Your order has been delivered successfully.",
+          orderDeliveredCustomerTemplate(order)
+        );
+      } catch (emailError) {
+        console.error("Delivered email sending failed:", emailError.message);
+      }
+    }
+
+    res.status(200).json({
+      message: "Order status updated successfully.",
+      order,
     });
   } catch (error) {
     res.status(500).json({
-      message: "Server error while updating order status",
+      message: "Server error while updating order status.",
       error: error.message,
     });
   }
