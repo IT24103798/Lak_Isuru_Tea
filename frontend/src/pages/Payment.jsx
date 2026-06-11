@@ -46,7 +46,6 @@ const Payment = () => {
       address.city,
       address.district,
       address.province,
-      address.postalCode,
     ]
       .filter(Boolean)
       .join(", ");
@@ -65,7 +64,6 @@ const Payment = () => {
       city: address.city || "",
       district: address.district || "",
       province: address.province || "",
-      postalCode: address.postalCode || "",
       address: address.address || fullAddress,
     };
   };
@@ -505,11 +503,6 @@ const Payment = () => {
                   <div>
                     <span>Province</span>
                     <strong>{displayCustomer.province || "-"}</strong>
-                  </div>
-
-                  <div>
-                    <span>Postal Code</span>
-                    <strong>{displayCustomer.postalCode || "-"}</strong>
                   </div>
                 </div>
               </div>
