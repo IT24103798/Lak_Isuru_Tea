@@ -7,7 +7,10 @@ const complaintSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
-    sessionId: String,
+    sessionId: {
+      type: String,
+      default: "guest-session",
+    },
     message: {
       type: String,
       required: true,
