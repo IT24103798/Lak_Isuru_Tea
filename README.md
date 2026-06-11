@@ -3,6 +3,9 @@
 Lak Isuru Tea is a full-stack tea product e-commerce website built using the MERN stack. The system allows customers to browse tea products, register and log in, manage their profile and addresses, add products to cart, place orders, choose payment methods, track orders, cancel orders, and get help from a tea product chatbot. It also includes an admin panel for managing products, users, reviews, and customer orders.
 
 ---
+> **Privacy note:** This README uses placeholders only. Do not add real `.env` values, passwords, API keys, database URLs, or personal account details to GitHub.
+
+---
 
 ## Table of Contents
 
@@ -473,7 +476,6 @@ Lak_Isuru_Tea/
 │   │   ├── generateToken.js
 │   │   └── sendEmail.js
 │   │
-│   ├── .env
 │   ├── package.json
 │   └── server.js
 │
@@ -536,7 +538,6 @@ Lak_Isuru_Tea/
 │   │   ├── App.jsx
 │   │   └── main.jsx
 │   │
-│   ├── .env
 │   ├── package.json
 │   └── vite.config.js
 │
@@ -546,41 +547,52 @@ Lak_Isuru_Tea/
 
 ---
 
-## Environment Variables
+## Environment Variables and Privacy
 
-### Backend `.env`
+For security, real `.env` files are **not included** in this README and should **never be uploaded to GitHub**. Keep private values such as database URLs, JWT secrets, email app passwords, Firebase keys, Gemini API keys, and payment keys only on your local computer or hosting provider dashboard.
 
-Create a `.env` file inside the `backend` folder.
+Add `.env` files to `.gitignore`:
+
+```gitignore
+backend/.env
+frontend/.env
+.env
+```
+
+You can create safe example files for GitHub instead:
+
+```text
+backend/.env.example
+frontend/.env.example
+```
+
+### Backend `.env.example`
 
 ```env
 PORT=5000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret_key
+MONGO_URI=PASTE_YOUR_DATABASE_URL_HERE
+JWT_SECRET=PASTE_YOUR_SECRET_KEY_HERE
 
-EMAIL_HOST=smtp.gmail.com
+EMAIL_HOST=PASTE_EMAIL_HOST_HERE
 EMAIL_PORT=587
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_app_password
+EMAIL_USER=PASTE_EMAIL_USERNAME_HERE
+EMAIL_PASS=PASTE_EMAIL_APP_PASSWORD_HERE
 
-GEMINI_API_KEY=your_gemini_api_key
+GEMINI_API_KEY=PASTE_GEMINI_API_KEY_HERE
 CLIENT_URL=http://localhost:5173
 ```
 
-### Frontend `.env`
-
-Create a `.env` file inside the `frontend` folder.
+### Frontend `.env.example`
 
 ```env
 VITE_API_BASE_URL=http://localhost:5000/api
-VITE_FIREBASE_API_KEY=your_firebase_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
-VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
-VITE_FIREBASE_APP_ID=your_firebase_app_id
+VITE_FIREBASE_API_KEY=PASTE_FIREBASE_API_KEY_HERE
+VITE_FIREBASE_AUTH_DOMAIN=PASTE_FIREBASE_AUTH_DOMAIN_HERE
+VITE_FIREBASE_PROJECT_ID=PASTE_FIREBASE_PROJECT_ID_HERE
+VITE_FIREBASE_APP_ID=PASTE_FIREBASE_APP_ID_HERE
 ```
 
-Do not upload `.env` files to GitHub.
-
----
+Before running the project, copy each `.env.example` file, rename the copy to `.env`, and fill the values locally.
 
 ## Installation and Setup
 
