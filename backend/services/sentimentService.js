@@ -1,9 +1,48 @@
 export const analyzeSentiment = (message) => {
   const text = message.toLowerCase();
 
-  const positiveWords = ["good", "great", "excellent", "love", "nice", "amazing", "thank"];
-  const negativeWords = ["bad", "late", "wrong", "damaged", "poor", "problem", "issue"];
-  const angryWords = ["angry", "worst", "terrible", "scam", "hate", "not received", "refund"];
+  const positiveWords = [
+    "good",
+    "great",
+    "excellent",
+    "love",
+    "nice",
+    "amazing",
+    "thank",
+    "thanks",
+    "helpful",
+    "perfect",
+    "okay",
+    "ok",
+  ];
+
+  const negativeWords = [
+    "bad",
+    "late",
+    "wrong",
+    "damaged",
+    "poor",
+    "problem",
+    "issue",
+    "confused",
+    "not clear",
+    "not satisfied",
+    "not good",
+    "can't cancel",
+    "cannot cancel",
+  ];
+
+  const angryWords = [
+    "angry",
+    "worst",
+    "terrible",
+    "scam",
+    "hate",
+    "not received",
+    "refund",
+    "useless",
+    "very bad",
+  ];
 
   let score = 0;
 
