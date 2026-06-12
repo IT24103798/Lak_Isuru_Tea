@@ -111,7 +111,13 @@ const getCustomerTabStatus = (order) => {
 };
 
 const MyOrders = () => {
-  const [orders, setOrders] = useState([]);
+  const {
+    orders,
+    ordersLoaded,
+    ordersError,
+    loadOrders,
+  } = useAppData();
+
   const [error, setError] = useState("");
   const [cancelError, setCancelError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
