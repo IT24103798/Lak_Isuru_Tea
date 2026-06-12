@@ -99,12 +99,18 @@ const orderSchema = new mongoose.Schema(
       type: String,
       enum: [
         "To Pay",
+        "Processing",
+        "To Pack",
+        "Packed",
         "To Ship",
+        "Shipped",
         "To Receive",
+        "On the Way",
         "To Review",
+        "Delivered",
         "Cancelled",
       ],
-      default: "To Pay",
+      default: "To Pack",
     },
 
     customer: {
@@ -140,7 +146,7 @@ const orderSchema = new mongoose.Schema(
 
       addressType: {
         type: String,
-        enum: ["Home", "Office", "Other", ""],
+        enum: ["Home", "Office", "Other", "HOME", "OFFICE", "OTHER", ""],
         default: "",
       },
 
@@ -210,10 +216,11 @@ const orderSchema = new mongoose.Schema(
         "processing",
         "packed",
         "shipped",
+        "on_the_way",
         "delivered",
         "cancelled",
       ],
-      default: "processing",
+      default: "packed",
     },
 
     cancelReason: {
@@ -229,6 +236,31 @@ const orderSchema = new mongoose.Schema(
     },
 
     cancelledAt: {
+      type: Date,
+      default: null,
+    },
+
+    stockDeducted: {
+      type: Boolean,
+      default: false,
+    },
+
+    packedAt: {
+      type: Date,
+      default: null,
+    },
+
+    shippedAt: {
+      type: Date,
+      default: null,
+    },
+
+    onTheWayAt: {
+      type: Date,
+      default: null,
+    },
+
+    deliveredAt: {
       type: Date,
       default: null,
     },

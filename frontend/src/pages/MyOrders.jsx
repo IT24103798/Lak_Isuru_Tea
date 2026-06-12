@@ -1,31 +1,33 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import API from "../api/api";
 import "../styles/MyOrders.css";
 
 const TABS = [
-  { label: "All", filter: null },
-  { label: "To Pay", filter: "pending" },
-  { label: "To Ship", filter: "processing" },
-  { label: "To Receive", filter: "shipped" },
-  { label: "To Review", filter: "delivered" },
+  { label: "All", filter: "all" },
+  { label: "To Pay", filter: "toPay" },
+  { label: "To Pack", filter: "toPack" },
+  { label: "To Ship", filter: "toShip" },
+  { label: "To Receive", filter: "toReceive" },
+  { label: "To Review", filter: "toReview" },
 ];
 
-const STEPS = ["Placed", "Packed", "On the Way", "To Review"];
+const STEPS = ["To Pack", "Shipped", "On the Way", "To Review"];
 
 const statusStepMap = {
   pending: 0,
-  processing: 0, 
-  packed: 1,
-  shipped: 2,
+  processing: 0,
+  packed: 0,
+  shipped: 1,
+  on_the_way: 2,
   delivered: 3,
 };
 
 const statusLabelMap = {
   pending: "To Pay",
-  processing: "To Ship",
-  packed: "Packed",
-  shipped: "To Receive",
+  processing: "Processing",
+  packed: "To Pack",
+  shipped: "To Ship",
+  on_the_way: "To Receive",
   delivered: "To Review",
   cancelled: "Cancelled",
 };
@@ -33,18 +35,79 @@ const statusLabelMap = {
 const statusColorMap = {
   pending: "amber",
   processing: "blue",
-  packed: "green",
+  packed: "blue",
   shipped: "purple",
+  on_the_way: "purple",
   delivered: "teal",
   returned: "red",
   cancelled: "red",
 };
 
-const normalizeStatus = (status = "") => status.toString().toLowerCase();
+const normalizeStatus = (status = "") => {
+  if (status === "To Pay") return "pending";
+  if (status === "Processing") return "processing";
+
+  if (status === "To Pack") return "packed";
+  if (status === "Packed") return "packed";
+
+  if (status === "To Ship") return "shipped";
+  if (status === "Shipped") return "shipped";
+
+  if (status === "On the Way") return "on_the_way";
+  if (status === "To Receive") return "on_the_way";
+
+  if (status === "To Review") return "delivered";
+  if (status === "Delivered") return "delivered";
+
+  if (status === "Cancelled") return "cancelled";
+
+  if (status === "pending") return "pending";
+  if (status === "processing") return "processing";
+  if (status === "packed") return "packed";
+  if (status === "shipped") return "shipped";
+  if (status === "on_the_way") return "on_the_way";
+  if (status === "delivered") return "delivered";
+  if (status === "cancelled") return "cancelled";
+
+  return status.toString().toLowerCase();
+};
+
+const formatSriLankanPhone = (phone = "") => {
+  const digits = String(phone).replace(/[^\d]/g, "");
+
+  if (!digits) return "-";
+
+  if (digits.startsWith("94") && digits.length === 11) {
+    const number = digits.slice(2);
+    return `+94 ${number.slice(0, 2)} ${number.slice(2, 5)} ${number.slice(5)}`;
+  }
+
+  if (digits.startsWith("0") && digits.length === 10) {
+    const number = digits.slice(1);
+    return `+94 ${number.slice(0, 2)} ${number.slice(2, 5)} ${number.slice(5)}`;
+  }
+
+  if (digits.length === 9) {
+    return `+94 ${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`;
+  }
+
+  return phone;
+};
+
+const getCustomerTabStatus = (order) => {
+  const status = normalizeStatus(order.status || order.orderStatus);
+
+  if (status === "pending") return "toPay";
+  if (status === "packed") return "toPack";
+  if (status === "shipped") return "toShip";
+  if (status === "on_the_way") return "toReceive";
+  if (status === "delivered") return "toReview";
+  if (status === "cancelled") return "cancelled";
+
+  return "all";
+};
 
 const MyOrders = () => {
-  const navigate = useNavigate();
-
   const [orders, setOrders] = useState([]);
   const [error, setError] = useState("");
   const [cancelError, setCancelError] = useState("");
@@ -84,12 +147,6 @@ const MyOrders = () => {
 
   useEffect(() => {
     loadOrders();
-
-    const interval = setInterval(() => {
-      loadOrders();
-    }, 60000);
-
-    return () => clearInterval(interval);
   }, [loadOrders]);
 
   const showSuccess = (message) => {
@@ -97,12 +154,17 @@ const MyOrders = () => {
 
     setTimeout(() => {
       setSuccessMessage("");
-    }, 3000);
+    }, 1000);
   };
 
   const canCancelOrder = (status) => {
     const currentStatus = normalizeStatus(status);
-    return currentStatus === "pending" || currentStatus === "processing";
+
+    return (
+      currentStatus === "pending" ||
+      currentStatus === "processing" ||
+      currentStatus === "packed"
+    );
   };
 
   const handlePayNow = async (orderId) => {
@@ -199,13 +261,17 @@ const MyOrders = () => {
     const currentFilter = TABS[activeTab].filter;
 
     return orders.filter((order) => {
-      const status = normalizeStatus(order.status);
-      const matchesTab = currentFilter ? status === currentFilter : true;
+      const tabStatus = getCustomerTabStatus(order);
+
+      const matchesTab =
+        currentFilter === "all" ? true : tabStatus === currentFilter;
+
       const search = searchText.trim().toLowerCase();
 
       if (!search) return matchesTab;
 
       const orderId = order._id?.toLowerCase() || "";
+
       const productNames =
         order.items?.map((item) => item.name?.toLowerCase()).join(" ") || "";
 
@@ -215,6 +281,13 @@ const MyOrders = () => {
       );
     });
   }, [orders, activeTab, searchText]);
+
+  const getTabCount = (filter) => {
+    if (filter === "all") return orders.length;
+
+    return orders.filter((order) => getCustomerTabStatus(order) === filter)
+      .length;
+  };
 
   const getOrderQty = (items = []) => {
     return items.reduce((sum, item) => sum + (item.quantity || 0), 0);
@@ -232,11 +305,13 @@ const MyOrders = () => {
 
   const getMainProduct = (items = []) => {
     if (!items.length) return null;
+
     return items[0];
   };
 
   const getExtraItemCount = (items = []) => {
     if (!items.length) return 0;
+
     return items.length - 1;
   };
 
@@ -256,21 +331,25 @@ const MyOrders = () => {
 
   const getStatusLabel = (status) => {
     const currentStatus = normalizeStatus(status);
+
     return statusLabelMap[currentStatus] || status || "Pending";
   };
 
   const getStatusColor = (status) => {
     const currentStatus = normalizeStatus(status);
+
     return statusColorMap[currentStatus] || "gray";
   };
 
   const getProgressStep = (status) => {
     const currentStatus = normalizeStatus(status);
+
     return statusStepMap[currentStatus] ?? -1;
   };
 
   const renderProgress = (status, className = "") => {
     const step = getProgressStep(status);
+
     if (step < 0) return null;
 
     return (
@@ -315,9 +394,14 @@ const MyOrders = () => {
               </p>
             </div>
 
-            <button type="button" className="refresh-btn" onClick={loadOrders}>
-              <i className="ti ti-refresh"></i>
-              Refresh
+            <button
+              type="button"
+              className="refresh-btn"
+              onClick={loadOrders}
+              disabled={loading}
+            >
+              <i className={`ti ${loading ? "ti-loader-2" : "ti-refresh"}`}></i>
+              {loading ? "Loading..." : "Refresh"}
             </button>
           </div>
 
@@ -331,6 +415,7 @@ const MyOrders = () => {
           <div className="orders-toolbar">
             <div className="search-box">
               <i className="ti ti-search"></i>
+
               <input
                 type="text"
                 placeholder="Search by order ID or product name..."
@@ -341,6 +426,7 @@ const MyOrders = () => {
 
             <div className="orders-summary-chip">
               <i className="ti ti-package"></i>
+
               <span>
                 {orders.length} Order{orders.length !== 1 ? "s" : ""}
               </span>
@@ -350,12 +436,7 @@ const MyOrders = () => {
 
         <div className="orders-tabs">
           {TABS.map((tab, index) => {
-            const count =
-              tab.filter === null
-                ? orders.length
-                : orders.filter(
-                    (order) => normalizeStatus(order.status) === tab.filter
-                  ).length;
+            const count = getTabCount(tab.filter);
 
             return (
               <button
@@ -385,10 +466,10 @@ const MyOrders = () => {
           </div>
         )}
 
-        {!loading && filteredOrders.length === 0 && !error && (
+        {!loading && orders.length > 0 && filteredOrders.length === 0 && !error && (
           <div className="state-card empty-card">
             <i className="ti ti-package-off"></i>
-            <h3>No orders found</h3>
+            <h3>No matching orders found</h3>
             <p>You do not have any matching orders right now.</p>
           </div>
         )}
@@ -396,7 +477,10 @@ const MyOrders = () => {
         <div className="orders-list">
           {!loading &&
             filteredOrders.map((order) => {
-              const currentStatus = normalizeStatus(order.status);
+              const currentStatus = normalizeStatus(
+                order.status || order.orderStatus
+              );
+
               const color = getStatusColor(currentStatus);
               const mainProduct = getMainProduct(order.items);
               const extraCount = getExtraItemCount(order.items);
@@ -523,7 +607,6 @@ const MyOrders = () => {
                         {isBusy ? "Processing..." : "Pay Now"}
                       </button>
                     )}
-
                   </div>
                 </div>
               );
@@ -547,10 +630,12 @@ const MyOrders = () => {
               <div className="modal-hero-actions">
                 <span
                   className={`order-badge badge-${getStatusColor(
-                    selectedOrder.status
+                    selectedOrder.status || selectedOrder.orderStatus
                   )}`}
                 >
-                  {getStatusLabel(selectedOrder.status)}
+                  {getStatusLabel(
+                    selectedOrder.status || selectedOrder.orderStatus
+                  )}
                 </span>
 
                 <button type="button" onClick={closeModal}>
@@ -559,7 +644,10 @@ const MyOrders = () => {
               </div>
             </div>
 
-            {renderProgress(selectedOrder.status, "modal-progress")}
+            {renderProgress(
+              selectedOrder.status || selectedOrder.orderStatus,
+              "modal-progress"
+            )}
 
             <div className="modal-quick-summary">
               <div>
@@ -642,7 +730,7 @@ const MyOrders = () => {
 
                 <p>
                   <span>Phone</span>
-                  {selectedOrder.customer?.phone || "-"}
+                  {formatSriLankanPhone(selectedOrder.customer?.phone)}
                 </p>
 
                 <p>
@@ -691,7 +779,8 @@ const MyOrders = () => {
               </div>
             </div>
 
-            {normalizeStatus(selectedOrder.status) === "cancelled" && (
+            {normalizeStatus(selectedOrder.status || selectedOrder.orderStatus) ===
+              "cancelled" && (
               <div className="modal-section cancelled-details">
                 <div className="section-title-row">
                   <h3>Cancellation Details</h3>
@@ -715,7 +804,8 @@ const MyOrders = () => {
             )}
 
             <div className="modal-action-panel">
-              {normalizeStatus(selectedOrder.status) === "pending" && (
+              {normalizeStatus(selectedOrder.status || selectedOrder.orderStatus) ===
+                "pending" && (
                 <button
                   type="button"
                   className="primary-btn"
@@ -728,7 +818,8 @@ const MyOrders = () => {
                 </button>
               )}
 
-              {normalizeStatus(selectedOrder.status) === "shipped" && (
+              {normalizeStatus(selectedOrder.status || selectedOrder.orderStatus) ===
+                "on_the_way" && (
                 <button
                   type="button"
                   className="receive-btn"
@@ -740,11 +831,9 @@ const MyOrders = () => {
                     : "Order Received"}
                 </button>
               )}
-
-        
             </div>
 
-            {canCancelOrder(selectedOrder.status) && (
+            {canCancelOrder(selectedOrder.status || selectedOrder.orderStatus) && (
               <div className="modal-section cancel-section">
                 {!showCancelForm ? (
                   <div className="cancel-button-row">
@@ -762,6 +851,7 @@ const MyOrders = () => {
 
                     <div className="cancel-warning">
                       <i className="ti ti-alert-triangle"></i>
+
                       <div>
                         <strong>Please read before cancelling</strong>
                         <p>
