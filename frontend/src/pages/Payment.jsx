@@ -30,9 +30,44 @@ const Payment = () => {
     return "Home";
   };
 
-  const normalizePhone = (phone) => {
-    const cleaned = String(phone || "").replace(/[^\d]/g, "");
-    return cleaned ? `+${cleaned}` : "";
+  const normalizeSriLankanPhone = (phone = "") => {
+    const digits = String(phone).replace(/[^\d]/g, "");
+
+    if (!digits) return "";
+
+    if (digits.startsWith("94") && digits.length === 11) {
+      return `+${digits}`;
+    }
+
+    if (digits.startsWith("0") && digits.length === 10) {
+      return `+94${digits.slice(1)}`;
+    }
+
+    if (digits.length === 9) {
+      return `+94${digits}`;
+    }
+
+    return `+${digits}`;
+  };
+
+  const formatSriLankanPhone = (phone = "") => {
+    const digits = String(phone).replace(/[^\d]/g, "");
+
+    if (!digits) return "-";
+
+    let number = "";
+
+    if (digits.startsWith("94") && digits.length === 11) {
+      number = digits.slice(2);
+    } else if (digits.startsWith("0") && digits.length === 10) {
+      number = digits.slice(1);
+    } else if (digits.length === 9) {
+      number = digits;
+    } else {
+      return phone;
+    }
+
+    return `+94 ${number.slice(0, 2)} ${number.slice(2, 5)} ${number.slice(5)}`;
   };
 
   const normalizeAddressPayload = (address = {}) => {
@@ -54,9 +89,11 @@ const Payment = () => {
       ...address,
       fullName: address.fullName || "",
       email: address.email || "",
-      phone: normalizePhone(address.phone || address.phoneNumber1),
-      phoneNumber1: normalizePhone(address.phoneNumber1 || address.phone),
-      phoneNumber2: normalizePhone(address.phoneNumber2),
+      phone: normalizeSriLankanPhone(address.phone || address.phoneNumber1),
+      phoneNumber1: normalizeSriLankanPhone(
+        address.phoneNumber1 || address.phone
+      ),
+      phoneNumber2: normalizeSriLankanPhone(address.phoneNumber2),
       addressType: normalizeAddressType(address.addressType),
       addressLine: addressLine1,
       addressLine1,
@@ -67,6 +104,7 @@ const Payment = () => {
       address: address.address || fullAddress,
     };
   };
+
   useEffect(() => {
     const scriptId = "payhere-script";
 
@@ -106,6 +144,7 @@ const Payment = () => {
     } else {
       setSelectedPaymentMethod(savedDraft.paymentMethod || "Cash on Delivery");
     }
+
     loadDefaultBillingAddress();
   }, [navigate]);
 
@@ -148,33 +187,6 @@ const Payment = () => {
   const validatePayment = () => {
     if (!orderDraft) return "Order details not found.";
 
-    if (selectedPaymentMethod === "Online Payment") {
-      if (!paymentDetails.cardName.trim()) {
-        return "Card holder name is required.";
-      }
-
-      const cardNumberDigits = paymentDetails.cardNumber.replace(/\D/g, "");
-      if (!cardNumberDigits || cardNumberDigits.length < 12) {
-        return "Please enter a valid card number.";
-      }
-
-      if (!paymentDetails.expiryDate.trim()) {
-        return "Expiry date is required.";
-      }
-
-      if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(paymentDetails.expiryDate)) {
-        return "Expiry date must be in MM/YY format.";
-      }
-
-      if (!paymentDetails.cvv.trim()) {
-        return "CVV is required.";
-      }
-
-      if (paymentDetails.cvv.length < 3) {
-        return "Please enter a valid CVV.";
-      }
-    }
-
     return "";
   };
 
@@ -197,9 +209,11 @@ const Payment = () => {
       setError("");
 
       const normalizedCustomer = normalizeAddressPayload(orderDraft.customer);
+
       const normalizedShippingAddress = normalizeAddressPayload(
         orderDraft.shippingAddress || orderDraft.customer
       );
+
       const normalizedBillingAddress = normalizeAddressPayload(
         orderDraft.billingAddress || orderDraft.customer
       );
@@ -225,8 +239,7 @@ const Payment = () => {
 
         paymentMethod: selectedPaymentMethod,
         paymentStatus: "Pending",
-        orderStatus:
-          selectedPaymentMethod === "Cash on Delivery" ? "To Ship" : "To Pay",
+        orderStatus: "To Pack",
       };
 
       const { data } = await API.post("/orders", finalOrderData);
@@ -240,7 +253,7 @@ const Payment = () => {
           total: orderDraft.total,
           paymentMethod: selectedPaymentMethod,
           customerName: orderDraft.customer.fullName,
-          orderStatus: "To Ship",
+          orderStatus: "To Pack",
         });
 
         return;
@@ -270,7 +283,7 @@ const Payment = () => {
           total: orderDraft.total,
           paymentMethod: "PayHere",
           customerName: orderDraft.customer.fullName,
-          orderStatus: "To Ship",
+          orderStatus: "To Pack",
         });
       };
 
@@ -297,7 +310,7 @@ const Payment = () => {
         first_name: orderDraft.customer.fullName,
         last_name: "",
         email: orderDraft.customer.email,
-        phone: orderDraft.customer.phone,
+        phone: normalizeSriLankanPhone(orderDraft.customer.phone),
         address: `${orderDraft.customer.addressLine1}, ${orderDraft.customer.addressLine2}`,
         city: orderDraft.customer.city,
         country: "Sri Lanka",
@@ -309,18 +322,21 @@ const Payment = () => {
 
       window.payhere.startPayment(payment);
     } catch (err) {
-        console.log("ORDER ERROR FULL:", err);
-        console.log("ORDER ERROR DATA:", JSON.stringify(err.response?.data, null, 2));
+      console.log("ORDER ERROR FULL:", err);
+      console.log(
+        "ORDER ERROR DATA:",
+        JSON.stringify(err.response?.data, null, 2)
+      );
 
-        setError(
-            err.response?.data?.message ||
-              err.response?.data?.error ||
-              err.message ||
-              "Failed to confirm order. Please try again."
-          );
+      setError(
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          err.message ||
+          "Failed to confirm order. Please try again."
+      );
 
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }finally {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } finally {
       setPlacingOrder(false);
     }
   };
@@ -354,7 +370,9 @@ const Payment = () => {
 
               <div>
                 <span>Total Amount</span>
-                <strong>Rs. {Number(orderSuccess.total).toLocaleString()}</strong>
+                <strong>
+                  Rs. {Number(orderSuccess.total).toLocaleString()}
+                </strong>
               </div>
 
               <div>
@@ -458,7 +476,7 @@ const Payment = () => {
 
                 <div className="customer-detail-item">
                   <span>Phone Number</span>
-                  <strong>{displayCustomer.phone || "-"}</strong>
+                  <strong>{formatSriLankanPhone(displayCustomer.phone)}</strong>
                 </div>
               </div>
             </section>
@@ -475,12 +493,12 @@ const Payment = () => {
                 <div className="payment-delivery-type">
                   <i
                     className={
-                      displayCustomer.addressType === "OFFICE"
+                      displayCustomer.addressType === "Office"
                         ? "ti ti-building"
                         : "ti ti-home"
                     }
                   ></i>
-                  {displayCustomer.addressType === "OFFICE" ? "Office" : "Home"}
+                  {displayCustomer.addressType === "Office" ? "Office" : "Home"}
                 </div>
 
                 <div className="payment-delivery-main">
@@ -518,13 +536,7 @@ const Payment = () => {
                   <i className="ti ti-receipt"></i>
                   <span>
                     Billing address is saved as{" "}
-                    <b>
-                      {normalizeAddressType(billingAddress.addressType) ===
-                      "OFFICE"
-                        ? "Office"
-                        : "Home"}
-                    </b>
-                    .
+                    <b>{normalizeAddressType(billingAddress.addressType)}</b>.
                   </span>
                 </div>
               )}
@@ -589,8 +601,6 @@ const Payment = () => {
                   </div>
                 </label>
               </div>
-
-        
             </section>
           </main>
 

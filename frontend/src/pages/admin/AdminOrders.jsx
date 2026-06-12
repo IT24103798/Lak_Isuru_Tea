@@ -3,9 +3,10 @@ import API from "../../api/api";
 import "../../styles/AdminOrders.css";
 
 const statusLabelMap = {
-  processing: "To Ship",
+  processing: "To Pack",
   packed: "To Pack",
-  shipped: "To Receive",
+  shipped: "To Ship",
+  on_the_way: "To Receive",
   delivered: "Delivered",
   cancelled: "Cancelled",
 };
@@ -14,55 +15,136 @@ const statusColorMap = {
   processing: "blue",
   packed: "orange",
   shipped: "purple",
+  on_the_way: "blue",
   delivered: "green",
   cancelled: "red",
 };
 
 const statusOptions = [
   { value: "all", label: "All Orders" },
-  { value: "processing", label: "To Ship" },
   { value: "packed", label: "To Pack" },
-  { value: "shipped", label: "To Receive" },
+  { value: "shipped", label: "To Ship" },
+  { value: "on_the_way", label: "To Receive" },
   { value: "delivered", label: "Delivered" },
   { value: "cancelled", label: "Cancelled" },
 ];
 
+const normalizeStatus = (status = "") => {
+  if (!status) return "packed";
+
+  if (status === "To Pay") return "pending";
+  if (status === "Processing") return "packed";
+
+  if (status === "To Pack") return "packed";
+  if (status === "Packed") return "packed";
+
+  if (status === "To Ship") return "shipped";
+  if (status === "Shipped") return "shipped";
+
+  if (status === "To Receive") return "on_the_way";
+  if (status === "On the Way") return "on_the_way";
+
+  if (status === "Delivered") return "delivered";
+  if (status === "To Review") return "delivered";
+
+  if (status === "Cancelled") return "cancelled";
+
+  if (status === "pending") return "pending";
+  if (status === "processing") return "packed";
+  if (status === "packed") return "packed";
+  if (status === "shipped") return "shipped";
+  if (status === "on_the_way") return "on_the_way";
+  if (status === "delivered") return "delivered";
+  if (status === "cancelled") return "cancelled";
+
+  return status.toString().toLowerCase();
+};
+
+const formatSriLankanPhone = (phone = "") => {
+  const digits = String(phone).replace(/[^\d]/g, "");
+
+  if (!digits) return "-";
+
+  if (digits.startsWith("94") && digits.length === 11) {
+    const number = digits.slice(2);
+    return `+94 ${number.slice(0, 2)} ${number.slice(2, 5)} ${number.slice(5)}`;
+  }
+
+  if (digits.startsWith("0") && digits.length === 10) {
+    const number = digits.slice(1);
+    return `+94 ${number.slice(0, 2)} ${number.slice(2, 5)} ${number.slice(5)}`;
+  }
+
+  if (digits.length === 9) {
+    return `+94 ${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`;
+  }
+
+  return phone;
+};
+
 const getNextStatusOptions = (currentStatus) => {
-  if (currentStatus === "processing") {
+  const status = normalizeStatus(currentStatus);
+
+  if (status === "pending") {
     return [
-      { value: "processing", label: "To Ship" },
+      { value: "pending", label: "To Pay" },
       { value: "packed", label: "To Pack" },
     ];
   }
 
-  if (currentStatus === "packed") {
+  if (status === "packed") {
     return [
       { value: "packed", label: "To Pack" },
-      { value: "shipped", label: "To Receive" },
+      { value: "shipped", label: "To Ship" },
     ];
   }
 
-  if (currentStatus === "shipped") {
+  if (status === "shipped") {
     return [
-      { value: "shipped", label: "To Receive" },
+      { value: "shipped", label: "To Ship" },
+      { value: "on_the_way", label: "To Receive" },
+    ];
+  }
+
+  if (status === "on_the_way") {
+    return [
+      { value: "on_the_way", label: "To Receive" },
       { value: "delivered", label: "Delivered" },
     ];
   }
 
-  if (currentStatus === "delivered") {
+  if (status === "delivered") {
     return [{ value: "delivered", label: "Delivered" }];
   }
 
-  if (currentStatus === "cancelled") {
+  if (status === "cancelled") {
     return [{ value: "cancelled", label: "Cancelled" }];
   }
 
   return [
-    {
-      value: currentStatus,
-      label: statusLabelMap[currentStatus] || currentStatus,
-    },
+    { value: "packed", label: "To Pack" },
+    { value: "shipped", label: "To Ship" },
   ];
+};
+
+const getOrderStatus = (order) => {
+  return normalizeStatus(order?.status || order?.orderStatus);
+};
+
+const getCancelAccessText = (status) => {
+  if (status === "packed") return "Can cancel before shipping";
+
+  if (
+    status === "shipped" ||
+    status === "on_the_way" ||
+    status === "delivered"
+  ) {
+    return "Disabled after shipping";
+  }
+
+  if (status === "cancelled") return "Already cancelled";
+
+  return "Can cancel";
 };
 
 const AdminOrders = () => {
@@ -89,6 +171,7 @@ const AdminOrders = () => {
       setOrders(data.orders || []);
       setError("");
     } catch (err) {
+      console.log("ADMIN ORDERS LOAD ERROR:", err.response?.data || err.message);
       setError(err.response?.data?.message || "Failed to load admin orders.");
     } finally {
       setLoading(false);
@@ -156,22 +239,27 @@ const AdminOrders = () => {
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
+      const normalizedStatus = getOrderStatus(order);
+
       const matchesStatus =
-        filterStatus === "all" ? true : order.status === filterStatus;
+        filterStatus === "all" ? true : normalizedStatus === filterStatus;
 
       const search = searchText.trim().toLowerCase();
 
       if (!search) return matchesStatus;
 
       const orderId = order._id?.toLowerCase() || "";
+
       const customerName =
         order.customer?.fullName?.toLowerCase() ||
         order.user?.name?.toLowerCase() ||
         "";
+
       const customerEmail =
         order.customer?.email?.toLowerCase() ||
         order.user?.email?.toLowerCase() ||
         "";
+
       const productNames =
         order.items?.map((item) => item.name?.toLowerCase()).join(" ") || "";
 
@@ -188,25 +276,33 @@ const AdminOrders = () => {
   const summary = useMemo(() => {
     return {
       total: orders.length,
-      processing: orders.filter((order) => order.status === "processing").length,
-      packed: orders.filter((order) => order.status === "packed").length,
-      shipped: orders.filter((order) => order.status === "shipped").length,
-      delivered: orders.filter((order) => order.status === "delivered").length,
-      cancelled: orders.filter((order) => order.status === "cancelled").length,
+      packed: orders.filter((order) => getOrderStatus(order) === "packed")
+        .length,
+      shipped: orders.filter((order) => getOrderStatus(order) === "shipped")
+        .length,
+      onTheWay: orders.filter((order) => getOrderStatus(order) === "on_the_way")
+        .length,
+      delivered: orders.filter((order) => getOrderStatus(order) === "delivered")
+        .length,
+      cancelled: orders.filter((order) => getOrderStatus(order) === "cancelled")
+        .length,
     };
   }, [orders]);
 
   const updateStatus = async (orderId, currentStatus) => {
-    const newStatus = selectedStatus[orderId] || currentStatus;
+    const normalizedCurrentStatus = normalizeStatus(currentStatus);
+    const newStatus = selectedStatus[orderId] || normalizedCurrentStatus;
 
     if (!newStatus) {
       setError("Please select a status.");
       return;
     }
 
-    if (newStatus === currentStatus) {
+    if (newStatus === normalizedCurrentStatus) {
       setError(
-        `This order is already marked as ${statusLabelMap[currentStatus]}.`
+        `This order is already marked as ${
+          statusLabelMap[normalizedCurrentStatus] || normalizedCurrentStatus
+        }.`
       );
       return;
     }
@@ -215,6 +311,12 @@ const AdminOrders = () => {
       setActionLoading(orderId);
       setError("");
 
+      console.log("SENDING STATUS UPDATE:", {
+        orderId,
+        currentStatus: normalizedCurrentStatus,
+        newStatus,
+      });
+
       await API.put(`/orders/${orderId}/status`, {
         status: newStatus,
       });
@@ -222,17 +324,25 @@ const AdminOrders = () => {
       await loadOrders();
 
       if (newStatus === "packed") {
-        showSuccess(
-          "Order marked as To Pack. Customer cancellation is now disabled."
-        );
+        showSuccess("Order marked as To Pack.");
       } else if (newStatus === "shipped") {
+        showSuccess("Order marked as To Ship.");
+      } else if (newStatus === "on_the_way") {
         showSuccess("Order marked as To Receive.");
       } else if (newStatus === "delivered") {
         showSuccess("Order marked as Delivered. Order completed.");
       } else {
         showSuccess("Order status updated successfully.");
       }
+
+      setSelectedStatus((prev) => {
+        const updated = { ...prev };
+        delete updated[orderId];
+        return updated;
+      });
     } catch (err) {
+      console.log("STATUS UPDATE ERROR:", err.response?.data || err.message);
+
       setError(err.response?.data?.message || "Failed to update order status.");
     } finally {
       setActionLoading("");
@@ -280,19 +390,10 @@ const AdminOrders = () => {
           <div className="summary-icon">
             <i className="ti ti-packages"></i>
           </div>
+
           <div>
             <span>Total Orders</span>
             <strong>{summary.total}</strong>
-          </div>
-        </div>
-
-        <div className="admin-summary-card ship">
-          <div className="summary-icon">
-            <i className="ti ti-truck-delivery"></i>
-          </div>
-          <div>
-            <span>To Ship</span>
-            <strong>{summary.processing}</strong>
           </div>
         </div>
 
@@ -300,19 +401,32 @@ const AdminOrders = () => {
           <div className="summary-icon">
             <i className="ti ti-box"></i>
           </div>
+
           <div>
             <span>To Pack</span>
             <strong>{summary.packed}</strong>
           </div>
         </div>
 
+        <div className="admin-summary-card ship">
+          <div className="summary-icon">
+            <i className="ti ti-truck-delivery"></i>
+          </div>
+
+          <div>
+            <span>To Ship</span>
+            <strong>{summary.shipped}</strong>
+          </div>
+        </div>
+
         <div className="admin-summary-card receive">
           <div className="summary-icon">
-            <i className="ti ti-box-seam"></i>
+            <i className="ti ti-route"></i>
           </div>
+
           <div>
             <span>To Receive</span>
-            <strong>{summary.shipped}</strong>
+            <strong>{summary.onTheWay}</strong>
           </div>
         </div>
 
@@ -320,9 +434,21 @@ const AdminOrders = () => {
           <div className="summary-icon">
             <i className="ti ti-circle-check"></i>
           </div>
+
           <div>
             <span>Delivered</span>
             <strong>{summary.delivered}</strong>
+          </div>
+        </div>
+
+        <div className="admin-summary-card cancelled">
+          <div className="summary-icon">
+            <i className="ti ti-circle-x"></i>
+          </div>
+
+          <div>
+            <span>Cancelled</span>
+            <strong>{summary.cancelled}</strong>
           </div>
         </div>
       </div>
@@ -330,6 +456,7 @@ const AdminOrders = () => {
       <div className="admin-orders-toolbar">
         <div className="admin-search-box">
           <i className="ti ti-search"></i>
+
           <input
             type="text"
             placeholder="Search by order ID, customer, email, or product..."
@@ -375,27 +502,30 @@ const AdminOrders = () => {
         {filteredOrders.map((order) => {
           const mainProduct = getMainProduct(order.items);
           const extraCount = getExtraItemCount(order.items);
-          const color = statusColorMap[order.status] || "gray";
+
+          const normalizedOrderStatus = getOrderStatus(order);
+          const color = statusColorMap[normalizedOrderStatus] || "gray";
 
           const isBusy = actionLoading === order._id;
-          const isCancelled = order.status === "cancelled";
-          const isDelivered = order.status === "delivered";
-          const isPacked = order.status === "packed";
-          const isShipped = order.status === "shipped";
-          const isProcessing = order.status === "processing";
+          const isCancelled = normalizedOrderStatus === "cancelled";
+          const isDelivered = normalizedOrderStatus === "delivered";
+          const isPacked = normalizedOrderStatus === "packed";
+          const isShipped = normalizedOrderStatus === "shipped";
+          const isOnTheWay = normalizedOrderStatus === "on_the_way";
 
           const cancelDisabled =
-            isPacked || isShipped || isDelivered || isCancelled;
+            isShipped || isOnTheWay || isDelivered || isCancelled;
 
           const currentSelectedStatus =
-            selectedStatus[order._id] || order.status;
+            selectedStatus[order._id] || normalizedOrderStatus;
 
-          const statusNotChanged = currentSelectedStatus === order.status;
+          const statusNotChanged =
+            currentSelectedStatus === normalizedOrderStatus;
 
           const disableUpdateButton =
             isBusy || isCancelled || isDelivered || statusNotChanged;
 
-          const dropdownOptions = getNextStatusOptions(order.status);
+          const dropdownOptions = getNextStatusOptions(normalizedOrderStatus);
 
           return (
             <div className="admin-order-card compact" key={order._id}>
@@ -431,17 +561,17 @@ const AdminOrders = () => {
                 <div className="admin-order-status-block">
                   <div className="admin-top-status-row">
                     <span className={`admin-status-badge badge-${color}`}>
-                      {statusLabelMap[order.status] || order.status}
+                      {statusLabelMap[normalizedOrderStatus] ||
+                        normalizedOrderStatus}
                     </span>
 
                     <div className="top-cancel-access">
                       <span>Cancel Access</span>
+
                       <strong className={cancelDisabled ? "blocked" : "allowed"}>
                         {isCancelled
                           ? "Already Cancelled"
-                          : isPacked
-                          ? "Disabled after To Pack"
-                          : isShipped || isDelivered
+                          : cancelDisabled
                           ? "Disabled"
                           : "Allowed"}
                       </strong>
@@ -452,22 +582,21 @@ const AdminOrders = () => {
                 </div>
               </div>
 
-              {isProcessing && (
-                <div className="admin-info-message">
-                  🧾 New order received. Prepare this order for packing.
-                </div>
-              )}
-
               {isPacked && (
                 <div className="admin-info-message">
-                  📦 Order is ready to pack/dispatch. Customer cancellation is
-                  disabled.
+                  📦 Order is waiting to be shipped.
                 </div>
               )}
 
               {isShipped && (
                 <div className="admin-warning-message">
-                  🚚 Order shipped. Waiting for customer to receive.
+                  🚚 Order is ready to move to To Receive.
+                </div>
+              )}
+
+              {isOnTheWay && (
+                <div className="admin-warning-message">
+                  🛣️ Order is now under To Receive. Next step is Delivered.
                 </div>
               )}
 
@@ -521,7 +650,7 @@ const AdminOrders = () => {
                 <button
                   type="button"
                   disabled={disableUpdateButton}
-                  onClick={() => updateStatus(order._id, order.status)}
+                  onClick={() => updateStatus(order._id, normalizedOrderStatus)}
                 >
                   {isBusy
                     ? "Updating..."
@@ -574,7 +703,7 @@ const AdminOrders = () => {
 
                 <p>
                   <span>Phone</span>
-                  {selectedOrder.customer?.phone || "-"}
+                  {formatSriLankanPhone(selectedOrder.customer?.phone)}
                 </p>
 
                 <p>
@@ -659,22 +788,15 @@ const AdminOrders = () => {
                 <div>
                   <span>Current Status</span>
                   <strong>
-                    {statusLabelMap[selectedOrder.status] ||
-                      selectedOrder.status}
+                    {statusLabelMap[getOrderStatus(selectedOrder)] ||
+                      getOrderStatus(selectedOrder)}
                   </strong>
                 </div>
 
                 <div>
                   <span>Cancel Access</span>
                   <strong>
-                    {selectedOrder.status === "packed"
-                      ? "Disabled after To Pack"
-                      : selectedOrder.status === "shipped" ||
-                        selectedOrder.status === "delivered"
-                      ? "Disabled after shipping"
-                      : selectedOrder.status === "cancelled"
-                      ? "Already cancelled"
-                      : "Customer can cancel"}
+                    {getCancelAccessText(getOrderStatus(selectedOrder))}
                   </strong>
                 </div>
 
@@ -687,7 +809,7 @@ const AdminOrders = () => {
               </div>
             </div>
 
-            {selectedOrder.status === "cancelled" && (
+            {getOrderStatus(selectedOrder) === "cancelled" && (
               <div className="admin-modal-section">
                 <h3>Cancellation Details</h3>
 
@@ -707,6 +829,14 @@ const AdminOrders = () => {
                     <span>Note:</span>{" "}
                     {selectedOrder.cancelNote || "No additional note."}
                   </p>
+                </div>
+              </div>
+            )}
+
+            {getOrderStatus(selectedOrder) === "delivered" && (
+              <div className="admin-modal-section">
+                <div className="admin-success-message">
+                  ✅ Customer received this order. Order completed.
                 </div>
               </div>
             )}
