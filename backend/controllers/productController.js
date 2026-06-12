@@ -34,21 +34,28 @@ export const getProducts = async (req, res) => {
     const canViewHidden = req.user?.role === "admin" && req.query.includeHidden === "true";
     const productFilter = canViewHidden ? {} : { isHidden: { $ne: true } };
     const products = await Product.find(productFilter).sort({ createdAt: -1 }).lean();
-    const salesTotals = await Order.aggregate([
-      { $match: { status: { $nin: ["cancelled", "returned"] } } },
-      { $unwind: "$items" },
-      {
-        $group: {
-          _id: "$items.product",
-          soldQuantity: { $sum: "$items.quantity" },
+    const productIds = products.map((product) => product._id);
+    const salesTotals = productIds.length
+      ? await Order.aggregate([
+        {
+          $match: {
+            status: { $nin: ["cancelled", "returned"] },
+            "items.product": { $in: productIds },
+          },
         },
-      },
-      { $sort: { soldQuantity: -1 } },
-    ]);
-    const visibleProductIds = new Set(products.map((product) => product._id.toString()));
+        { $unwind: "$items" },
+        { $match: { "items.product": { $in: productIds } } },
+        {
+          $group: {
+            _id: "$items.product",
+            soldQuantity: { $sum: "$items.quantity" },
+          },
+        },
+        { $sort: { soldQuantity: -1 } },
+      ])
+      : [];
     const topSellingIds = new Set(
       salesTotals
-        .filter((item) => visibleProductIds.has(item._id?.toString()))
         .slice(0, TOP_SELLING_LIMIT)
         .map((item) => item._id?.toString())
     );
@@ -82,6 +89,41 @@ export const getProductById = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Server error while loading product",
+      error: error.message,
+    });
+  }
+};
+
+export const getRelatedProducts = async (req, res) => {
+  try {
+    const currentProduct = await Product.findById(req.params.id).lean();
+
+    if (!currentProduct || (currentProduct.isHidden && req.user?.role !== "admin")) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const canViewHidden = req.user?.role === "admin";
+    const relatedFilter = {
+      _id: { $ne: currentProduct._id },
+      $or: [
+        { category: currentProduct.category },
+        { subcategory: currentProduct.subcategory },
+      ],
+    };
+
+    if (!canViewHidden) {
+      relatedFilter.isHidden = { $ne: true };
+    }
+
+    const products = await Product.find(relatedFilter)
+      .sort({ createdAt: -1 })
+      .limit(4)
+      .lean();
+
+    res.status(200).json({ products });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error while loading related products",
       error: error.message,
     });
   }

@@ -268,6 +268,10 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+orderSchema.index({ user: 1, createdAt: -1 });
+orderSchema.index({ user: 1, status: 1, createdAt: -1 });
+orderSchema.index({ status: 1, "items.product": 1 });
+
 const Order = mongoose.model("Order", orderSchema);
 
 export default Order;

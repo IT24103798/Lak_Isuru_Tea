@@ -6,6 +6,7 @@ import {
   deleteProductReview,
   getProductById,
   getProducts,
+  getRelatedProducts,
   getReviewEligibility,
   updateProductVisibility,
   updateProductReview,
@@ -16,6 +17,7 @@ import { admin, optionalProtect, protect } from "../middleware/authMiddleware.js
 const router = express.Router();
 
 router.route("/").get(optionalProtect, getProducts).post(protect, admin, createProduct);
+router.get("/:id/related", optionalProtect, getRelatedProducts);
 router
   .route("/:id")
   .get(optionalProtect, getProductById)

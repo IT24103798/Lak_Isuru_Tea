@@ -1,38 +1,60 @@
 import { useEffect, useState, useCallback } from "react";
-import API from "../api/api";
+import { useAppData } from "../context/AppDataContext";
 import "../styles/MyOrders.css";
 
+const CANCELLATIONS_REFRESH_INTERVAL = 90000;
+
 const MyCancellations = () => {
-  const [cancellations, setCancellations] = useState([]);
+  const {
+    cancellations,
+    cancellationsLoaded,
+    cancellationsError,
+    loadCancellations,
+  } = useAppData();
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const loading = !cancellationsLoaded;
+  const displayError = error || cancellationsError;
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
-  const loadCancellations = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
+  const handleRefreshCancellations = useCallback(() => {
+    setRefreshing(true);
+    setError("");
 
-      const { data } = await API.get("/orders/cancellations");
-
-      console.log("CANCELLATIONS RESPONSE:", data);
-
-      setCancellations(data.cancellations || []);
-    } catch (err) {
-      console.log("CANCELLATIONS ERROR:", err.response?.data || err.message);
-
-      setError(
-        err.response?.data?.message ||
-          "Failed to load cancellations. Please login again."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    loadCancellations({
+      force: true,
+      forceFresh: true,
+    })
+      .catch((err) => {
+        setError(
+          err.response?.data?.message ||
+            "Failed to load cancellations. Please login again."
+        );
+      })
+      .finally(() => {
+        setRefreshing(false);
+      });
+  }, [loadCancellations]);
 
   useEffect(() => {
-    loadCancellations();
-  }, [loadCancellations]);
+    if (!cancellationsLoaded) {
+      loadCancellations()
+        .catch((err) => {
+          setError(
+            err.response?.data?.message ||
+              "Failed to load cancellations. Please login again."
+          );
+        });
+    }
+
+    const interval = setInterval(() => {
+      loadCancellations({ force: true }).catch(() => {});
+    }, CANCELLATIONS_REFRESH_INTERVAL);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [cancellationsLoaded, loadCancellations]);
 
   const formatDate = (date) => {
     if (!date) return "-";
@@ -71,7 +93,6 @@ const MyCancellations = () => {
   };
 
   const openCancelDetails = (order) => {
-    console.log("OPEN CANCEL DETAILS:", order);
     setSelectedOrder(order);
   };
 
@@ -93,10 +114,11 @@ const MyCancellations = () => {
           <button
             type="button"
             className="refresh-btn"
-            onClick={loadCancellations}
+            onClick={handleRefreshCancellations}
+            disabled={refreshing}
           >
             <i className="ti ti-refresh"></i>
-            Refresh
+            {refreshing ? "Refreshing..." : "Refresh"}
           </button>
         </div>
 
@@ -113,21 +135,21 @@ const MyCancellations = () => {
           </div>
         </div>
 
-        {error && (
+        {displayError && (
           <div className="state-card error-card">
             <i className="ti ti-alert-circle"></i>
-            <p>{error}</p>
+            <p>{displayError}</p>
           </div>
         )}
 
-        {loading && (
+        {loading && cancellations.length === 0 && (
           <div className="state-card loading-card">
             <i className="ti ti-loader-2"></i>
             <p>Loading your cancellations...</p>
           </div>
         )}
 
-        {!loading && cancellations.length === 0 && !error && (
+        {cancellationsLoaded && cancellations.length === 0 && !displayError && (
           <div className="state-card empty-card">
             <i className="ti ti-package-off"></i>
             <h3>No cancellations found</h3>
@@ -135,7 +157,7 @@ const MyCancellations = () => {
           </div>
         )}
 
-        {!loading && cancellations.length > 0 && (
+        {cancellations.length > 0 && (
           <div className="orders-list">
             {cancellations.map((order) => {
               const mainProduct = getMainProduct(order.items);
@@ -198,10 +220,6 @@ const MyCancellations = () => {
 
                     <div className="order-right-block">
                       <span className="order-badge badge-gray">Cancelled</span>
-
-                      <div className="order-total">
-                        Rs. {(order.totalPrice || 0).toLocaleString()}
-                      </div>
                     </div>
                   </div>
 

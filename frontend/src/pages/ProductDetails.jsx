@@ -2,11 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import API from "../api/api";
 import ProductCard from "../components/ProductCard";
+import { useAppData } from "../context/AppDataContext";
 import {
   addProductReview,
   deleteProductReview,
-  getAllProducts,
-  getProductById,
   getReviewEligibility,
   updateProductReview,
 } from "../services/productService";
@@ -16,19 +15,34 @@ function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const user = useMemo(() => JSON.parse(localStorage.getItem("userInfo")), []);
+  const {
+    products,
+    productDetailsById,
+    relatedProductsById,
+    loadProductDetails,
+    loadCart,
+  } = useAppData();
+  const cachedProduct = useMemo(
+    () =>
+      productDetailsById[id] ||
+      products.find((currentProduct) => currentProduct._id === id) ||
+      null,
+    [id, productDetailsById, products]
+  );
 
-  const [product, setProduct] = useState(null);
+  const [productOverride, setProductOverride] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
   const [cartMessage, setCartMessage] = useState("");
+  const [cartMessageType, setCartMessageType] = useState("success");
   const [reviewEligibility, setReviewEligibility] = useState(null);
   const [checkingReviewEligibility, setCheckingReviewEligibility] = useState(Boolean(user));
   const [editingReviewId, setEditingReviewId] = useState(null);
-  const [relatedProducts, setRelatedProducts] = useState([]);
+  const product = productOverride || cachedProduct;
+  const relatedProducts = relatedProductsById[id] || [];
 
   const reviews = useMemo(() => product?.reviews || [], [product]);
   const writtenReviews = useMemo(
@@ -37,40 +51,34 @@ function ProductDetails() {
   );
 
   useEffect(() => {
+    let isActive = true;
+
     const loadProduct = async () => {
       try {
-        setLoading(true);
-        const data = await getProductById(id);
-        const currentProduct = data.product;
+        const currentProduct = await loadProductDetails(id);
 
-        setProduct(currentProduct);
+        if (!isActive) {
+          return;
+        }
+
+        setProductOverride(currentProduct);
         setQuantity(currentProduct.stock > 0 ? 1 : 0);
         setError("");
-
-        try {
-          const productsData = await getAllProducts();
-          const recommendations = (productsData.products || [])
-            .filter((relatedProduct) => relatedProduct._id !== currentProduct._id)
-            .filter(
-              (relatedProduct) =>
-                relatedProduct.category === currentProduct.category ||
-                relatedProduct.subcategory === currentProduct.subcategory
-            )
-            .slice(0, 4);
-
-          setRelatedProducts(recommendations);
-        } catch {
-          setRelatedProducts([]);
-        }
       } catch {
-        setError("Failed to load product details. Please try again.");
-      } finally {
-        setLoading(false);
+        if (isActive) {
+          setError("Failed to load product details. Please try again.");
+        }
       }
     };
 
-    loadProduct();
-  }, [id]);
+    if (!productDetailsById[id]) {
+      loadProduct();
+    }
+
+    return () => {
+      isActive = false;
+    };
+  }, [cachedProduct, id, loadProductDetails, productDetailsById]);
 
   useEffect(() => {
     if (!product || !user || user.role === "admin") {
@@ -201,13 +209,19 @@ function ProductDetails() {
       return;
     }
 
+    setCartMessageType("pending");
+    setCartMessage(`Adding ${quantity} × ${product.name} to cart...`);
+
     try {
       await API.post("/cart", getCartPayload());
+      loadCart({ force: true }).catch(() => {});
 
+      setCartMessageType("success");
       setCartMessage(`✓ ${quantity} × ${product.name} added to cart!`);
       setQuantity(product.stock > 0 ? 1 : 0);
       setTimeout(() => setCartMessage(""), 3000);
     } catch (error) {
+      setCartMessage("");
       alert(
         error.response?.data?.message ||
           "Failed to add to cart. Please try again."
@@ -252,7 +266,7 @@ function ProductDetails() {
         ? await updateProductReview(product._id, editingReviewId, reviewPayload)
         : await addProductReview(product._id, reviewPayload);
 
-      setProduct(data.product);
+      setProductOverride(data.product);
       setReviewEligibility({ canReview: false, hasPurchased: true, hasReviewed: true });
       setEditingReviewId(null);
       setRating(5);
@@ -285,7 +299,7 @@ function ProductDetails() {
     try {
       const data = await deleteProductReview(product._id, reviewId);
 
-      setProduct(data.product);
+      setProductOverride(data.product);
       setReviewEligibility({ canReview: true, hasPurchased: true, hasReviewed: false });
 
       if (editingReviewId === reviewId) {
@@ -296,25 +310,19 @@ function ProductDetails() {
     }
   };
 
-  if (loading) {
+  if (error) {
     return (
       <div className="details-page">
         <main className="details-not-found">
-          <h1>Loading product...</h1>
+          <h1>{error}</h1>
+          <Link to="/">Back to products</Link>
         </main>
       </div>
     );
   }
 
-  if (error || !product) {
-    return (
-      <div className="details-page">
-        <main className="details-not-found">
-          <h1>{error || "Product not found"}</h1>
-          <Link to="/">Back to products</Link>
-        </main>
-      </div>
-    );
+  if (!product) {
+    return <div className="details-page" />;
   }
 
   return (
@@ -388,14 +396,7 @@ function ProductDetails() {
               </div>
 
               {cartMessage && (
-                <p
-                  style={{
-                    color: "#0f6e56",
-                    fontWeight: 600,
-                    marginTop: "0.8rem",
-                    fontSize: "0.9rem",
-                  }}
-                >
+                <p className={`cart-message cart-message-${cartMessageType}`}>
                   {cartMessage}
                 </p>
               )}

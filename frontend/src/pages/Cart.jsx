@@ -1,12 +1,17 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import API from "../api/api";
+import { useAppData } from "../context/AppDataContext";
 import { useNavigate } from "react-router-dom";
 import "../styles/Cart.css";
 
 const Cart = () => {
-  const [cart, setCart] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const {
+    cart,
+    cartLoaded,
+    cartError,
+    loadCart,
+    updateCart,
+  } = useAppData();
   const [selectedItems, setSelectedItems] = useState([]);
 
   const [removePopup, setRemovePopup] = useState({
@@ -17,21 +22,11 @@ const Cart = () => {
 
   const navigate = useNavigate();
 
-  const loadCart = useCallback(async () => {
-    try {
-      const { data } = await API.get("/cart");
-      setCart(data.cart || []);
-      setError("");
-    } catch (err) {
-      setError("Failed to load cart.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    loadCart();
-  }, [loadCart]);
+    if (!cartLoaded) {
+      loadCart().catch(() => {});
+    }
+  }, [cartLoaded, loadCart]);
 
   const handleSelectItem = (productId) => {
     setSelectedItems((prevSelected) => {
@@ -85,12 +80,12 @@ const Cart = () => {
         selectedItems.map((productId) => API.delete(`/cart/${productId}`))
       );
 
-      setCart((prevCart) =>
+      updateCart((prevCart) =>
         prevCart.filter((item) => !selectedItems.includes(item.productId))
       );
 
       setSelectedItems([]);
-    } catch (error) {
+    } catch {
       alert("Failed to delete selected items.");
     }
   };
@@ -121,13 +116,13 @@ const Cart = () => {
     try {
       await API.put("/cart", { productId, quantity });
 
-      setCart((prev) =>
+      updateCart((prev) =>
         prev.map((item) =>
           item.productId === productId ? { ...item, quantity } : item
         )
       );
-    } catch (err) {
-      setError("Failed to update quantity.");
+    } catch {
+      alert("Failed to update quantity.");
     }
   };
 
@@ -135,7 +130,7 @@ const Cart = () => {
     try {
       await API.delete(`/cart/${productId}`);
 
-      setCart((prev) => prev.filter((item) => item.productId !== productId));
+      updateCart((prev) => prev.filter((item) => item.productId !== productId));
       setSelectedItems((prev) => prev.filter((id) => id !== productId));
 
       setRemovePopup({
@@ -143,8 +138,8 @@ const Cart = () => {
         productId: null,
         productName: "",
       });
-    } catch (err) {
-      setError("Failed to remove item.");
+    } catch {
+      alert("Failed to remove item.");
     }
   };
 
@@ -164,11 +159,6 @@ const Cart = () => {
     });
   };
 
-  const cartItemsTotal = cart.reduce(
-    (sum, item) => sum + Number(item.price) * Number(item.quantity),
-    0
-  );
-
   const itemCount = cart.reduce(
     (sum, item) => sum + Number(item.quantity),
     0
@@ -186,7 +176,7 @@ const Cart = () => {
       ? 5000 - selectedItemsTotal
       : 0;
 
-  const checkoutDisabled = loading || selectedItems.length === 0;
+  const checkoutDisabled = selectedItems.length === 0;
 
   return (
     <div className="cart-page">
@@ -202,17 +192,9 @@ const Cart = () => {
             )}
           </div>
 
-          {error && <p className="error-text">{error}</p>}
+          {cartError && <p className="error-text">{cartError}</p>}
 
-          {loading && (
-            <div className="cart-loading">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="skeleton-card" />
-              ))}
-            </div>
-          )}
-
-          {!loading && cart.length === 0 && !error && (
+          {cartLoaded && cart.length === 0 && !cartError && (
             <div className="cart-empty">
               <div className="empty-icon">
                 <i className="ti ti-shopping-cart-off"></i>
@@ -231,7 +213,7 @@ const Cart = () => {
             </div>
           )}
 
-          {!loading && cart.length > 0 && (
+          {cart.length > 0 && (
             <div className="cart-select-bar">
               <div className="select-left">
                 <input

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
+import { useAppData } from "../context/AppDataContext";
 import { useAuth } from "../context/AuthContext";
-import { getAllProducts } from "../services/productService";
 import "../styles/Favorites.css";
 
 const getCustomerStorageKey = (baseKey, userId) => `${baseKey}:${userId || "guest"}`;
@@ -20,32 +20,25 @@ const readStoredArray = (key) => {
 
 function Favorites() {
   const { userInfo } = useAuth();
-  const [products, setProducts] = useState([]);
+  const {
+    products,
+    productsLoaded,
+    productsError,
+    loadProducts,
+  } = useAppData();
   const [wishlistProductIds, setWishlistProductIds] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const customerId = userInfo?._id || userInfo?.id;
   const wishlistStorageKey = getCustomerStorageKey("lakIsuruWishlist", customerId);
 
   useEffect(() => {
-    setWishlistProductIds(readStoredArray(wishlistStorageKey));
+    Promise.resolve().then(() => {
+      setWishlistProductIds(readStoredArray(wishlistStorageKey));
+    });
 
-    const loadProducts = async () => {
-      try {
-        setLoading(true);
-        const data = await getAllProducts();
-
-        setProducts(data.products || []);
-        setError("");
-      } catch {
-        setError("Failed to load saved favorites. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadProducts();
-  }, [wishlistStorageKey]);
+    if (!productsLoaded) {
+      loadProducts().catch(() => {});
+    }
+  }, [loadProducts, productsLoaded, wishlistStorageKey]);
 
   const favoriteProducts = wishlistProductIds
     .map((productId) => products.find((product) => product._id === productId))
@@ -73,10 +66,10 @@ function Favorites() {
         </Link>
       </section>
 
-      {loading && <p className="favorites-status">Loading saved favorites...</p>}
-      {error && <p className="favorites-error">{error}</p>}
+      {!productsLoaded && <p className="favorites-status">Loading saved favorites...</p>}
+      {productsError && <p className="favorites-error">{productsError}</p>}
 
-      {!loading && !error && favoriteProducts.length === 0 && (
+      {productsLoaded && !productsError && favoriteProducts.length === 0 && (
         <section className="favorites-empty">
           <h2>No saved favorites yet</h2>
           <p>Tap the heart on any product to save it here.</p>
@@ -84,7 +77,7 @@ function Favorites() {
         </section>
       )}
 
-      {!loading && !error && favoriteProducts.length > 0 && (
+      {productsLoaded && !productsError && favoriteProducts.length > 0 && (
         <div className="favorites-grid">
           {favoriteProducts.map((product) => (
             <ProductCard

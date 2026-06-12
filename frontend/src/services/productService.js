@@ -10,6 +10,10 @@ export const getProductById = async (id) => {
   return apiRequest(`/products/${id}`);
 };
 
+export const getRelatedProducts = async (id) => {
+  return apiRequest(`/products/${id}/related`);
+};
+
 export const createProduct = async (product) => {
   return apiRequest("/products", {
     method: "POST",

@@ -93,6 +93,10 @@ const productSchema = new mongoose.Schema(
   }
 );
 
+productSchema.index({ isHidden: 1, createdAt: -1 });
+productSchema.index({ category: 1, createdAt: -1 });
+productSchema.index({ subcategory: 1, createdAt: -1 });
+
 const Product = mongoose.model("Product", productSchema);
 
 export default Product;

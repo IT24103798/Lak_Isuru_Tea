@@ -11,23 +11,24 @@
   width: 100%;
   max-width: 460px;
   background: white;
-  padding: 38px;
+  padding: 30px;
   border-radius: 18px;
   box-shadow: 0 10px 35px rgba(0, 0, 0, 0.12);
 }
 
 .auth-card h2 {
-  margin: 0;
+  margin: 0 0 4px;
   color: #1f5c2e;
   text-align: center;
-  font-size: 30px;
+  font-size: 26px;
 }
 
 .auth-subtitle {
   text-align: center;
   color: #666;
-  margin-top: 8px;
-  margin-bottom: 24px;
+  margin-top: 4px;
+  margin-bottom: 20px;
+  font-size: 15px;
 }
 
 .auth-card form {
@@ -38,16 +39,18 @@
 .auth-card label {
   font-weight: 600;
   color: #333;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
+  font-size: 14px;
 }
 
 .auth-card input {
-  padding: 13px;
+  padding: 10px 14px;
   border: 1px solid #d0d0d0;
   border-radius: 10px;
   outline: none;
-  font-size: 14px;
-  margin-bottom: 15px;
+  font-size: 13.5px;
+  margin-bottom: 10px;
+  height: 42px;
 }
 
 .auth-card input:focus {
@@ -57,18 +60,24 @@
 
 .password-box {
   display: flex;
-  align-items: center;
-  margin-bottom: 12px;
+  align-items: stretch;
+  margin-bottom: 10px;
+  width: 100%;
 }
 
 .password-box input {
   flex: 1;
-  margin-bottom: 0;
+  margin-bottom: 0 !important;
   border-radius: 10px 0 0 10px;
+  height: 42px;
 }
 
 .password-box button {
-  padding: 13px 14px;
+  padding: 0 16px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid #d0d0d0;
   border-left: none;
   background: #2e7d32;
@@ -76,6 +85,8 @@
   font-weight: 600;
   cursor: pointer;
   border-radius: 0 10px 10px 0;
+  font-size: 13px;
+  transition: background 0.2s;
 }
 
 .checkbox-row {
@@ -104,19 +115,20 @@
 .auth-options a {
   color: #2e7d32;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
 }
 
 .auth-main-btn {
-  padding: 13px;
+  padding: 10px;
   background: #2e7d32;
   color: white;
   border: none;
   border-radius: 10px;
   font-weight: bold;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 14px;
+  height: 42px;
 }
 
 .auth-main-btn:hover {
@@ -135,13 +147,14 @@
   border-radius: 10px;
   margin-bottom: 16px;
   text-align: center;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .auth-link {
   text-align: center;
   margin-top: 18px;
   color: #555;
+  font-size: 14px;
 }
 
 .auth-link a {
@@ -151,14 +164,114 @@
 }
 
 @media (max-width: 600px) {
+  .auth-page-center {
+    padding: 10px;
+    min-height: 100vh;
+  }
+
   .auth-card {
-    padding: 28px;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    max-width: 95%;
+  }
+
+  .auth-card h2 {
+    font-size: 19px;
+    margin-bottom: 2px;
+  }
+
+  .auth-subtitle {
+    font-size: 12px;
+    margin-bottom: 12px;
+    margin-top: 2px;
+  }
+
+  .auth-card label {
+    font-size: 11.5px;
+    margin-bottom: 2px;
+  }
+
+  .auth-card input {
+    padding: 8px 12px;
+    font-size: 12px;
+    margin-bottom: 6px;
+    height: 36px;
+  }
+
+  .password-box {
+    margin-bottom: 8px;
+    align-items: stretch;
+  }
+
+  .password-box input {
+    height: 36px;
+    border-radius: 8px 0 0 8px;
+  }
+
+  .password-box button {
+    height: 36px;
+    padding: 0 12px;
+    font-size: 11px;
+    border-radius: 0 8px 8px 0;
   }
 
   .auth-options {
-    flex-direction: column;
-    gap: 12px;
-    align-items: flex-start;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin: 5px 0 10px;
+  }
+
+  .auth-options a {
+    font-size: 11.5px;
+  }
+
+  .auth-main-btn {
+    padding: 8px;
+    font-size: 13px;
+    margin-top: 5px;
+    height: 38px;
+  }
+
+  .auth-link {
+    font-size: 12.5px;
+    margin-top: 10px;
+  }
+
+  .checkbox-row.small {
+    font-size: 11.5px;
+  }
+
+  .react-tel-input .custom-phone-input {
+    height: 36px !important;
+    font-size: 12px !important;
+    padding-left: 45px !important;
+  }
+
+  .react-tel-input .custom-phone-dropdown {
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .auth-page-center {
+    padding: 5px;
+  }
+
+  .auth-card {
+    padding: 15px;
+    border-radius: 10px;
+  }
+
+  .auth-card h2 {
+    font-size: 18px;
+  }
+
+  .auth-subtitle {
+    font-size: 11.5px;
+    margin-bottom: 12px;
   }
 }
 .auth-success {
@@ -183,12 +296,14 @@
 .reset-link-box p {
   margin: 0 0 8px;
   color: #555;
+  font-size: 13px;
 }
 
 .reset-link-box a {
   color: #2e7d32;
   font-weight: bold;
   text-decoration: none;
+  font-size: 13px;
 }
 .auth-success {
   background: #e3f8e3;
@@ -197,7 +312,7 @@
   border-radius: 10px;
   margin-bottom: 16px;
   text-align: center;
-  font-size: 14px;
+  font-size: 13px;
 }
 .auth-success {
   background: #e3f8e3;
@@ -206,14 +321,14 @@
   border-radius: 10px;
   margin-bottom: 16px;
   text-align: center;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .password-hint {
   color: #777;
   margin-top: -4px;
   margin-bottom: 14px;
-  font-size: 13px;
+  font-size: 12px;
 }
 .step-indicator {
   text-align: center;
@@ -223,6 +338,7 @@
   border-radius: 10px;
   margin-bottom: 16px;
   font-weight: 700;
+  font-size: 13px;
 }
 
 .auth-secondary-btn {
@@ -235,6 +351,7 @@
   border-radius: 10px;
   font-weight: 700;
   cursor: pointer;
+  font-size: 14px;
 }
 
 .auth-secondary-btn:hover {
@@ -252,7 +369,7 @@
   padding: 14px;
   border: 1px solid #d0d0d0;
   border-radius: 10px;
-  font-size: 15px;
+  font-size: 14px;
   outline: none;
   background: #fff;
 }

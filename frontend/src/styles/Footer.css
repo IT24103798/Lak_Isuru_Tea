@@ -183,13 +183,13 @@
 
 @media (max-width: 640px) {
   .site-footer {
-    gap: 12px;
-    padding: 16px 14px 14px;
+    gap: 8px;
+    padding: 12px 14px 10px;
   }
 
   .footer-main {
-    grid-template-columns: 1.25fr 0.9fr;
-    gap: 14px;
+    grid-template-columns: 1.2fr 0.95fr;
+    gap: 10px 14px;
   }
 
   .footer-right,
@@ -203,7 +203,7 @@
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    gap: 16px;
+    gap: 12px;
   }
 
   .footer-right h2 {
@@ -213,22 +213,26 @@
 
   .site-footer h2,
   .footer-main h2 {
-    margin-bottom: 7px;
-    font-size: 14px;
+    margin-bottom: 5px;
+    font-size: 13px;
   }
 
   .site-footer p,
   .footer-nav a {
-    font-size: 12px;
-    line-height: 1.35;
+    font-size: 11px;
+    line-height: 1.25;
   }
 
-  .site-footer p br + br {
+  .site-footer p br {
     display: none;
   }
 
+  .site-footer p {
+    max-width: 230px;
+  }
+
   .footer-nav {
-    gap: 5px;
+    gap: 4px;
   }
 
   .footer-nav a::before {
@@ -236,53 +240,58 @@
   }
 
   .footer-social-links {
-    gap: 10px;
+    gap: 8px;
   }
 
   .footer-social-link {
-    width: 28px;
-    height: 28px;
-    font-size: 18px;
+    width: 24px;
+    height: 24px;
+    font-size: 15px;
   }
 
   .footer-social-link svg {
-    width: 18px;
-    height: 18px;
+    width: 15px;
+    height: 15px;
   }
 
   .footer-social-link.instagram::before {
-    width: 9px;
-    height: 9px;
+    width: 7px;
+    height: 7px;
     border-width: 2px;
   }
 
   .footer-social-link.instagram::after {
-    width: 3px;
-    height: 3px;
-    top: 5px;
-    right: 5px;
+    width: 2px;
+    height: 2px;
+    top: 4px;
+    right: 4px;
+  }
+
+  .site-footer hr {
+    margin-top: 2px;
   }
 }
 
 @media (max-width: 420px) {
   .footer-main {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px 12px;
   }
 
   .footer-right {
+    grid-column: 1 / -1;
     align-items: flex-start;
     flex-direction: row;
-    gap: 14px;
+    gap: 10px;
   }
 
   .footer-social-links {
-    gap: 9px;
+    gap: 8px;
   }
 
   .footer-social-link {
-    width: 27px;
-    height: 27px;
-    font-size: 17px;
+    width: 24px;
+    height: 24px;
+    font-size: 15px;
   }
 }

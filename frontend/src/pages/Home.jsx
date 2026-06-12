@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
+import { useAppData } from "../context/AppDataContext";
 import { useAuth } from "../context/AuthContext";
-import { getAllProducts } from "../services/productService";
 import "../styles/Home.css";
 
 const heroSlides = [
@@ -137,49 +137,38 @@ const readStoredArray = (key) => {
 
 function Home() {
   const { userInfo } = useAuth();
+  const {
+    products,
+    productsLoaded,
+    productsError,
+    loadProducts,
+  } = useAppData();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
-  const [products, setProducts] = useState([]);
   const [wishlistProductIds, setWishlistProductIds] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
   const isAdminUser = userInfo?.role === "admin";
   const isCustomerUser = userInfo && userInfo.role !== "admin";
   const customerId = userInfo?._id || userInfo?.id;
   const wishlistStorageKey = getCustomerStorageKey("lakIsuruWishlist", customerId);
 
-  const loadProducts = async () => {
-    try {
-      setLoading(true);
-
-      const data = await getAllProducts();
-
-      setProducts(data.products);
-      setError("");
-    } catch {
-      setError("Failed to load products. Please try again.");
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (!productsLoaded) {
+      loadProducts().catch(() => {});
     }
-  };
+  }, [loadProducts, productsLoaded]);
 
   useEffect(() => {
-    const timerId = setTimeout(loadProducts, 0);
+    const timerId = setTimeout(() => {
+      setWishlistProductIds(
+        isCustomerUser ? readStoredArray(wishlistStorageKey) : []
+      );
+    }, 0);
 
     return () => {
       clearTimeout(timerId);
     };
-  }, []);
-
-  useEffect(() => {
-    if (!isCustomerUser) {
-      setWishlistProductIds([]);
-      return;
-    }
-
-    setWishlistProductIds(readStoredArray(wishlistStorageKey));
   }, [isCustomerUser, wishlistStorageKey]);
 
   useEffect(() => {
@@ -217,18 +206,26 @@ function Home() {
     const shouldShowWelcome = sessionStorage.getItem("showWelcomeBack") === "true";
 
     if (!userInfo || userInfo.role === "admin" || !shouldShowWelcome) {
-      setShowWelcomeMessage(false);
-      return;
+      const resetTimerId = setTimeout(() => {
+        setShowWelcomeMessage(false);
+      }, 0);
+
+      return () => {
+        clearTimeout(resetTimerId);
+      };
     }
 
     sessionStorage.removeItem("showWelcomeBack");
-    setShowWelcomeMessage(true);
+    const showTimerId = setTimeout(() => {
+      setShowWelcomeMessage(true);
+    }, 0);
 
     const welcomeTimerId = setTimeout(() => {
       setShowWelcomeMessage(false);
     }, 6000);
 
     return () => {
+      clearTimeout(showTimerId);
       clearTimeout(welcomeTimerId);
     };
   }, [userInfo]);
@@ -401,19 +398,17 @@ function Home() {
           </>
         )}
 
-        {loading && <p className="status-message">Loading products...</p>}
+        {productsError && <p className="error-message">{productsError}</p>}
 
-        {error && <p className="error-message">{error}</p>}
-
-        {!loading && !error && visibleProducts.length === 0 && (
+        {productsLoaded && !productsError && visibleProducts.length === 0 && (
           <p className="status-message">No products available yet.</p>
         )}
 
-        {!loading && !error && visibleProducts.length > 0 && filteredProducts.length === 0 && (
+        {productsLoaded && !productsError && visibleProducts.length > 0 && filteredProducts.length === 0 && (
           <p className="status-message">{emptyProductsMessage}</p>
         )}
 
-        {!loading && !error && shouldShowTopPicks && (
+        {!productsError && shouldShowTopPicks && (
           <div className="top-picks-preview" aria-label="Best selling tea products">
             <div className="top-picks-header">
               <span>Best Sellers</span>
@@ -468,7 +463,7 @@ function Home() {
           </div>
         )}
 
-        {!loading && !error && gridProducts.length > 0 && (
+        {!productsError && gridProducts.length > 0 && (
           <div className="product-grid">
             {gridProducts.map((product) => (
               <ProductCard
