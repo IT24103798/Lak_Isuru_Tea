@@ -31,7 +31,11 @@ const MyCancellations = () => {
   }, []);
 
   useEffect(() => {
-    loadCancellations();
+    const timerId = setTimeout(loadCancellations, 0);
+
+    return () => {
+      clearTimeout(timerId);
+    };
   }, [loadCancellations]);
 
   const formatDate = (date) => {
@@ -198,10 +202,6 @@ const MyCancellations = () => {
 
                     <div className="order-right-block">
                       <span className="order-badge badge-gray">Cancelled</span>
-
-                      <div className="order-total">
-                        Rs. {(order.totalPrice || 0).toLocaleString()}
-                      </div>
                     </div>
                   </div>
 
