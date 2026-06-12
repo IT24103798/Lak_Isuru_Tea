@@ -10,6 +10,47 @@ import {
   orderDeliveredCustomerTemplate,
 } from "../utils/emailTemplates.js";
 
+const normalizeOrderStatus = (status = "") => {
+  if (!status) return "packed";
+
+  if (status === "To Pay") return "pending";
+  if (status === "Processing") return "packed";
+
+  if (status === "To Pack") return "packed";
+  if (status === "Packed") return "packed";
+
+  if (status === "To Ship") return "shipped";
+  if (status === "Shipped") return "shipped";
+
+  if (status === "To Receive") return "on_the_way";
+  if (status === "On the Way") return "on_the_way";
+
+  if (status === "Delivered") return "delivered";
+  if (status === "To Review") return "delivered";
+
+  if (status === "Cancelled") return "cancelled";
+
+  if (status === "pending") return "pending";
+  if (status === "processing") return "packed";
+  if (status === "packed") return "packed";
+  if (status === "shipped") return "shipped";
+  if (status === "on_the_way") return "on_the_way";
+  if (status === "delivered") return "delivered";
+  if (status === "cancelled") return "cancelled";
+
+  return String(status).toLowerCase();
+};
+
+const statusTextMap = {
+  pending: "To Pay",
+  processing: "To Pack",
+  packed: "To Pack",
+  shipped: "To Ship",
+  on_the_way: "To Receive",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+};
+
 // POST /api/orders
 export const createOrder = async (req, res) => {
   try {
@@ -53,10 +94,8 @@ export const createOrder = async (req, res) => {
       price: Number(item.price),
     }));
 
-    // Check stock before creating order
-    for (const item of items) {
-      const productId = item.productId || item.product || item._id;
-      const product = await Product.findById(productId);
+    for (const item of formattedItems) {
+      const product = await Product.findById(item.product);
 
       if (!product) {
         return res.status(404).json({
@@ -71,6 +110,14 @@ export const createOrder = async (req, res) => {
       }
     }
 
+    for (const item of formattedItems) {
+      await Product.findByIdAndUpdate(item.product, {
+        $inc: {
+          stock: -Number(item.quantity),
+        },
+      });
+    }
+
     const calculatedItemsTotal = formattedItems.reduce((sum, item) => {
       return sum + Number(item.price || 0) * Number(item.quantity || 0);
     }, 0);
@@ -82,15 +129,6 @@ export const createOrder = async (req, res) => {
     const paymentStatus =
       paymentMethod === "Cash on Delivery" ? "Pending" : "Paid";
 
-    const orderStatus =
-       paymentMethod === "Cash on Delivery" ? "To Ship" : "To Pay";
-
-    const status =
-      paymentMethod === "Cash on Delivery" ? "processing" : "pending";
-
-    const shippingOption = "Standard";
-
-    // Create order
     const order = await Order.create({
       user: req.user._id,
       customer,
@@ -100,26 +138,17 @@ export const createOrder = async (req, res) => {
       totalPrice: finalTotal,
       paymentMethod,
       paymentStatus,
-      shippingOption,
-      orderStatus: "To Ship",
-      status: "processing",
+      shippingOption: "Standard",
+      status: "packed",
+      orderStatus: "To Pack",
+      stockDeducted: true,
+      packedAt: new Date(),
     });
 
-    // Reduce stock after order is successfully created
-    for (const item of items) {
-      const productId = item.productId || item.product || item._id;
-
-      await Product.findByIdAndUpdate(productId, {
-        $inc: {
-          stock: -Number(item.quantity),
-        },
-      });
-    }
-
-    // Remove only ordered products so selected checkout or Pay Now keeps other cart items.
     const orderedProductIds = formattedItems.map((item) =>
       String(item.product)
     );
+
     const cart = await Cart.findOne({ user: req.user._id });
 
     if (cart) {
@@ -134,9 +163,7 @@ export const createOrder = async (req, res) => {
       }
     }
 
-    // Send emails without stopping order process if email fails
     try {
-      // 1. Customer order placed email
       await sendEmail(
         order.customer.email,
         `Your Lak Isuru Tea order is confirmed - #${order._id}`,
@@ -144,22 +171,18 @@ export const createOrder = async (req, res) => {
         orderPlacedCustomerTemplate(order)
       );
 
-      // 2. Find all admins from database
       const admins = await User.find({
         role: { $regex: /^admin$/i },
       }).select("email");
 
       const adminEmails = admins.map((admin) => admin.email).filter(Boolean);
 
-      // Optional fallback shop email
       if (process.env.SHOP_EMAIL) {
         adminEmails.push(process.env.SHOP_EMAIL);
       }
 
-      // Remove duplicate emails
       const uniqueAdminEmails = [...new Set(adminEmails)];
 
-      // 3. Admin new order email
       if (uniqueAdminEmails.length > 0) {
         await sendEmail(
           uniqueAdminEmails.join(","),
@@ -233,15 +256,21 @@ export const markOrderPaid = async (req, res) => {
       });
     }
 
-    if (order.status === "cancelled") {
+    const currentStatus = normalizeOrderStatus(order.status || order.orderStatus);
+
+    if (currentStatus === "cancelled") {
       return res.status(400).json({
         message: "Cancelled orders cannot be paid.",
       });
     }
 
     order.paymentStatus = "Paid";
-    order.orderStatus = "To Ship";
-    order.status = "processing";
+    order.status = "packed";
+    order.orderStatus = "To Pack";
+
+    if (!order.packedAt) {
+      order.packedAt = new Date();
+    }
 
     await order.save();
 
@@ -279,30 +308,34 @@ export const cancelOrder = async (req, res) => {
       });
     }
 
+    const currentStatus = normalizeOrderStatus(order.status || order.orderStatus);
+
     if (
-      order.status === "shipped" ||
-      order.status === "shipped" ||
-      order.status === "delivered" ||
-      order.status === "returned"
+      currentStatus === "shipped" ||
+      currentStatus === "on_the_way" ||
+      currentStatus === "delivered"
     ) {
       return res.status(400).json({
         message: "This order cannot be cancelled now.",
       });
     }
 
-    if (order.status === "cancelled") {
+    if (currentStatus === "cancelled") {
       return res.status(400).json({
         message: "This order is already cancelled.",
       });
     }
 
-    // Restore stock when order is cancelled
-    for (const item of order.items) {
-      await Product.findByIdAndUpdate(item.product, {
-        $inc: {
-          stock: Number(item.quantity),
-        },
-      });
+    if (order.stockDeducted) {
+      for (const item of order.items) {
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: {
+            stock: Number(item.quantity),
+          },
+        });
+      }
+
+      order.stockDeducted = false;
     }
 
     order.status = "cancelled";
@@ -342,18 +375,20 @@ export const confirmReceived = async (req, res) => {
       });
     }
 
-    if (order.status !== "shipped") {
+    const currentStatus = normalizeOrderStatus(order.status || order.orderStatus);
+
+    if (currentStatus !== "on_the_way") {
       return res.status(400).json({
-        message: "Only shipped orders can be confirmed as received.",
+        message: "Only To Receive orders can be confirmed as received.",
       });
     }
 
     order.status = "delivered";
-    order.orderStatus = "To Review";
+    order.orderStatus = "Delivered";
+    order.deliveredAt = new Date();
 
     await order.save();
 
-    // Customer delivered email
     try {
       await sendEmail(
         order.customer.email,
@@ -377,9 +412,7 @@ export const confirmReceived = async (req, res) => {
   }
 };
 
-/* =========================
-   ADMIN - GET ALL ORDERS
-========================= */
+// ADMIN - GET ALL ORDERS
 export const getAllOrdersForAdmin = async (req, res) => {
   try {
     const orders = await Order.find({})
@@ -397,38 +430,37 @@ export const getAllOrdersForAdmin = async (req, res) => {
   }
 };
 
-/* ===============================
-   ADMIN - UPDATE ORDER STATUS
-=============================== */
+// ADMIN - UPDATE ORDER STATUS
 export const updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
 
+    const requestedStatus = normalizeOrderStatus(status);
+
     const allowedStatuses = [
+      "pending",
       "processing",
       "packed",
       "shipped",
+      "on_the_way",
       "delivered",
       "cancelled",
     ];
 
-    const statusTextMap = {
-      processing: "To Ship",
-      packed: "To Pack",
-      shipped: "To Receive",
-      delivered: "To Review",
-      cancelled: "Cancelled",
-    };
-
     const validNextStatuses = {
-      processing: ["packed", "cancelled"],
-      packed: ["shipped"],
-      shipped: ["delivered"],
+      pending: ["packed", "cancelled"],
+      processing: ["packed", "shipped", "on_the_way", "cancelled"],
+
+      // flexible to avoid old database status errors
+      packed: ["shipped", "on_the_way"],
+
+      shipped: ["on_the_way", "delivered"],
+      on_the_way: ["delivered"],
       delivered: [],
       cancelled: [],
     };
 
-    if (!allowedStatuses.includes(status)) {
+    if (!allowedStatuses.includes(requestedStatus)) {
       return res.status(400).json({
         message: "Invalid order status",
       });
@@ -442,60 +474,79 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
-    if (order.status === "cancelled") {
+    const currentStatus = normalizeOrderStatus(order.status || order.orderStatus);
+
+    console.log("STATUS UPDATE DEBUG:", {
+      orderId: req.params.id,
+      frontendStatus: status,
+      requestedStatus,
+      dbStatus: order.status,
+      dbOrderStatus: order.orderStatus,
+      currentStatus,
+    });
+
+    if (currentStatus === "cancelled") {
       return res.status(400).json({
         message: "Cancelled order status cannot be changed.",
       });
     }
 
-    if (order.status === "delivered") {
+    if (currentStatus === "delivered") {
       return res.status(400).json({
         message: "This order is already delivered and completed.",
       });
     }
 
-    if (order.status === status) {
+    if (currentStatus === requestedStatus) {
       return res.status(400).json({
-        message: `This order is already marked as ${statusTextMap[status]}.`,
-      });
-    }
-
-    const nextStatuses = validNextStatuses[order.status] || [];
-
-    if (!nextStatuses.includes(status)) {
-      return res.status(400).json({
-        message: `Invalid status change. Current status is ${
-          statusTextMap[order.status] || order.status
+        message: `This order is already marked as ${
+          statusTextMap[requestedStatus] || requestedStatus
         }.`,
       });
     }
 
-    order.status = status;
-    order.orderStatus = statusTextMap[status];
+    const nextStatuses = validNextStatuses[currentStatus] || [];
 
-    if (status === "packed") {
+    if (!nextStatuses.includes(requestedStatus)) {
+      return res.status(400).json({
+        message: `Invalid status change. Current status is ${
+          statusTextMap[currentStatus] || currentStatus
+        }.`,
+      });
+    }
+
+    order.status = requestedStatus;
+    order.orderStatus = statusTextMap[requestedStatus];
+
+    if (requestedStatus === "packed" && !order.packedAt) {
       order.packedAt = new Date();
     }
 
-    if (status === "shipped") {
+    if (requestedStatus === "shipped" && !order.shippedAt) {
       order.shippedAt = new Date();
     }
 
-    if (status === "delivered") {
+    if (requestedStatus === "on_the_way" && !order.onTheWayAt) {
+      order.onTheWayAt = new Date();
+    }
+
+    if (requestedStatus === "delivered" && !order.deliveredAt) {
       order.deliveredAt = new Date();
     }
 
-    if (status === "cancelled") {
+    if (requestedStatus === "cancelled" && !order.cancelledAt) {
       order.cancelledAt = new Date();
     }
 
     const updatedOrder = await order.save();
 
-    res.json({
+    res.status(200).json({
       message: "Order status updated successfully",
       order: updatedOrder,
     });
   } catch (error) {
+    console.error("UPDATE ORDER STATUS ERROR:", error);
+
     res.status(500).json({
       message: "Server error while updating order status",
       error: error.message,

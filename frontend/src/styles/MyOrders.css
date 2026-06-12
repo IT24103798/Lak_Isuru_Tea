@@ -1781,7 +1781,21 @@
   }
 }
 
-.badge-cancelled {
-  background: #b91c1c !important;
+/* =========================
+   CANCELLED ORDER CARD RED STYLE
+========================= */
+
+.cancellation-card .order-badge,
+.cancellation-card .badge-red,
+.order-card.cancelled-order-card .order-badge,
+.order-card.cancelled-order-card .badge-red {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  border: 1px solid #fecaca !important;
+}
+
+.order-card.cancelled-order-card .cancel-details-btn:hover,
+.order-card.cancelled-order-card .cancel-detail-btn:hover {
+  background: #dc2626 !important;
   color: #ffffff !important;
 }

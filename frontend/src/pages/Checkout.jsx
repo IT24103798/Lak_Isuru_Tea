@@ -47,9 +47,44 @@ const Checkout = () => {
     return String(value || "").replace(/[^\d]/g, "");
   };
 
-  const formatPhoneForApi = (value) => {
-    const cleaned = cleanPhone(value);
-    return cleaned ? `+${cleaned}` : "";
+  const normalizeSriLankanPhone = (phone = "") => {
+    const digits = String(phone).replace(/[^\d]/g, "");
+
+    if (!digits) return "";
+
+    if (digits.startsWith("94") && digits.length === 11) {
+      return `+${digits}`;
+    }
+
+    if (digits.startsWith("0") && digits.length === 10) {
+      return `+94${digits.slice(1)}`;
+    }
+
+    if (digits.length === 9) {
+      return `+94${digits}`;
+    }
+
+    return `+${digits}`;
+  };
+
+  const formatSriLankanPhone = (phone = "") => {
+    const digits = String(phone).replace(/[^\d]/g, "");
+
+    if (!digits) return "-";
+
+    let number = "";
+
+    if (digits.startsWith("94") && digits.length === 11) {
+      number = digits.slice(2);
+    } else if (digits.startsWith("0") && digits.length === 10) {
+      number = digits.slice(1);
+    } else if (digits.length === 9) {
+      number = digits;
+    } else {
+      return phone;
+    }
+
+    return `+94 ${number.slice(0, 2)} ${number.slice(2, 5)} ${number.slice(5)}`;
   };
 
   const handlePhoneChange = (section, fieldName, value) => {
@@ -76,10 +111,7 @@ const Checkout = () => {
             "",
           email: savedUser.email || "",
           phoneNumber1: cleanPhone(
-            savedUser.phone ||
-              savedUser.phoneNumber ||
-              savedUser.mobile ||
-              ""
+            savedUser.phone || savedUser.phoneNumber || savedUser.mobile || ""
           ),
         };
 
@@ -213,21 +245,22 @@ const Checkout = () => {
   const getCities = (province, district) =>
     province && district ? locationData[province]?.[district] || [] : [];
 
- const handleAddressChange = (section, event) => {
-  const { name, value } = event.target;
-  const setter = section === "shipping" ? setShippingData : setBillingData;
+  const handleAddressChange = (section, event) => {
+    const { name, value } = event.target;
+    const setter = section === "shipping" ? setShippingData : setBillingData;
 
-  setter((prev) => {
-    if (name === "province") {
-      return { ...prev, province: value, district: "", city: "" };
-    }
+    setter((prev) => {
+      if (name === "province") {
+        return { ...prev, province: value, district: "", city: "" };
+      }
 
-    if (name === "district") {
-      return { ...prev, district: value, city: "" };
-    }
-    return { ...prev, [name]: value };
-  });
-};
+      if (name === "district") {
+        return { ...prev, district: value, city: "" };
+      }
+
+      return { ...prev, [name]: value };
+    });
+  };
 
   const validateAddress = (data, type) => {
     if (!data.fullName.trim()) return `${type} full name is required.`;
@@ -243,10 +276,12 @@ const Checkout = () => {
 
   const validateForm = () => {
     const shippingError = validateAddress(shippingData, "Shipping");
+
     if (shippingError) return shippingError;
 
     if (!billingSameAsShipping) {
       const billingError = validateAddress(billingData, "Billing");
+
       if (billingError) return billingError;
     }
 
@@ -262,22 +297,18 @@ const Checkout = () => {
     const district = data.district.trim();
     const province = data.province.trim();
 
-    const addressParts = [
-      line1,
-      line2,
-      city,
-      district,
-      province,
-    ].filter(Boolean);
+    const addressParts = [line1, line2, city, district, province].filter(
+      Boolean
+    );
 
     const fullAddress = addressParts.join(", ");
 
     return {
       fullName: data.fullName.trim(),
       email: data.email.trim(),
-      phone: formatPhoneForApi(data.phoneNumber1),
-      phoneNumber1: formatPhoneForApi(data.phoneNumber1),
-      phoneNumber2: formatPhoneForApi(data.phoneNumber2),
+      phone: normalizeSriLankanPhone(data.phoneNumber1),
+      phoneNumber1: normalizeSriLankanPhone(data.phoneNumber1),
+      phoneNumber2: normalizeSriLankanPhone(data.phoneNumber2),
       addressType: data.addressType === "OFFICE" ? "OFFICE" : "HOME",
       addressLine: line1,
       addressLine1: line1,
@@ -350,7 +381,7 @@ const Checkout = () => {
         total,
         paymentMethod: "Cash on Delivery",
         paymentStatus: "Pending",
-        orderStatus: "To Ship",
+        orderStatus: "To Pack",
       };
 
       if (saveShippingAddress) {
@@ -429,7 +460,7 @@ const Checkout = () => {
           <div className="saved-address-field">
             <span className="saved-field-label">Phone Number 1</span>
             <strong className="saved-field-value">
-              {formatPhoneForApi(data.phoneNumber1)}
+              {formatSriLankanPhone(data.phoneNumber1)}
             </strong>
           </div>
 
@@ -437,13 +468,14 @@ const Checkout = () => {
             <div className="saved-address-field">
               <span className="saved-field-label">Phone Number 2</span>
               <strong className="saved-field-value">
-                {formatPhoneForApi(data.phoneNumber2)}
+                {formatSriLankanPhone(data.phoneNumber2)}
               </strong>
             </div>
           )}
 
           <div className="saved-address-field full-width">
             <span className="saved-field-label">Address</span>
+
             <div className="saved-address-detail">
               <span className="orange-address-badge">{data.addressType}</span>
               <span className="saved-field-value">{finalAddress}</span>
@@ -464,6 +496,7 @@ const Checkout = () => {
       <div className="checkout-form-area">
         <div className="form-section-title address-section-title full-width">
           <h3>{isShipping ? "Customer Details" : "Customer Billing Details"}</h3>
+
           <p>
             <i>
               {isShipping
@@ -476,6 +509,7 @@ const Checkout = () => {
         <div className="form-grid">
           <div className="form-group">
             <label>Full Name</label>
+
             <input
               type="text"
               name="fullName"
@@ -487,6 +521,7 @@ const Checkout = () => {
 
           <div className="form-group">
             <label>Email Address</label>
+
             <input
               type="email"
               name="email"
@@ -498,6 +533,7 @@ const Checkout = () => {
 
           <div className="form-group">
             <label>Phone Number 1</label>
+
             <PhoneInput
               country="lk"
               enableSearch={true}
@@ -516,6 +552,7 @@ const Checkout = () => {
             <label>
               Phone Number 2 <span className="optional-tag">Optional</span>
             </label>
+
             <PhoneInput
               country="lk"
               enableSearch={true}
@@ -533,6 +570,7 @@ const Checkout = () => {
           <div className="form-group full-width">
             <div className="form-section-title address-section-title">
               <h3>{isShipping ? "Shipping Address" : "Billing Address"}</h3>
+
               <p>
                 <i>
                   {isShipping
@@ -564,6 +602,7 @@ const Checkout = () => {
                     checked={data.addressType === at.value}
                     onChange={(e) => handleAddressChange(type, e)}
                   />
+
                   {at.label}
                 </label>
               ))}
@@ -572,6 +611,7 @@ const Checkout = () => {
 
           <div className="form-group full-width">
             <label>Address Line 1</label>
+
             <input
               type="text"
               name="addressLine1"
@@ -583,6 +623,7 @@ const Checkout = () => {
 
           <div className="form-group full-width">
             <label>Address Line 2</label>
+
             <input
               type="text"
               name="addressLine2"
@@ -594,12 +635,14 @@ const Checkout = () => {
 
           <div className="form-group">
             <label>Province</label>
+
             <select
               name="province"
               value={data.province}
               onChange={(e) => handleAddressChange(type, e)}
             >
               <option value="">Select Province</option>
+
               {provinces.map((p) => (
                 <option key={p} value={p}>
                   {p}
@@ -610,6 +653,7 @@ const Checkout = () => {
 
           <div className="form-group">
             <label>District</label>
+
             <select
               name="district"
               value={data.district}
@@ -617,6 +661,7 @@ const Checkout = () => {
               disabled={!data.province}
             >
               <option value="">Select District</option>
+
               {districts.map((d) => (
                 <option key={d} value={d}>
                   {d}
@@ -627,6 +672,7 @@ const Checkout = () => {
 
           <div className="form-group">
             <label>City</label>
+
             <select
               name="city"
               value={data.city}
@@ -634,6 +680,7 @@ const Checkout = () => {
               disabled={!data.district}
             >
               <option value="">Select City</option>
+
               {cities.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -641,7 +688,6 @@ const Checkout = () => {
               ))}
             </select>
           </div>
-
 
           <div className="form-group full-width">
             <div className="address-save-action">
@@ -699,6 +745,7 @@ const Checkout = () => {
               <div className="checkout-card-header">
                 <div>
                   <h2>Shipping Address</h2>
+
                   <p className="section-subtitle">
                     Delivery contact and location details
                   </p>
@@ -724,6 +771,7 @@ const Checkout = () => {
               <div className="checkout-card-header">
                 <div>
                   <h2>Billing Address</h2>
+
                   <p className="section-subtitle">
                     Invoice and payment address details
                   </p>
@@ -746,6 +794,7 @@ const Checkout = () => {
                   checked={billingSameAsShipping}
                   onChange={(e) => {
                     const checked = e.target.checked;
+
                     setBillingSameAsShipping(checked);
 
                     if (checked) {
@@ -756,6 +805,7 @@ const Checkout = () => {
                     }
                   }}
                 />
+
                 <span>Billing address is same as shipping address</span>
               </label>
 
@@ -820,6 +870,7 @@ const Checkout = () => {
 
               <div className="checkout-price-row">
                 <span>Delivery Fee</span>
+
                 <strong>
                   {deliveryFee === 0
                     ? "Free"
