@@ -235,9 +235,21 @@
   }
 
   .chatbot-floating-button {
-    right: 18px;
-    bottom: 18px;
-    width: 68px;
-    height: 68px;
+    right: 14px;
+    bottom: 14px;
+    width: 52px;
+    height: 52px;
+  }
+
+  .chatbot-icon {
+    font-size: 25px;
+  }
+
+  .chatbot-badge {
+    top: -4px;
+    right: -3px;
+    min-width: 24px;
+    height: 24px;
+    font-size: 10px;
   }
 }

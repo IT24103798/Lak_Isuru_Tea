@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../api/api";
+import { useAppData } from "../context/AppDataContext";
 import locationData from "../data/locationData";
 import "../styles/AddressBook.css";
 import PhoneInputModule from "react-phone-input-2";
@@ -64,7 +65,12 @@ const cleanAddressParts = (address) => {
 };
 
 const AddressBook = () => {
-  const [addresses, setAddresses] = useState([]);
+  const {
+    addresses,
+    addressesLoaded,
+    addressesError,
+    loadAddresses,
+  } = useAppData();
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -81,18 +87,19 @@ const AddressBook = () => {
       ? locationData[form.province]?.[form.district] || []
       : [];
 
-  const loadAddresses = async () => {
-    try {
-      const { data } = await API.get("/addresses");
-      setAddresses(data.addresses || data || []);
-    } catch {
-      setMessage("Failed to load addresses.");
+  useEffect(() => {
+    if (!addressesLoaded) {
+      loadAddresses().catch(() => {});
     }
-  };
+  }, [addressesLoaded, loadAddresses]);
 
   useEffect(() => {
-    loadAddresses();
-  }, []);
+    if (addressesError) {
+      Promise.resolve().then(() => {
+        setMessage(addressesError);
+      });
+    }
+  }, [addressesError]);
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -199,7 +206,7 @@ const AddressBook = () => {
       setForm(emptyForm);
       setEditingId(null);
       setShowForm(false);
-      await loadAddresses();
+      await loadAddresses({ force: true });
     } catch (error) {
       setMessage(error.response?.data?.message || "Something went wrong.");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -236,7 +243,7 @@ const AddressBook = () => {
     try {
       await API.put(`/addresses/${id}/default-shipping`);
       setMessage("Default shipping address updated.");
-      await loadAddresses();
+      await loadAddresses({ force: true });
     } catch {
       setMessage("Failed to update default shipping address.");
     }
@@ -246,7 +253,7 @@ const AddressBook = () => {
     try {
       await API.put(`/addresses/${id}/default-billing`);
       setMessage("Default billing address updated.");
-      await loadAddresses();
+      await loadAddresses({ force: true });
     } catch {
       setMessage("Failed to update default billing address.");
     }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import API from "../api/api";
 import PhoneInputModule from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
+import { useAppData } from "../context/AppDataContext";
 import { useAuth } from "../context/AuthContext";
 import {
   getProfilePhotoStorageKey,
@@ -32,6 +33,13 @@ const formatPhoneForSave = (phone) => {
 
 const Profile = () => {
   const { userInfo, login } = useAuth();
+  const {
+    profile: sharedProfile,
+    profileLoaded,
+    profileError,
+    loadProfile,
+    updateProfile,
+  } = useAppData();
 
   const [profile, setProfile] = useState({
     name: "",
@@ -52,29 +60,34 @@ const Profile = () => {
   const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const { data } = await API.get("/users/profile");
+    const applyLoadedProfile = (userData = {}) => {
+      const loadedProfile = {
+        name: userData.name || userInfo?.name || "",
+        email: userData.email || userInfo?.email || "",
+        phone: formatPhoneForInput(userData.phone || userInfo?.phone || ""),
+        address: userData.address || userInfo?.address || "",
+      };
 
-        const userData = data.user || data;
+      setProfile(loadedProfile);
+      const loadedProfilePhoto = userData.profileImage || getStoredProfilePhoto(userData);
 
-        const loadedProfile = {
-          name: userData.name || userInfo?.name || "",
-          email: userData.email || userInfo?.email || "",
-          phone: formatPhoneForInput(userData.phone || userInfo?.phone || ""),
-          address: userData.address || userInfo?.address || "",
-        };
+      setProfilePhoto(loadedProfilePhoto);
+      if (loadedProfilePhoto) {
+        localStorage.setItem(getProfilePhotoStorageKey(userData), loadedProfilePhoto);
+      }
+      setError("");
+      setLoading(false);
+    };
 
-        setProfile(loadedProfile);
-        const loadedProfilePhoto = userData.profileImage || getStoredProfilePhoto(userData);
+    if (profileLoaded && sharedProfile) {
+      Promise.resolve(sharedProfile).then(applyLoadedProfile);
+      return;
+    }
 
-        setProfilePhoto(loadedProfilePhoto);
-        if (loadedProfilePhoto) {
-          localStorage.setItem(getProfilePhotoStorageKey(userData), loadedProfilePhoto);
-        }
-        setError("");
-      } catch {
-        setError("Failed to load profile. Please login again.");
+    loadProfile()
+      .then(applyLoadedProfile)
+      .catch(() => {
+        setError(profileError || "Failed to load profile. Please login again.");
 
         setProfile({
           name: userInfo?.name || "",
@@ -82,13 +95,9 @@ const Profile = () => {
           phone: formatPhoneForInput(userInfo?.phone || ""),
           address: userInfo?.address || "",
         });
-      } finally {
         setLoading(false);
-      }
-    };
-
-    loadProfile();
-  }, [userInfo]);
+      });
+  }, [loadProfile, profileError, profileLoaded, sharedProfile, userInfo]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -138,6 +147,7 @@ const Profile = () => {
           });
         }
 
+        updateProfile(updatedUser);
         setSuccess("Profile photo updated successfully.");
         setError("");
       } catch (err) {
@@ -170,6 +180,7 @@ const Profile = () => {
         });
       }
 
+      updateProfile(updatedUser);
       setSuccess("Profile photo removed successfully.");
       setError("");
     } catch (err) {
@@ -226,6 +237,7 @@ const Profile = () => {
       };
 
       setProfile(updatedProfile);
+      updateProfile(updatedUser);
 
       if (data.token && login) {
         login({

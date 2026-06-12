@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import ProductCard from "../components/ProductCard";
+import { useAppData } from "../context/AppDataContext";
 import { useAuth } from "../context/AuthContext";
 import { productCatalog } from "../data/productCatalog";
-import { getAllProducts } from "../services/productService";
 import "../styles/Home.css";
 
 const sortTopSellingFirst = (productList) => {
@@ -54,11 +54,14 @@ const readStoredArray = (key) => {
 
 function Products() {
   const { userInfo } = useAuth();
+  const {
+    products,
+    productsLoaded,
+    productsError,
+    loadProducts,
+  } = useAppData();
   const [searchParams] = useSearchParams();
-  const [products, setProducts] = useState([]);
   const [wishlistProductIds, setWishlistProductIds] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const isCustomerUser = userInfo && userInfo.role !== "admin";
   const customerId = userInfo?._id || userInfo?.id;
   const wishlistStorageKey = getCustomerStorageKey("lakIsuruWishlist", customerId);
@@ -74,29 +77,21 @@ function Products() {
   const [showInStockOnly, setShowInStockOnly] = useState(false);
 
   useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        setLoading(true);
-        const data = await getAllProducts();
-        setProducts(data.products);
-        setError("");
-      } catch {
-        setError("Failed to load products. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadProducts();
-  }, []);
+    if (!productsLoaded) {
+      loadProducts().catch(() => {});
+    }
+  }, [loadProducts, productsLoaded]);
 
   useEffect(() => {
-    if (!isCustomerUser) {
-      setWishlistProductIds([]);
-      return;
-    }
+    const timerId = setTimeout(() => {
+      setWishlistProductIds(
+        isCustomerUser ? readStoredArray(wishlistStorageKey) : []
+      );
+    }, 0);
 
-    setWishlistProductIds(readStoredArray(wishlistStorageKey));
+    return () => {
+      clearTimeout(timerId);
+    };
   }, [isCustomerUser, wishlistStorageKey]);
 
   const toggleWishlistProduct = (productId) => {
@@ -312,19 +307,17 @@ function Products() {
           </div>
         )}
 
-        {loading && <p className="status-message">Loading products...</p>}
+        {productsError && <p className="error-message">{productsError}</p>}
 
-        {error && <p className="error-message">{error}</p>}
-
-        {!loading && !error && visibleProducts.length === 0 && (
+        {productsLoaded && !productsError && visibleProducts.length === 0 && (
           <p className="status-message">No products available yet.</p>
         )}
 
-        {!loading && !error && visibleProducts.length > 0 && filteredProducts.length === 0 && (
+        {productsLoaded && !productsError && visibleProducts.length > 0 && filteredProducts.length === 0 && (
           <p className="status-message">{emptyProductsMessage}</p>
         )}
 
-        {!loading && !error && filteredProducts.length > 0 && (
+        {!productsError && filteredProducts.length > 0 && (
           <div className="product-grid">
             {filteredProducts.map((product) => (
               <ProductCard

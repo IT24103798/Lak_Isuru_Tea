@@ -1,6 +1,9 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import API from "../api/api";
+import { useAppData } from "../context/AppDataContext";
 import "../styles/MyOrders.css";
+
+const ORDERS_REFRESH_INTERVAL = 90000;
 
 const TABS = [
   { label: "All", filter: "all" },
@@ -112,7 +115,9 @@ const MyOrders = () => {
   const [error, setError] = useState("");
   const [cancelError, setCancelError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [loading, setLoading] = useState(true);
+  const loading = !ordersLoaded;
+  const displayError = error || ordersError;
+  const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState("");
   const [activeTab, setActiveTab] = useState(0);
   const [searchText, setSearchText] = useState("");
@@ -123,31 +128,41 @@ const MyOrders = () => {
   const [cancelNote, setCancelNote] = useState("");
   const [agreeCancel, setAgreeCancel] = useState(false);
 
-  const loadOrders = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
+  const handleRefreshOrders = useCallback(() => {
+    setRefreshing(true);
+    setError("");
 
-      const { data } = await API.get("/orders");
-
-      console.log("ORDERS RESPONSE:", data);
-
-      setOrders(data.orders || []);
-    } catch (err) {
-      console.log("ORDERS LOAD ERROR:", err.response?.data || err.message);
-
-      setError(
-        err.response?.data?.message ||
-          "Failed to load orders. Please login again."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    loadOrders({ force: true, forceFresh: true })
+      .catch((err) => {
+        setError(
+          err.response?.data?.message ||
+            "Failed to load orders. Please login again."
+        );
+      })
+      .finally(() => {
+        setRefreshing(false);
+      });
+  }, [loadOrders]);
 
   useEffect(() => {
-    loadOrders();
-  }, [loadOrders]);
+    if (!ordersLoaded) {
+      loadOrders()
+        .catch((err) => {
+          setError(
+            err.response?.data?.message ||
+              "Failed to load orders. Please login again."
+          );
+        });
+    }
+
+    const interval = setInterval(() => {
+      loadOrders({ force: true }).catch(() => {});
+    }, ORDERS_REFRESH_INTERVAL);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [loadOrders, ordersLoaded]);
 
   const showSuccess = (message) => {
     setSuccessMessage(message);
@@ -397,11 +412,11 @@ const MyOrders = () => {
             <button
               type="button"
               className="refresh-btn"
-              onClick={loadOrders}
-              disabled={loading}
+              onClick={handleRefreshOrders}
+              disabled={refreshing}
             >
-              <i className={`ti ${loading ? "ti-loader-2" : "ti-refresh"}`}></i>
-              {loading ? "Loading..." : "Refresh"}
+              <i className="ti ti-refresh"></i>
+              {refreshing ? "Refreshing..." : "Refresh"}
             </button>
           </div>
 
@@ -452,21 +467,21 @@ const MyOrders = () => {
           })}
         </div>
 
-        {error && (
+        {displayError && (
           <div className="state-card error-card">
             <i className="ti ti-alert-circle"></i>
-            <p>{error}</p>
+            <p>{displayError}</p>
           </div>
         )}
 
-        {loading && (
+        {loading && orders.length === 0 && (
           <div className="state-card loading-card">
             <i className="ti ti-loader-2"></i>
             <p>Loading your orders...</p>
           </div>
         )}
 
-        {!loading && orders.length > 0 && filteredOrders.length === 0 && !error && (
+        {ordersLoaded && orders.length > 0 && filteredOrders.length === 0 && !displayError && (
           <div className="state-card empty-card">
             <i className="ti ti-package-off"></i>
             <h3>No matching orders found</h3>
@@ -475,8 +490,7 @@ const MyOrders = () => {
         )}
 
         <div className="orders-list">
-          {!loading &&
-            filteredOrders.map((order) => {
+          {filteredOrders.map((order) => {
               const currentStatus = normalizeStatus(
                 order.status || order.orderStatus
               );
