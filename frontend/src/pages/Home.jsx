@@ -81,7 +81,7 @@ const teaCategoryShowcase = [
   {
     title: "Green Tea",
     text: "Light, clean cups with a fresh and gentle finish.",
-    image: "/images/category-green-tea.png",
+    image: "/images/green-tea.png",
     accent: "Fresh",
   },
   {
